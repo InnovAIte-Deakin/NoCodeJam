@@ -26,7 +26,7 @@ export function LandingPage() {
               <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold responsive-transition" asChild>
                 <Link to="/challenges">Browse Challenges</Link>
               </Button>
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white hover:text-purple-600 px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold responsive-transition" asChild>
+              <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold responsive-transition" asChild>
                 <Link to="/register">Start Your Journey</Link>
               </Button>
             </div>
