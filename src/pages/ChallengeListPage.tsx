@@ -157,11 +157,15 @@ export function ChallengeListPage() {
                     </span>
                   </div>
                   <div className="flex gap-2">
-                    <Button asChild className="flex-1">
-                      <Link to={`/challenges/${challenge.id}`}>
-                        {status === 'approved' ? 'View Details' : 'Start Challenge'}
-                      </Link>
-                    </Button>
+                    {status === 'approved' ? (
+                      <Button asChild className="flex-1" variant="secondary">
+                        <Link to={`/challenges/${challenge.id}`}>View Details</Link>
+                      </Button>
+                    ) : (
+                      <Button asChild className="flex-1">
+                        <Link to={`/challenges/${challenge.id}`}>Start Challenge</Link>
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
