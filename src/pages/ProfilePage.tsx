@@ -9,21 +9,53 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { User, Github, Mail, Calendar, ExternalLink, Trophy } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { Link } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 
 export function ProfilePage() {
-  const { user, setUser } = useAuth();
+  const { user: currentUser, setUser } = useAuth();
+  const { id } = useParams();
+  const [user, setProfileUser] = useState<any>(currentUser);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    username: user?.username || '',
-    bio: user?.bio || '',
-    githubUsername: user?.githubUsername || '',
-    avatar: user?.avatar || ''
+    username: currentUser?.username || '',
+    bio: currentUser?.bio || '',
+    githubUsername: currentUser?.githubUsername || '',
+    avatar: currentUser?.avatar || ''
   });
   const [completedChallenges, setCompletedChallenges] = useState(0);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      if (id && id !== currentUser?.id) {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('id', id)
+          .single();
+        if (!error && data) {
+          setProfileUser(data);
+          setFormData({
+            username: data.username || '',
+            bio: data.bio || '',
+            githubUsername: data.githubUsername || '',
+            avatar: data.avatar || ''
+          });
+        }
+      } else {
+        setProfileUser(currentUser);
+        setFormData({
+          username: currentUser?.username || '',
+          bio: currentUser?.bio || '',
+          githubUsername: currentUser?.githubUsername || '',
+          avatar: currentUser?.avatar || ''
+        });
+      }
+    };
+    fetchUser();
+  }, [id, currentUser]);
 
   useEffect(() => {
     const fetchCompleted = async () => {
@@ -92,6 +124,9 @@ export function ProfilePage() {
     setIsEditing(false);
   };
 
+  // Only allow editing if viewing own profile
+  const isOwnProfile = !id || id === currentUser?.id;
+
   if (!user) return null;
 
   return (
@@ -127,9 +162,11 @@ export function ProfilePage() {
                   <Calendar className="w-4 h-4" />
                   <span>Joined {user?.joinedAt?.toLocaleDateString()}</span>
                 </div>
-                <Button variant="outline" size="sm" asChild>
-                  <Link to="/profile">Edit Profile</Link>
-                </Button>
+                {isOwnProfile && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link to="/profile">Edit Profile</Link>
+                  </Button>
+                )}
               </CardHeader>
             </Card>
             {/* Account Stats */}
@@ -145,7 +182,7 @@ export function ProfilePage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Badges Earned</span>
-                    <span className="font-bold text-yellow-600">{user.badges.length}</span>
+                    <span className="font-bold text-yellow-600">{(user?.badges?.length ?? 0)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Account Type</span>
@@ -220,9 +257,9 @@ export function ProfilePage() {
                 <CardDescription>Your achievements and milestones</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                {user.badges.length > 0 ? (
+                {(user?.badges?.length ?? 0) > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {user.badges.map((badge) => (
+                    {(user.badges || []).map((badge: any) => (
                       <div key={badge.id} className="text-center p-2 sm:p-3 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
                         <div className="text-xl sm:text-2xl mb-1 sm:mb-2">{badge.icon}</div>
                         <div className="font-medium text-xs sm:text-sm text-gray-900">{badge.name}</div>

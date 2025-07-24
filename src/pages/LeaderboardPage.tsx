@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Medal, Award, Crown, Star } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { Link } from 'react-router-dom';
 
 export function LeaderboardPage() {
   const { user } = useAuth();
@@ -112,9 +113,11 @@ export function LeaderboardPage() {
                     const position = index + 1;
                     const isCurrentUser = developer.id === user?.id;
                     return (
-                      <div
+                      <Link
                         key={developer.id}
-                        className={getRankStyle(position, isCurrentUser) + ' card-contrast'}
+                        to={isCurrentUser ? '/profile' : `/profile/${developer.id}`}
+                        className={getRankStyle(position, isCurrentUser) + ' card-contrast cursor-pointer hover:shadow-lg transition'}
+                        style={{ textDecoration: 'none', color: 'inherit' }}
                       >
                         <div className="flex items-center space-x-3">
                           {getRankIcon(position)}
@@ -138,7 +141,7 @@ export function LeaderboardPage() {
                           <div className="font-bold text-purple-600 text-lg">{developer.total_xp} XP</div>
                           <div className="text-sm text-gray-600">0 badges</div>
                         </div>
-                      </div>
+                      </Link>
                     );
                   })}
                 </div>
