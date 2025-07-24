@@ -1,21 +1,47 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { mockSubmissions, mockChallenges } from '@/data/mockData';
+import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import { Trophy, Star, Calendar, ExternalLink, Github } from 'lucide-react';
 
 export function Dashboard() {
   const { user } = useAuth();
-  
-  if (!user) return null;
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const userSubmissions = mockSubmissions.filter(s => s.userId === user.id);
-  const completedChallenges = userSubmissions.filter(s => s.status === 'approved').length;
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      if (user) {
+        const { data: submissionsData } = await supabase
+          .from('submissions')
+          .select('*')
+          .eq('user_id', user.id);
+        setSubmissions(submissionsData || []);
+      } else {
+        setSubmissions([]);
+      }
+      const { data: challengesData } = await supabase
+        .from('challenges')
+        .select('*');
+      setChallenges(challengesData || []);
+      setLoading(false);
+    };
+    fetchData();
+  }, [user]);
+
+  if (!user) return null;
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">Loading dashboard...</div>;
+  }
+
+  const completedChallenges = submissions.filter(s => s.status === 'approved').length;
   const nextLevelXP = Math.ceil(user.xp / 1000) * 1000;
   const progressToNextLevel = (user.xp % 1000) / 10;
 
@@ -36,7 +62,7 @@ export function Dashboard() {
           {/* Left Column - Stats & Progress */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* XP and Level Progress */}
-            <Card>
+            <Card className="card-gradient-bar">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
                   <Star className="w-5 h-5 text-yellow-500" />
@@ -57,13 +83,13 @@ export function Dashboard() {
                     <Progress value={progressToNextLevel} className="h-3" />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4">
-                    <div className="text-center p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg">
+                    <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
                       <div className="text-xl sm:text-2xl font-bold text-purple-600">{completedChallenges}</div>
-                      <div className="text-xs sm:text-sm text-gray-600">Challenges Completed</div>
+                      <div className="text-xs sm:text-sm text-gray-400">Challenges Completed</div>
                     </div>
-                    <div className="text-center p-3 sm:p-4 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg">
+                    <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
                       <div className="text-xl sm:text-2xl font-bold text-orange-600">{user.badges.length}</div>
-                      <div className="text-xs sm:text-sm text-gray-600">Badges Earned</div>
+                      <div className="text-xs sm:text-sm text-gray-400">Badges Earned</div>
                     </div>
                   </div>
                 </div>
@@ -79,19 +105,19 @@ export function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                {userSubmissions.length > 0 ? (
+                {submissions.length > 0 ? (
                   <div className="space-y-4">
-                    {userSubmissions.slice(0, 3).map((submission) => {
-                      const challenge = mockChallenges.find(c => c.id === submission.challengeId);
+                    {submissions.slice(0, 3).map((submission) => {
+                      const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
                       return (
                         <div key={submission.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg space-y-2 sm:space-y-0">
                           <div className="flex-1">
                             <h4 className="font-medium text-sm sm:text-base text-gray-900">{challenge?.title}</h4>
                             <p className="text-xs sm:text-sm text-gray-600">
-                              Submitted {submission.submittedAt.toLocaleDateString()}
+                              Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
                             </p>
-                            {submission.feedback && (
-                              <p className="text-xs sm:text-sm text-gray-500 mt-1">{submission.feedback}</p>
+                            {submission.admin_feedback && (
+                              <p className="text-xs sm:text-sm text-gray-500 mt-1">{submission.admin_feedback}</p>
                             )}
                           </div>
                           <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-center">
@@ -103,7 +129,7 @@ export function Dashboard() {
                               {submission.status}
                             </Badge>
                             <Button variant="ghost" size="sm" asChild>
-                              <a href={submission.solutionUrl} target="_blank" rel="noopener noreferrer">
+                              <a href={submission.submission_url} target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="w-4 h-4" />
                               </a>
                             </Button>

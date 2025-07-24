@@ -34,6 +34,16 @@
   
   /* Touch Target Minimum */
   --touch-target: 44px;
+
+  --color-bg: #0d1117;
+  --color-card: #161b22;
+  --color-border: #30363d;
+  --color-text: #c9d1d9;
+  --color-accent: #a371f7;
+  --color-blue: #58a6ff;
+  --color-green: #238636;
+  --gradient-purple: #6e40c9;
+  --gradient-blue: #3575ec;
 }
 
 /* Tablet Breakpoint - 768px+ */
@@ -123,6 +133,9 @@ body {
   min-width: 320px;
   min-height: 100vh;
   line-height: var(--line-height-normal);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
 h1 {
@@ -270,4 +283,128 @@ button:focus-visible {
   body {
     @apply bg-background text-foreground;
   }
+}
+
+.card-dark {
+  background: var(--color-card);
+  border: 1px solid var(--color-border);
+  border-radius: 0.75rem;
+  box-shadow: 0 2px 8px 0 rgba(20, 20, 30, 0.25);
+}
+
+.gradient-header {
+  background: linear-gradient(90deg, var(--gradient-purple) 0%, var(--gradient-blue) 100%);
+  color: #fff;
+  border-radius: 1rem;
+  padding: 2rem 1.5rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 24px 0 rgba(80, 80, 120, 0.15);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #fff;
+  font-weight: 700;
+}
+
+a {
+  color: var(--color-blue);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--color-accent);
+}
+
+input, textarea, select {
+  background: var(--color-card);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+button, .btn {
+  background: var(--color-accent);
+  color: #fff;
+  border-radius: 0.5rem;
+  transition: background 0.2s;
+}
+button:hover, .btn:hover {
+  background: var(--color-blue);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  background: var(--color-card);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.card-contrast {
+  background: linear-gradient(135deg, #23272e 60%, #161b22 100%);
+  border: 1px solid #30363d;
+  color: #c9d1d9;
+}
+
+html, body, #root, .min-h-screen, .container-responsive, .bg-gray-50 {
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
+
+.card, .card-dark, .card-contrast {
+  box-shadow: 0 4px 24px 0 rgba(80, 80, 120, 0.15), 0 1.5px 6px 0 rgba(0,0,0,0.18);
+  transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+  position: relative;
+}
+.card:hover, .card-dark:hover, .card-contrast:hover {
+  box-shadow: 0 8px 32px 0 rgba(80, 80, 120, 0.22), 0 2px 8px 0 rgba(163,113,247,0.10);
+  transform: translateY(-2px) scale(1.015);
+  border-color: var(--color-accent);
+}
+.card-pop {
+  border: 1.5px solid var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(163,113,247,0.12);
+}
+.card-gradient-bar::before {
+  content: '';
+  display: block;
+  height: 12px;
+  width: 100%;
+  background: linear-gradient(90deg, #6e40c9 0%, #3575ec 16%, #2dd4bf 32%, #58a6ff 48%, #a371f7 64%, #ff5ecd 80%, #6e40c9 100%, #3575ec 116%, #2dd4bf 132%, #58a6ff 148%, #a371f7 164%, #ff5ecd 180%, #6e40c9 200%);
+  border-radius: 8px 8px 0 0;
+  margin-bottom: 0.5rem;
+  box-shadow: 0 2px 8px 0 rgba(80, 80, 120, 0.25), 0 1.5px 6px 0 rgba(0,0,0,0.18);
+  animation: gradient-move-bounce 3.5s linear infinite alternate;
+  background-size: 200% 100%;
+  background-position: 0% 50%;
+}
+
+@keyframes gradient-move-bounce {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
+
+.shadow-navbar {
+  box-shadow:
+    0 2px 12px 0 rgba(20, 20, 30, 0.32),
+    0 0px 16px 0 rgba(88, 166, 255, 0.10),
+    0 0px 24px 0 rgba(163, 113, 247, 0.08);
+}
+
+.admin-tabs-trigger {
+  background: linear-gradient(90deg, #6e40c9 0%, #3575ec 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 2px 12px 0 rgba(20, 20, 30, 0.32), 0 0px 16px 0 rgba(88, 166, 255, 0.10), 0 0px 24px 0 rgba(163, 113, 247, 0.08) !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem 1.25rem !important;
+  font-weight: 500 !important;
+  font-size: 1rem !important;
+  border: none !important;
+  transition: filter 0.2s;
+}
+.admin-tabs-trigger:hover, .admin-tabs-trigger[data-state="active"] {
+  filter: brightness(1.12);
 }

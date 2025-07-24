@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { mockChallenges, mockSubmissions } from '@/data/mockData';
+import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Search, Filter, Star, Clock, CheckCircle, Circle } from 'lucide-react';
 import {
@@ -19,26 +19,49 @@ export function ChallengeListPage() {
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const userSubmissions = mockSubmissions.filter(s => s.userId === user?.id);
-  
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const { data: challengesData } = await supabase
+        .from('challenges')
+        .select('*');
+      setChallenges(challengesData || []);
+      if (user) {
+        const { data: submissionsData } = await supabase
+          .from('submissions')
+          .select('*')
+          .eq('user_id', user.id);
+        setSubmissions(submissionsData || []);
+      } else {
+        setSubmissions([]);
+      }
+      setLoading(false);
+    };
+    fetchData();
+  }, [user]);
+
   const getChallengeStatus = (challengeId: string) => {
-    const submission = userSubmissions.find(s => s.challengeId === challengeId);
+    const submission = submissions.find(s => s.challenge_id === challengeId);
     return submission?.status || 'not-attempted';
   };
 
-  const filteredChallenges = mockChallenges.filter(challenge => {
+  const filteredChallenges = challenges.filter(challenge => {
     const matchesSearch = challenge.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          challenge.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesDifficulty = difficultyFilter === 'all' || challenge.difficulty === difficultyFilter;
+    const matchesDifficulty = difficultyFilter === 'all' ||
+      challenge.difficulty.toLowerCase() === difficultyFilter.toLowerCase();
     return matchesSearch && matchesDifficulty;
   });
 
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty) {
-      case 'Beginner': return 'bg-green-100 text-green-800';
-      case 'Intermediate': return 'bg-yellow-100 text-yellow-800';
-      case 'Expert': return 'bg-red-100 text-red-800';
+    switch (difficulty.toLowerCase()) {
+      case 'beginner': return 'bg-green-100 text-green-800';
+      case 'intermediate': return 'bg-yellow-100 text-yellow-800';
+      case 'expert': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -92,45 +115,47 @@ export function ChallengeListPage() {
         </Card>
 
         {/* Challenge Grid */}
+        {loading ? (
+          <div className="text-center py-12 text-lg text-gray-500">Loading challenges...</div>
+        ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredChallenges.map((challenge) => {
             const status = getChallengeStatus(challenge.id);
+            // Parse requirements string to array for display
+            const requirementsArr = challenge.requirements ? challenge.requirements.split(';').map((r: string) => r.trim()).filter(Boolean) : [];
             return (
               <Card key={challenge.id} className="hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                 <div className="relative">
                   <img
-                    src={challenge.imageUrl}
+                    src={challenge.image}
                     alt={challenge.title}
                     className="w-full h-48 object-cover"
                   />
                   <div className="absolute top-4 left-4">
                     <Badge className={getDifficultyColor(challenge.difficulty)}>
-                      {challenge.difficulty}
+                      {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
                     </Badge>
                   </div>
                   <div className="absolute top-4 right-4">
                     {getStatusIcon(status)}
                   </div>
                 </div>
-                
                 <CardHeader>
                   <CardTitle className="line-clamp-2">{challenge.title}</CardTitle>
                   <CardDescription className="line-clamp-3">
                     {challenge.description}
                   </CardDescription>
                 </CardHeader>
-                
                 <CardContent>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-1 text-purple-600">
                       <Star className="w-4 h-4" />
-                      <span className="font-medium">{challenge.xpReward} XP</span>
+                      <span className="font-medium">{challenge.xp_reward} XP</span>
                     </div>
                     <span className="text-sm text-gray-500">
-                      {challenge.requirements.length} requirements
+                      {requirementsArr.length} requirements
                     </span>
                   </div>
-                  
                   <div className="flex gap-2">
                     <Button asChild className="flex-1">
                       <Link to={`/challenges/${challenge.id}`}>
@@ -143,8 +168,8 @@ export function ChallengeListPage() {
             );
           })}
         </div>
-
-        {filteredChallenges.length === 0 && (
+        )}
+        {filteredChallenges.length === 0 && !loading && (
           <div className="text-center py-12">
             <div className="text-gray-400 mb-4">
               <Filter className="w-12 h-12 mx-auto" />

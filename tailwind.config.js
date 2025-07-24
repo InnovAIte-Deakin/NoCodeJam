@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
-  darkMode: ['class'],
+  darkMode: 'class',
   content: [
     './pages/**/*.{ts,tsx}',
     './components/**/*.{ts,tsx}',
@@ -55,6 +55,23 @@ export default {
           4: 'hsl(var(--chart-4))',
           5: 'hsl(var(--chart-5))',
         },
+        github: {
+          bg: '#0d1117',
+          card: '#161b22',
+          border: '#30363d',
+          text: '#c9d1d9',
+          accent: '#a371f7',
+          blue: '#58a6ff',
+          green: '#238636',
+        },
+        gradientPurple: '#6e40c9',
+        gradientBlue: '#3575ec',
+      },
+      backgroundImage: {
+        'gradient-purple-blue': 'linear-gradient(90deg, #6e40c9 0%, #3575ec 100%)',
+      },
+      boxShadow: {
+        'card-dark': '0 2px 8px 0 rgba(20, 20, 30, 0.25)',
       },
       keyframes: {
         'accordion-down': {
@@ -80,5 +97,5 @@ export default {
       },
     },
   },
-  plugins: [require('tailwindcss-animate')],
+  plugins: [],
 };

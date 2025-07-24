@@ -105,19 +105,18 @@ export function LoginPage() {
                   placeholder="Enter your password"
                   required
                 />
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute inset-y-0 right-0 flex items-center px-2 h-full !bg-transparent !shadow-none !border-none outline-none focus:outline-none"
                   onClick={() => setShowPassword(!showPassword)}
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
+                    <EyeOff className="w-4 h-4" />
                   ) : (
-                    <Eye className="h-4 w-4" />
+                    <Eye className="w-4 h-4" />
                   )}
-                </Button>
+                </button>
               </div>
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -136,14 +135,6 @@ export function LoginPage() {
               <Link to="/register" className="text-purple-600 hover:underline font-medium">
                 Sign up here
               </Link>
-            </div>
-          </div>
-
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-            <p className="text-sm text-blue-800 font-medium mb-2">Demo Accounts:</p>
-            <div className="space-y-1 text-xs text-blue-700">
-              <div>👤 User: john@example.com / password</div>
-              <div>👑 Admin: admin@nocodejam.com / password</div>
             </div>
           </div>
         </CardContent>

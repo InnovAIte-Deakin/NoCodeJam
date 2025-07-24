@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { mockSubmissions, mockChallenges } from '@/data/mockData';
+import { supabase } from '@/lib/supabaseClient';
 import { 
   CheckCircle, 
   XCircle, 
@@ -36,26 +36,125 @@ export function AdminDashboard() {
     requirements: ['']
   });
 
-  const pendingSubmissions = mockSubmissions.filter(s => s.status === 'pending');
-  
+  // Step 1: Fetch real pending submissions and challenges
+  const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoadingSubmissions(true);
+      // Fetch pending submissions
+      const { data: submissions, error: subError } = await supabase
+        .from('submissions')
+        .select('*')
+        .eq('status', 'pending');
+      // Fetch all challenges (for lookup)
+      const { data: challengesData, error: chalError } = await supabase
+        .from('challenges')
+        .select('*');
+      if (!subError && !chalError && submissions && challengesData) {
+        setPendingSubmissions(submissions);
+        setChallenges(challengesData);
+      }
+      setLoadingSubmissions(false);
+    };
+    fetchData();
+  }, []);
+
   const handleApproveSubmission = async (submissionId: string) => {
+    // Find the submission and its challenge
+    const submission = pendingSubmissions.find((s: any) => s.id === submissionId);
+    if (!submission) return;
+    const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
+    if (!challenge) return;
+    // Update submission status to approved
+    const { error: updateError } = await supabase
+      .from('submissions')
+      .update({ status: 'approved' })
+      .eq('id', submissionId);
+    if (updateError) {
+      toast({
+        title: "Failed to approve submission",
+        description: updateError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+    // Add XP to user (two-step process)
+    // 1. Fetch user
+    const { data: userData, error: userFetchError } = await supabase
+      .from('users')
+      .select('total_xp')
+      .eq('id', submission.user_id)
+      .single();
+    if (userFetchError || !userData) {
+      toast({
+        title: "Failed to fetch user XP",
+        description: userFetchError?.message || 'User not found',
+        variant: "destructive",
+      });
+      return;
+    }
+    // 2. Update total_xp = user.total_xp + challenge.xp_reward
+    const newXP = (userData.total_xp || 0) + (challenge.xp_reward || 0);
+    const { error: xpError } = await supabase
+      .from('users')
+      .update({ total_xp: newXP })
+      .eq('id', submission.user_id);
+    if (xpError) {
+      toast({
+        title: "Failed to award XP",
+        description: xpError.message,
+        variant: "destructive",
+      });
+      return;
+    }
     toast({
       title: "Submission approved",
       description: "The submission has been approved and the user has been awarded XP.",
     });
+    // Refresh pending submissions
+    refreshPendingSubmissions();
   };
 
   const handleRejectSubmission = async (submissionId: string) => {
+    const { error } = await supabase
+      .from('submissions')
+      .update({ status: 'denied' })
+      .eq('id', submissionId);
+    if (error) {
+      toast({
+        title: "Failed to reject submission",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
     toast({
       title: "Submission rejected",
-      description: "The submission has been rejected with feedback.",
+      description: "The submission has been rejected.",
       variant: "destructive",
     });
+    // Refresh pending submissions
+    refreshPendingSubmissions();
+  };
+
+  // Helper to refresh pending submissions
+  const refreshPendingSubmissions = async () => {
+    setLoadingSubmissions(true);
+    const { data: submissions, error: subError } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('status', 'pending');
+    if (!subError && submissions) {
+      setPendingSubmissions(submissions);
+    }
+    setLoadingSubmissions(false);
   };
 
   const handleCreateChallenge = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!newChallenge.title || !newChallenge.description) {
       toast({
         title: "Missing information",
@@ -64,12 +163,33 @@ export function AdminDashboard() {
       });
       return;
     }
-
+    // Insert new challenge into Supabase (requirements as string, difficulty lowercase)
+    const { error } = await supabase.from('challenges').insert([
+      {
+        title: newChallenge.title,
+        description: newChallenge.description,
+        difficulty: newChallenge.difficulty.toLowerCase(),
+        xp_reward: newChallenge.xpReward,
+        image: newChallenge.imageUrl,
+        requirements: newChallenge.requirements.join('; '),
+        // created_by: user?.id, // if you want to track the creator
+      }
+    ]);
+    if (error) {
+      console.error('Create challenge error:', error);
+      toast({
+        title: "Failed to create challenge",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
     toast({
       title: "Challenge created",
       description: "New challenge has been successfully created and published.",
     });
-
+    // Refresh challenges list
+    refreshChallenges();
     // Reset form
     setNewChallenge({
       title: '',
@@ -79,6 +199,16 @@ export function AdminDashboard() {
       imageUrl: '',
       requirements: ['']
     });
+  };
+
+  // Helper to refresh challenges
+  const refreshChallenges = async () => {
+    const { data: challengesData, error: chalError } = await supabase
+      .from('challenges')
+      .select('*');
+    if (!chalError && challengesData) {
+      setChallenges(challengesData);
+    }
   };
 
   const addRequirement = () => {
@@ -105,6 +235,85 @@ export function AdminDashboard() {
         requirements: updated
       });
     }
+  };
+
+  // Step 4: Fetch real users for Manage Users tab
+  const [users, setUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      const { data: usersData, error } = await supabase
+        .from('users')
+        .select('id, username, email, role, total_xp');
+      if (!error && usersData) {
+        setUsers(usersData);
+      }
+      setLoadingUsers(false);
+    };
+    fetchUsers();
+  }, []);
+
+  // Helper to refresh users
+  const refreshUsers = async () => {
+    setLoadingUsers(true);
+    const { data: usersData, error } = await supabase
+      .from('users')
+      .select('id, username, email, role, total_xp');
+    if (!error && usersData) {
+      setUsers(usersData);
+    }
+    setLoadingUsers(false);
+  };
+
+  // Admin action: Change user role
+  const handleRoleChange = async (userId: string, newRole: 'user' | 'admin') => {
+    setUpdatingUserId(userId);
+    const { error } = await supabase
+      .from('users')
+      .update({ role: newRole })
+      .eq('id', userId);
+    setUpdatingUserId(null);
+    if (error) {
+      toast({
+        title: 'Failed to update role',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({
+      title: 'Role updated',
+      description: `User role changed to ${newRole}.`,
+    });
+    refreshUsers();
+  };
+
+  // Admin action: Delete user
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm('Are you sure you want to delete this user? This cannot be undone.')) return;
+    setDeletingUserId(userId);
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+    setDeletingUserId(null);
+    if (error) {
+      toast({
+        title: 'Failed to delete user',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+    toast({
+      title: 'User deleted',
+      description: 'The user has been deleted.',
+    });
+    refreshUsers();
   };
 
   return (
@@ -137,7 +346,7 @@ export function AdminDashboard() {
               <div className="flex items-center">
                 <FileText className="w-8 h-8 text-blue-500" />
                 <div className="ml-4">
-                  <p className="text-2xl font-bold">{mockChallenges.length}</p>
+                  <p className="text-2xl font-bold">{challenges.length}</p>
                   <p className="text-gray-600">Total Challenges</p>
                 </div>
               </div>
@@ -161,8 +370,8 @@ export function AdminDashboard() {
               <div className="flex items-center">
                 <CheckCircle className="w-8 h-8 text-purple-500" />
                 <div className="ml-4">
-                  <p className="text-2xl font-bold">{mockSubmissions.filter(s => s.status === 'approved').length}</p>
-                  <p className="text-gray-600">Approved Submissions</p>
+                  <p className="text-2xl font-bold">{challenges.filter(c => c.is_published).length}</p>
+                  <p className="text-gray-600">Published Challenges</p>
                 </div>
               </div>
             </CardContent>
@@ -171,10 +380,16 @@ export function AdminDashboard() {
 
         {/* Main Content */}
         <Tabs defaultValue="submissions" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="submissions">Pending Submissions</TabsTrigger>
-            <TabsTrigger value="challenges">Create Challenge</TabsTrigger>
-            <TabsTrigger value="users">Manage Users</TabsTrigger>
+          <TabsList className="flex gap-3 bg-transparent p-0 mb-4">
+            <TabsTrigger value="submissions" className="admin-tabs-trigger">
+              Pending Submissions
+            </TabsTrigger>
+            <TabsTrigger value="challenges" className="admin-tabs-trigger">
+              Create Challenge
+            </TabsTrigger>
+            <TabsTrigger value="users" className="admin-tabs-trigger">
+              Manage Users
+            </TabsTrigger>
           </TabsList>
 
           {/* Pending Submissions */}
@@ -187,41 +402,44 @@ export function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {pendingSubmissions.length > 0 ? (
+                {loadingSubmissions ? (
+                  <div className="text-center py-8">
+                    <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
+                    <p className="text-gray-600">Loading pending submissions...</p>
+                  </div>
+                ) : pendingSubmissions.length > 0 ? (
                   <div className="space-y-4">
                     {pendingSubmissions.map((submission) => {
-                      const challenge = mockChallenges.find(c => c.id === submission.challengeId);
+                      const challenge = challenges.find(c => c.id === submission.challenge_id);
                       return (
                         <div key={submission.id} className="border border-gray-200 rounded-lg p-4">
                           <div className="flex justify-between items-start mb-4">
                             <div>
-                              <h3 className="font-semibold text-lg">{challenge?.title}</h3>
-                              <p className="text-gray-600">Submitted by User #{submission.userId}</p>
+                              <h3 className="font-semibold text-lg">{challenge?.title || 'Unknown Challenge'}</h3>
+                              <p className="text-gray-600">Submitted by User #{submission.user_id}</p>
                               <p className="text-sm text-gray-500">
-                                {submission.submittedAt.toLocaleDateString()}
+                                {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
                               </p>
                             </div>
                             <Badge variant="secondary">
-                              {challenge?.difficulty}
+                              {challenge?.difficulty || 'Unknown'}
                             </Badge>
                           </div>
-                          
                           <div className="mb-4">
                             <Label className="text-sm font-medium">Solution URL:</Label>
                             <div className="flex items-center space-x-2 mt-1">
-                              <Input value={submission.solutionUrl} readOnly />
+                              <Input value={submission.submission_url} readOnly />
                               <Button variant="outline" size="sm" asChild>
-                                <a href={submission.solutionUrl} target="_blank" rel="noopener noreferrer">
+                                <a href={submission.submission_url} target="_blank" rel="noopener noreferrer">
                                   <ExternalLink className="w-4 h-4" />
                                 </a>
                               </Button>
                             </div>
                           </div>
-                          
-                          <div className="flex space-x-2">
+                          <div className="flex gap-3 mt-4">
                             <Button 
                               onClick={() => handleApproveSubmission(submission.id)}
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
                             >
                               <CheckCircle className="w-4 h-4 mr-2" />
                               Approve
@@ -229,6 +447,7 @@ export function AdminDashboard() {
                             <Button 
                               variant="destructive"
                               onClick={() => handleRejectSubmission(submission.id)}
+                              className="shadow-sm"
                             >
                               <XCircle className="w-4 h-4 mr-2" />
                               Reject
@@ -358,6 +577,7 @@ export function AdminDashboard() {
                         variant="outline"
                         size="sm"
                         onClick={addRequirement}
+                        className="mt-2 text-sm border-[#30363d] bg-[#161b22] hover:bg-[#23272e] text-[#c9d1d9]"
                       >
                         <Plus className="w-4 h-4 mr-2" />
                         Add Requirement
@@ -365,7 +585,7 @@ export function AdminDashboard() {
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full">
+                  <Button type="submit" className="w-full mt-4 bg-gradient-to-r from-purple-700 to-blue-700 text-white shadow-md hover:from-purple-600 hover:to-blue-600">
                     <Plus className="w-4 h-4 mr-2" />
                     Create Challenge
                   </Button>
@@ -384,29 +604,47 @@ export function AdminDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {[
-                    { id: '1', username: 'john_doe', email: 'john@example.com', role: 'user', xp: 1250 },
-                    { id: '2', username: 'admin', email: 'admin@nocodejam.com', role: 'admin', xp: 2500 },
-                    { id: '3', username: 'sarah_dev', email: 'sarah@example.com', role: 'user', xp: 980 },
-                  ].map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
-                      <div>
-                        <h3 className="font-semibold">{user.username}</h3>
-                        <p className="text-sm text-gray-600">{user.email}</p>
-                        <p className="text-sm text-purple-600 font-medium">{user.xp} XP</p>
+                {loadingUsers ? (
+                  <div className="text-center py-8">
+                    <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
+                    <p className="text-gray-600">Loading users...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {users.map((user) => (
+                      <div key={user.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                        <div>
+                          <h3 className="font-semibold">{user.username}</h3>
+                          <p className="text-sm text-gray-600">{user.email}</p>
+                          <p className="text-sm text-purple-600 font-medium">{user.total_xp} XP</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Select
+                            value={user.role}
+                            onValueChange={(value) => handleRoleChange(user.id, value as 'user' | 'admin')}
+                            disabled={updatingUserId === user.id}
+                          >
+                            <SelectTrigger className="w-28">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteUser(user.id)}
+                            disabled={deletingUserId === user.id}
+                          >
+                            {deletingUserId === user.id ? 'Deleting...' : 'Delete'}
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                          {user.role}
-                        </Badge>
-                        <Button variant="outline" size="sm">
-                          <Settings className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
