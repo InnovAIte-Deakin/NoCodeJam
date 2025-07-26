@@ -8,6 +8,7 @@ import { LandingPage } from '@/pages/LandingPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { RegisterPage } from '@/pages/RegisterPage';
 import { Dashboard } from '@/pages/Dashboard';
+import { OnboardingPage } from '@/pages/OnboardingPage';
 import { ChallengeListPage } from '@/pages/ChallengeListPage';
 import { ChallengeDetailPage } from '@/pages/ChallengeDetailPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
@@ -29,6 +30,11 @@ function AppRoutes() {
       <Route path="/dashboard" element={
         <ProtectedRoute>
           <Dashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/onboarding" element={
+        <ProtectedRoute>
+          <OnboardingPage />
         </ProtectedRoute>
       } />
       <Route path="/challenges" element={

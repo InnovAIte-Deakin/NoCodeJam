@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, Trophy, Home, List, Shield, Menu } from 'lucide-react';
+import { LogOut, User, Trophy, Home, List, Shield, Menu, GraduationCap } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -40,6 +40,18 @@ export function Navigation() {
       >
         <Home className="w-4 h-4" />
         <span>Dashboard</span>
+      </Link>
+      <Link
+        to="/onboarding"
+        onClick={onLinkClick}
+        className={`flex items-center space-x-2 ${mobile ? 'px-4 py-3 rounded-md text-base font-medium' : 'px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium'} responsive-transition ${
+          isActive('/onboarding')
+            ? 'bg-gradient-to-r from-purple-700 to-blue-700 text-white'
+            : 'text-gray-200 hover:text-white hover:bg-[#23272e]'
+        }`}
+      >
+        <GraduationCap className="w-4 h-4" />
+        <span>Onboarding</span>
       </Link>
       <Link
         to="/challenges"
