@@ -44,10 +44,13 @@ export function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       setLoadingSubmissions(true);
-      // Fetch pending submissions
+      // Fetch pending submissions with user data
       const { data: submissions, error: subError } = await supabase
         .from('submissions')
-        .select('*')
+        .select(`
+          *,
+          users!inner(username)
+        `)
         .eq('status', 'pending');
       // Fetch all challenges (for lookup)
       const { data: challengesData, error: chalError } = await supabase
@@ -145,7 +148,10 @@ export function AdminDashboard() {
     setLoadingSubmissions(true);
     const { data: submissions, error: subError } = await supabase
       .from('submissions')
-      .select('*')
+      .select(`
+        *,
+        users!inner(username)
+      `)
       .eq('status', 'pending');
     if (!subError && submissions) {
       setPendingSubmissions(submissions);
@@ -416,7 +422,7 @@ export function AdminDashboard() {
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h3 className="font-semibold text-lg">{challenge?.title || 'Unknown Challenge'}</h3>
-                              <p className="text-gray-600">Submitted by User #{submission.user_id}</p>
+                              <p className="text-gray-600">Submitted by {submission.users?.username || 'Unknown User'} - {submission.user_id}</p>
                               <p className="text-sm text-gray-500">
                                 {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
                               </p>
