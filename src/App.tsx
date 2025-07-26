@@ -13,6 +13,7 @@ import { ChallengeDetailPage } from '@/pages/ChallengeDetailPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { ProfilePage } from '@/pages/ProfilePage';
+import { LearnPage } from '@/pages/LearnPage';
 import './App.css';
 
 function AppRoutes() {
@@ -44,6 +45,11 @@ function AppRoutes() {
       <Route path="/leaderboard" element={
         <ProtectedRoute>
           <LeaderboardPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/learn" element={
+        <ProtectedRoute>
+          <LearnPage />
         </ProtectedRoute>
       } />
       <Route path="/profile" element={
