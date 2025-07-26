@@ -303,7 +303,12 @@ export function OnboardingPage() {
                       </a>
                     </Button>
                     <Button variant="outline" asChild className="flex-1">
-                      <a href={`${platform.website}/docs`} target="_blank" rel="noopener noreferrer">
+                      <a href={
+                        platform.id === 'windsurf' ? 'https://docs.windsurf.com/windsurf/getting-started' :
+                        platform.id === 'bolt' ? 'https://support.bolt.new/' :
+                        platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
+                        `${platform.website}/docs`
+                      } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
                         Documentation
                       </a>
