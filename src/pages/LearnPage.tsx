@@ -104,7 +104,7 @@ export function LearnPage() {
               <Button 
                 variant="secondary" 
                 className="bg-white text-blue-600 hover:bg-gray-100"
-                onClick={() => openVideo('https://youtube.com/@InnovAIte-Deakin')}
+                onClick={() => openVideo('https://www.youtube.com/@innovAIteDeakin')}
               >
                 <Play className="w-4 h-4 mr-2" />
                 Visit Channel
