@@ -8,6 +8,10 @@ import lovableLogo from '@/images/logoblack.svg';
 import boltLogo from '@/images/Bolt Logo.svg';
 import windsurfLogo from '@/images/windsurf Logo.png';
 import cursorLogo from '@/images/Cursor.jfif';
+import replitLogo from '@/images/Replit Logo.png';
+import githubCopilotLogo from '@/images/Github Copilot Logo.webp';
+import claudeCodeLogo from '@/images/Claude Code Logo.webp';
+import geminiLogo from '@/images/Gemini Logo.png';
 
 interface Platform {
   id: string;
@@ -68,42 +72,6 @@ const platforms: Platform[] = [
     ]
   },
   {
-    id: 'bolt',
-    name: 'Bolt',
-    description: 'Bolt is a powerful no-code platform focused on building database-driven applications. Create complex business applications with ease using its intuitive interface and robust data management tools.',
-    logo: boltLogo,
-    website: 'https://bolt.com',
-    features: ['Database Management', 'Business Logic', 'API Integration', 'User Management'],
-    difficulty: 'Intermediate',
-    category: 'Database',
-    tutorials: [
-      {
-        id: 'bolt-1',
-        title: 'Database Design Fundamentals',
-        description: 'Learn how to design and structure your database in Bolt',
-        duration: '20 min',
-        difficulty: 'Beginner',
-        url: 'https://bolt.com/docs/database-design'
-      },
-      {
-        id: 'bolt-2',
-        title: 'Building Business Logic',
-        description: 'Create complex workflows and business rules',
-        duration: '30 min',
-        difficulty: 'Intermediate',
-        url: 'https://bolt.com/docs/business-logic'
-      },
-      {
-        id: 'bolt-3',
-        title: 'API Integration',
-        description: 'Connect your Bolt app with external services',
-        duration: '40 min',
-        difficulty: 'Advanced',
-        url: 'https://bolt.com/docs/api-integration'
-      }
-    ]
-  },
-  {
     id: 'windsurf',
     name: 'Windsurf',
     description: 'Windsurf is an AI-powered no-code platform that helps you build applications using natural language. Simply describe what you want to build, and Windsurf creates it for you.',
@@ -140,6 +108,114 @@ const platforms: Platform[] = [
     ]
   },
   {
+    id: 'replit',
+    name: 'Replit',
+    description: 'Replit is a powerful online IDE that allows you to write, run, and share code with others. It\'s perfect for beginners and experienced developers alike, offering a seamless development experience.',
+    logo: replitLogo,
+    website: 'https://replit.com',
+    features: ['Online IDE', 'Real-time Collaboration', 'Version Control', 'Community'],
+    difficulty: 'Beginner',
+    category: 'Web Development',
+    tutorials: [
+      {
+        id: 'replit-1',
+        title: 'Getting Started with Replit',
+        description: 'Learn how to create your first Replit project and navigate the interface',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://replit.com/learn'
+      },
+      {
+        id: 'replit-2',
+        title: 'Collaborating on Projects',
+        description: 'Practice real-time collaboration with your team',
+        duration: '15 min',
+        difficulty: 'Intermediate',
+        url: 'https://replit.com/learn/collaboration'
+      },
+      {
+        id: 'replit-3',
+        title: 'Advanced Features',
+        description: 'Explore advanced features like version control and community',
+        duration: '20 min',
+        difficulty: 'Advanced',
+        url: 'https://replit.com/learn/advanced'
+      }
+    ]
+  },
+  {
+    id: 'bolt',
+    name: 'Bolt',
+    description: 'Bolt is a powerful no-code platform focused on building database-driven applications. Create complex business applications with ease using its intuitive interface and robust data management tools.',
+    logo: boltLogo,
+    website: 'https://bolt.com',
+    features: ['Database Management', 'Business Logic', 'API Integration', 'User Management'],
+    difficulty: 'Intermediate',
+    category: 'Database',
+    tutorials: [
+      {
+        id: 'bolt-1',
+        title: 'Database Design Fundamentals',
+        description: 'Learn how to design and structure your database in Bolt',
+        duration: '20 min',
+        difficulty: 'Beginner',
+        url: 'https://bolt.com/docs/database-design'
+      },
+      {
+        id: 'bolt-2',
+        title: 'Building Business Logic',
+        description: 'Create complex workflows and business rules',
+        duration: '30 min',
+        difficulty: 'Intermediate',
+        url: 'https://bolt.com/docs/business-logic'
+      },
+      {
+        id: 'bolt-3',
+        title: 'API Integration',
+        description: 'Connect your Bolt app with external services',
+        duration: '40 min',
+        difficulty: 'Advanced',
+        url: 'https://bolt.com/docs/api-integration'
+      }
+    ]
+  },
+  {
+    id: 'github-copilot',
+    name: 'GitHub Copilot',
+    description: 'GitHub Copilot is an AI pair programmer that helps you write code faster and more accurately. It integrates with your existing workflow and provides intelligent suggestions.',
+    logo: githubCopilotLogo,
+    website: 'https://github.com/features/copilot',
+    features: ['AI Pair Programming', 'Intelligent Suggestions', 'Code Generation', 'Integration'],
+    difficulty: 'Intermediate',
+    category: 'Web Development',
+    tutorials: [
+      {
+        id: 'github-copilot-1',
+        title: 'Introduction to GitHub Copilot',
+        description: 'Learn how to get started with GitHub Copilot and its features',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://docs.github.com/en/copilot/overview'
+      },
+      {
+        id: 'github-copilot-2',
+        title: 'Using Copilot for Development',
+        description: 'Practice using GitHub Copilot for your daily development tasks',
+        duration: '15 min',
+        difficulty: 'Intermediate',
+        url: 'https://docs.github.com/en/copilot/overview'
+      },
+      {
+        id: 'github-copilot-3',
+        title: 'Advanced Copilot Features',
+        description: 'Explore advanced features and customizations',
+        duration: '20 min',
+        difficulty: 'Advanced',
+        url: 'https://docs.github.com/en/copilot/overview'
+      }
+    ]
+  },
+  {
     id: 'cursor',
     name: 'Cursor',
     description: 'Cursor is an AI-first code editor that helps you write, edit, and debug code faster. While not strictly no-code, it makes coding accessible to everyone with AI assistance.',
@@ -172,6 +248,78 @@ const platforms: Platform[] = [
         duration: '35 min',
         difficulty: 'Advanced',
         url: 'https://cursor.sh/docs/advanced-features'
+      }
+    ]
+  },
+  {
+    id: 'claude-code',
+    name: 'Claude Code',
+    description: 'Claude Code is an AI-powered code assistant that helps you write, debug, and optimize code. It\'s designed to be your personal assistant for all your coding needs.',
+    logo: claudeCodeLogo,
+    website: 'https://claude.com/code',
+    features: ['AI Code Assistant', 'Code Generation', 'Debugging', 'Multi-language Support'],
+    difficulty: 'Advanced',
+    category: 'Web Development',
+    tutorials: [
+      {
+        id: 'claude-code-1',
+        title: 'Introduction to Claude Code',
+        description: 'Get started with Claude Code and its AI features',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://docs.claude.com/code/getting-started'
+      },
+      {
+        id: 'claude-code-2',
+        title: 'AI Code Generation',
+        description: 'Learn how to generate code using Claude Code',
+        duration: '15 min',
+        difficulty: 'Intermediate',
+        url: 'https://docs.claude.com/code/ai-generation'
+      },
+      {
+        id: 'claude-code-3',
+        title: 'Advanced Claude Code Features',
+        description: 'Explore advanced AI features and customizations',
+        duration: '20 min',
+        difficulty: 'Advanced',
+        url: 'https://docs.claude.com/code/advanced-features'
+      }
+    ]
+  },
+  {
+    id: 'gemini-cli',
+    name: 'Gemini CLI',
+    description: 'Gemini CLI is an open-source AI agent that brings the power of Gemini directly into your terminal. It can query and edit large codebases, generate apps from PDFs or sketches, and automate operational tasks.',
+    logo: geminiLogo,
+    website: 'https://github.com/google-gemini/gemini-cli',
+    features: ['Terminal AI Agent', 'Code Analysis', 'Multimodal Generation', 'Tool Integration'],
+    difficulty: 'Advanced',
+    category: 'Web Development',
+    tutorials: [
+      {
+        id: 'gemini-cli-1',
+        title: 'Getting Started with Gemini CLI',
+        description: 'Install and configure Gemini CLI for your development workflow',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli'
+      },
+      {
+        id: 'gemini-cli-2',
+        title: 'Exploring Codebases',
+        description: 'Learn how to analyze and understand large codebases with Gemini CLI',
+        duration: '20 min',
+        difficulty: 'Intermediate',
+        url: 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli'
+      },
+      {
+        id: 'gemini-cli-3',
+        title: 'Advanced Automation',
+        description: 'Automate complex workflows and integrate with external tools',
+        duration: '25 min',
+        difficulty: 'Advanced',
+        url: 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli'
       }
     ]
   }
@@ -211,7 +359,7 @@ export function LearnPage() {
         </div>
 
         {/* Platform Overview Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6 mb-8">
           {platforms.map((platform) => (
             <Card 
               key={platform.id} 
@@ -307,6 +455,10 @@ export function LearnPage() {
                         platform.id === 'windsurf' ? 'https://docs.windsurf.com/windsurf/getting-started' :
                         platform.id === 'bolt' ? 'https://support.bolt.new/' :
                         platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
+                        platform.id === 'replit' ? 'https://docs.replit.com/' :
+                        platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
+                        platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
+                        platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
