@@ -32,6 +32,11 @@ function AppRoutes() {
           <Dashboard />
         </ProtectedRoute>
       } />
+      <Route path="/learn" element={
+        <ProtectedRoute>
+          <LearnPage />
+        </ProtectedRoute>
+      } />
       <Route path="/challenges" element={
         <ProtectedRoute>
           <ChallengeListPage />

@@ -37,3 +37,11 @@ button:hover, .btn:hover {
 .container-responsive, .min-h-screen {
   background: none !important;
 }
+
+/* Line clamp utility */
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
