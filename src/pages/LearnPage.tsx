@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,7 @@ import replitLogo from '@/images/Replit Logo.png';
 import githubCopilotLogo from '@/images/Github Copilot Logo.webp';
 import claudeCodeLogo from '@/images/Claude Code Logo.webp';
 import geminiLogo from '@/images/Gemini Logo.png';
+import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
 
 interface Platform {
   id: string;
@@ -51,23 +52,23 @@ const platforms: Platform[] = [
         description: 'Learn the basics of Lovable and create your first web application',
         duration: '15 min',
         difficulty: 'Beginner',
-        url: 'https://lovable.dev/docs/getting-started'
+        url: 'https://docs.lovable.dev/introduction/getting-started'
       },
       {
         id: 'lovable-2',
-        title: 'Building Responsive Layouts',
-        description: 'Master responsive design principles in Lovable',
-        duration: '25 min',
-        difficulty: 'Intermediate',
-        url: 'https://lovable.dev/docs/responsive-design'
+        title: 'Mastering Lovable',
+        description: 'Video Tutorial by Darrel Wilson on Lovable',
+        duration: '20 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=mOak_imYmqU'
       },
       {
         id: 'lovable-3',
-        title: 'Advanced Components',
-        description: 'Explore advanced components and custom styling',
-        duration: '35 min',
-        difficulty: 'Advanced',
-        url: 'https://lovable.dev/docs/advanced-components'
+        title: 'Deep Dive',
+        description: 'Video Tutorial deep dive into Lovable',
+        duration: '15 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=N8JWiuVLi9E&t'
       }
     ]
   },
@@ -83,27 +84,19 @@ const platforms: Platform[] = [
     tutorials: [
       {
         id: 'windsurf-1',
-        title: 'AI-Powered Development',
-        description: 'Learn how to use natural language to build applications',
-        duration: '10 min',
+        title: 'Windsurf Basics',
+        description: 'Video Tutorial by Tech With Tim on Windsurf',
+        duration: '20 min',
         difficulty: 'Beginner',
-        url: 'https://windsurf.dev/docs/ai-development'
+        url: 'https://www.youtube.com/watch?v=8TcWGk1DJVs'
       },
       {
         id: 'windsurf-2',
-        title: 'Optimizing AI Prompts',
-        description: 'Master the art of writing effective prompts for better results',
+        title: 'Deep Dive',
+        description: 'Video Tutorial deep dive into Windsurf',
         duration: '20 min',
         difficulty: 'Intermediate',
-        url: 'https://windsurf.dev/docs/optimizing-prompts'
-      },
-      {
-        id: 'windsurf-3',
-        title: 'Custom AI Workflows',
-        description: 'Create custom AI workflows and automation',
-        duration: '30 min',
-        difficulty: 'Advanced',
-        url: 'https://windsurf.dev/docs/custom-workflows'
+        url: 'https://www.youtube.com/watch?v=qVuWRQh4Buo&t'
       }
     ]
   },
@@ -123,23 +116,23 @@ const platforms: Platform[] = [
         description: 'Learn how to create your first Replit project and navigate the interface',
         duration: '10 min',
         difficulty: 'Beginner',
-        url: 'https://replit.com/learn'
+        url: 'https://www.youtube.com/watch?v=St95nPOwsa8'
       },
       {
         id: 'replit-2',
-        title: 'Collaborating on Projects',
-        description: 'Practice real-time collaboration with your team',
-        duration: '15 min',
+        title: 'Deep Dive',
+        description: 'Video Tutorial deep dive into Replit',
+        duration: '20 min',
         difficulty: 'Intermediate',
-        url: 'https://replit.com/learn/collaboration'
+        url: 'https://www.youtube.com/watch?v=KH63ojH6tQI&t'
       },
       {
         id: 'replit-3',
-        title: 'Advanced Features',
-        description: 'Explore advanced features like version control and community',
-        duration: '20 min',
-        difficulty: 'Advanced',
-        url: 'https://replit.com/learn/advanced'
+        title: 'Replit AI Agent',
+        description: 'Video Tutorial full Replit course',
+        duration: '2 hours',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=DaXQ5L7r7Lg'
       }
     ]
   },
@@ -155,27 +148,19 @@ const platforms: Platform[] = [
     tutorials: [
       {
         id: 'bolt-1',
-        title: 'Database Design Fundamentals',
-        description: 'Learn how to design and structure your database in Bolt',
-        duration: '20 min',
+        title: 'Bolt Basics',
+        description: 'Video Tutorial by No Code MBA on building apps with Bolt',
+        duration: '30 min',
         difficulty: 'Beginner',
-        url: 'https://bolt.com/docs/database-design'
+        url: 'https://www.youtube.com/watch?v=0_Ij8FEvY4U'
       },
       {
         id: 'bolt-2',
-        title: 'Building Business Logic',
-        description: 'Create complex workflows and business rules',
-        duration: '30 min',
+        title: 'Deep Dive',
+        description: 'Video Tutorial deep dive into Bolt',
+        duration: '20 min',
         difficulty: 'Intermediate',
-        url: 'https://bolt.com/docs/business-logic'
-      },
-      {
-        id: 'bolt-3',
-        title: 'API Integration',
-        description: 'Connect your Bolt app with external services',
-        duration: '40 min',
-        difficulty: 'Advanced',
-        url: 'https://bolt.com/docs/api-integration'
+        url: 'https://www.youtube.com/watch?v=JMBqw2SkuRw&t'
       }
     ]
   },
@@ -191,27 +176,27 @@ const platforms: Platform[] = [
     tutorials: [
       {
         id: 'github-copilot-1',
-        title: 'Introduction to GitHub Copilot',
-        description: 'Learn how to get started with GitHub Copilot and its features',
+        title: 'Getting Started With GitHub Copilot',
+        description: 'Video Tutorial learn how to get started with GitHub Copilot and its features',
         duration: '10 min',
         difficulty: 'Beginner',
-        url: 'https://docs.github.com/en/copilot/overview'
+        url: 'https://www.youtube.com/watch?v=n0NlxUyA7FI '
       },
       {
         id: 'github-copilot-2',
-        title: 'Using Copilot for Development',
-        description: 'Practice using GitHub Copilot for your daily development tasks',
-        duration: '15 min',
+        title: 'Essential Features',
+        description: 'Video Tutorial essential features of GitHub Copilot',
+        duration: '10 min',
         difficulty: 'Intermediate',
-        url: 'https://docs.github.com/en/copilot/overview'
+        url: 'https://www.youtube.com/watch?v=b5xcWdzAB5c'
       },
       {
         id: 'github-copilot-3',
-        title: 'Advanced Copilot Features',
-        description: 'Explore advanced features and customizations',
+        title: 'Building a Web App',
+        description: 'Video Tutorial building a web app with GitHub Copilot',
         duration: '20 min',
         difficulty: 'Advanced',
-        url: 'https://docs.github.com/en/copilot/overview'
+        url: 'https://www.youtube.com/watch?v=Nw4y5XQyugc&list=PL0lo9MOBetEFcp4SCWinBdpml9B2U25-f&index=3'
       }
     ]
   },
@@ -227,27 +212,27 @@ const platforms: Platform[] = [
     tutorials: [
       {
         id: 'cursor-1',
-        title: 'Introduction to Cursor',
-        description: 'Get started with Cursor and its AI features',
-        duration: '15 min',
-        difficulty: 'Beginner',
-        url: 'https://cursor.sh/docs/getting-started'
+        title: 'Installation',
+        description: 'Get Cursor installed on your computer in just a few minutes',
+        duration: '10 min',
+        difficulty: 'Intermediate',
+        url: 'https://docs.cursor.com/en/get-started/installation'
       },
       {
         id: 'cursor-2',
-        title: 'AI Code Generation',
-        description: 'Learn how to generate code using AI prompts',
-        duration: '25 min',
+        title: 'Introduction to Cursor',
+        description: 'Video Tutorial by Volo Builds on Cursor basics',
+        duration: '30 min',
         difficulty: 'Intermediate',
-        url: 'https://cursor.sh/docs/ai-generation'
+        url: 'https://www.youtube.com/watch?v=3289vhOUdKA'
       },
       {
         id: 'cursor-3',
-        title: 'Advanced AI Features',
-        description: 'Explore advanced AI features and customizations',
-        duration: '35 min',
+        title: 'Advanced Cursor Rules',
+        description: 'Video Tutorial by Neel about how to setup advanced Cursor rules',
+        duration: '25 min',
         difficulty: 'Advanced',
-        url: 'https://cursor.sh/docs/advanced-features'
+        url: 'https://www.youtube.com/watch?v=TrcyAWGC1k4'
       }
     ]
   },
@@ -263,27 +248,27 @@ const platforms: Platform[] = [
     tutorials: [
       {
         id: 'claude-code-1',
-        title: 'Introduction to Claude Code',
-        description: 'Get started with Claude Code and its AI features',
+        title: 'Setup',
+        description: 'Guide to setup Claude Code',
         duration: '10 min',
-        difficulty: 'Beginner',
-        url: 'https://docs.claude.com/code/getting-started'
+        difficulty: 'Intermediate',
+        url: 'https://docs.anthropic.com/en/docs/claude-code/setup'
       },
       {
         id: 'claude-code-2',
-        title: 'AI Code Generation',
-        description: 'Learn how to generate code using Claude Code',
-        duration: '15 min',
+        title: 'Claude Code Basics',
+        description: 'Video Tutorial by Tyler AI on Claude Code basics',
+        duration: '10 min',
         difficulty: 'Intermediate',
-        url: 'https://docs.claude.com/code/ai-generation'
+        url: 'https://www.youtube.com/watch?v=P_pTypZZL4c'
       },
       {
         id: 'claude-code-3',
-        title: 'Advanced Claude Code Features',
-        description: 'Explore advanced AI features and customizations',
-        duration: '20 min',
+        title: 'Build a Full Stack Web App',
+        description: 'Video Tutorial by Rob Shocks on how to build a full stack web app with Claude Code',
+        duration: '30 min',
         difficulty: 'Advanced',
-        url: 'https://docs.claude.com/code/advanced-features'
+        url: 'https://www.youtube.com/watch?v=cYIxhL6pxL4'
       }
     ]
   },
@@ -299,27 +284,19 @@ const platforms: Platform[] = [
     tutorials: [
       {
         id: 'gemini-cli-1',
-        title: 'Getting Started with Gemini CLI',
-        description: 'Install and configure Gemini CLI for your development workflow',
-        duration: '15 min',
-        difficulty: 'Beginner',
-        url: 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli'
+        title: 'Installation',
+        description: 'Video Tutorial on installing and configuring Gemini CLI for your development workflow',
+        duration: '10 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=we2HwLyKYEg'
       },
       {
         id: 'gemini-cli-2',
-        title: 'Exploring Codebases',
-        description: 'Learn how to analyze and understand large codebases with Gemini CLI',
-        duration: '20 min',
+        title: 'Crash Course',
+        description: 'Video Tutorial by Sam Witteveen on how to use Gemini CLI',
+        duration: '15 min',
         difficulty: 'Intermediate',
-        url: 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli'
-      },
-      {
-        id: 'gemini-cli-3',
-        title: 'Advanced Automation',
-        description: 'Automate complex workflows and integrate with external tools',
-        duration: '25 min',
-        difficulty: 'Advanced',
-        url: 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli'
+        url: 'https://www.youtube.com/watch?v=KUCZe1xBKFM'
       }
     ]
   }
@@ -327,6 +304,17 @@ const platforms: Platform[] = [
 
 export function LearnPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('lovable');
+  const platformRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  const scrollToPlatform = (platformId: string) => {
+    setSelectedPlatform(platformId);
+    setTimeout(() => {
+      const element = platformRefs.current[platformId];
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
+  };
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -366,7 +354,7 @@ export function LearnPage() {
               className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
                 selectedPlatform === platform.id ? 'ring-2 ring-purple-500' : ''
               }`}
-              onClick={() => setSelectedPlatform(platform.id)}
+              onClick={() => scrollToPlatform(platform.id)}
             >
               <CardContent className="p-6 text-center">
                 <div className="w-full h-16 mb-4 flex items-center justify-center p-2">
@@ -394,9 +382,12 @@ export function LearnPage() {
         {/* Detailed Platform Information */}
         <div className="space-y-6">
           {platforms.map((platform) => (
-            <div key={platform.id} className={`space-y-6 ${selectedPlatform === platform.id ? 'block' : 'hidden'}`}>
-              <Card>
-                <CardHeader>
+            <div 
+              key={platform.id} 
+              className={`space-y-6 ${selectedPlatform === platform.id ? 'block' : 'hidden'}`}
+            >
+                            <Card>
+                <CardHeader ref={(el) => (platformRefs.current[platform.id] = el)}>
                   <div className="flex items-center space-x-4">
                     <div className="w-16 h-12 p-1">
                       <img 
@@ -549,6 +540,124 @@ export function LearnPage() {
                   Create your first project and practice with our challenges
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* InnovAIte Section */}
+        <Card className="mt-8 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2 text-2xl">
+              <img src={innovAIteLogo} alt="InnovAIte Logo" className="w-8 h-8" />
+              <span>About InnovAIte</span>
+            </CardTitle>
+            <CardDescription className="text-lg">
+              Meet the team behind NoCodeJam and learn about our mission
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="prose max-w-none">
+              <p className="text-gray-700 mb-4">
+                <strong>InnovAIte</strong> is focused on testing and validating two key programs that will make up SPARK when it launches in 2026 - the AI Generalist Program and the AI Prototyping Lab.
+              </p>
+              
+              <p className="text-gray-700 mb-4">
+                Our mission is to understand how AI tools and platforms can dramatically compress startup development cycles from months to days, making entrepreneurship more accessible to everyone regardless of technical background.
+              </p>
+
+              <div className="bg-white p-4 rounded-lg border border-purple-200 mb-4">
+                <h4 className="font-semibold text-purple-800 mb-2">Our Structure</h4>
+                <p className="text-gray-700 mb-3">
+                  At InnovAIte, we operate with a collaborative structure that encourages team leadership and contributions. While Jesse McMeikan serves as our Product Owner, Dr Leon Yang as the Acting Academic Company Director, and Scott West as our Industry Mentor, we focus on contributions made by students to our validation projects.
+                </p>
+              </div>
+
+              <div className="bg-white p-4 rounded-lg border border-blue-200 mb-4">
+                <h4 className="font-semibold text-blue-800 mb-2">Our Operations: "The Three C's"</h4>
+                <div className="space-y-3">
+                  <div>
+                    <h5 className="font-medium text-white">Code</h5>
+                    <p className="text-gray-700 text-sm">
+                      We use GitLab as our code repository with Code Integration Leads who help manage AI coding tools, establish best practices, and manage the handoff between AI-generated code and human refinement.
+                    </p>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-white">Communication</h5>
+                    <p className="text-gray-700 text-sm">
+                      We use MS Teams for direct communication with students and for updates about events, managed by Comms Leads who also make Company-wide OnTrack submissions.
+                    </p>
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-white">Coordination</h5>
+                    <p className="text-gray-700 text-sm">
+                      We use Microsoft Planner as our main source of truth for all activities. Sprint Leads manage the challenge of adapting traditional agile frameworks to AI-accelerated development cycles.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <Card className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <Play className="w-5 h-5 mr-2" />
+                    Company Handover Video
+                  </CardTitle>
+                  <CardDescription className="text-purple-100">
+                    Watch our Trimester 1 handover presentation
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    variant="secondary" 
+                    className="bg-white text-purple-600 hover:bg-gray-100"
+                    onClick={() => window.open('https://www.youtube.com/watch?v=WPt6f4-sM4s', '_blank')}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Watch Video
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-0">
+                <CardHeader>
+                  <CardTitle className="flex items-center text-lg">
+                    <Play className="w-5 h-5 mr-2" />
+                    YouTube Channel
+                  </CardTitle>
+                  <CardDescription className="text-blue-100">
+                    Subscribe to our channel for the latest tutorials and updates
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button 
+                    variant="secondary" 
+                    className="bg-white text-blue-600 hover:bg-gray-100"
+                    onClick={() => window.open('https://www.youtube.com/@innovAIteDeakin', '_blank')}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Visit Channel
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="bg-white p-4 rounded-lg border border-green-200">
+              <h4 className="font-semibold text-green-800 mb-2">Get Involved</h4>
+              <p className="text-gray-700 mb-3">
+                Deakin students can access our GitLab repository and contribute to our validation projects. Look for the SSO sign-in button.
+              </p>
+              <Button 
+                variant="outline" 
+                className="border-green-300 text-green-700 hover:bg-green-50"
+                onClick={() => window.open('https://gitlab.deakin.edu.au/innovaite-lab', '_blank')}
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Visit GitLab Repository
+              </Button>
             </div>
           </CardContent>
         </Card>
