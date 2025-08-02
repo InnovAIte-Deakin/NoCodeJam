@@ -330,50 +330,31 @@ export function AdminDashboard() {
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Clock className="w-8 h-8 text-yellow-500" />
-                <div className="ml-4">
-                  <p className="text-2xl font-bold">{pendingSubmissions.length}</p>
-                  <p className="text-gray-600">Pending Reviews</p>
-                </div>
-              </div>
+            <CardContent className="p-6 flex flex-col items-center">
+              <Clock className="w-8 h-8 text-yellow-500" />
+              <p className="text-gray-600 mt-1 mb-0">Pending Reviews</p>
+              <p className="text-2xl font-bold mt-0 mb-0">{pendingSubmissions.length}</p>
             </CardContent>
           </Card>
-          
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <FileText className="w-8 h-8 text-blue-500" />
-                <div className="ml-4">
-                  <p className="text-2xl font-bold">{challenges.length}</p>
-                  <p className="text-gray-600">Total Challenges</p>
-                </div>
-              </div>
+            <CardContent className="p-6 flex flex-col items-center">
+              <FileText className="w-8 h-8 text-blue-500" />
+              <p className="text-gray-600 mt-1 mb-0">Total Challenges</p>
+              <p className="text-2xl font-bold mt-0 mb-0">{challenges.length}</p>
             </CardContent>
           </Card>
-          
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <Users className="w-8 h-8 text-green-500" />
-                <div className="ml-4">
-                  <p className="text-2xl font-bold">156</p>
-                  <p className="text-gray-600">Active Users</p>
-                </div>
-              </div>
+            <CardContent className="p-6 flex flex-col items-center">
+              <Users className="w-8 h-8 text-green-500" />
+              <p className="text-gray-600 mt-1 mb-0">Active Users</p>
+              <p className="text-2xl font-bold mt-0 mb-0">{users.length}</p>
             </CardContent>
           </Card>
-          
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center">
-                <CheckCircle className="w-8 h-8 text-purple-500" />
-                <div className="ml-4">
-                  <p className="text-2xl font-bold">{challenges.filter(c => c.is_published).length}</p>
-                  <p className="text-gray-600">Published Challenges</p>
-                </div>
-              </div>
+            <CardContent className="p-6 flex flex-col items-center">
+              <CheckCircle className="w-8 h-8 text-purple-500" />
+              <p className="text-gray-600 mt-1 mb-0">Admin Users</p>
+              <p className="text-2xl font-bold mt-0 mb-0">{users.filter(u => u.role === 'admin').length}</p>
             </CardContent>
           </Card>
         </div>
