@@ -6,17 +6,19 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
     
     const success = await login(email, password);
     if (success) {
@@ -26,6 +28,8 @@ export function LoginPage() {
       });
       navigate('/dashboard');
     } else {
+      // Set specific error message based on the failure
+      setError('Invalid email or password. Please check your credentials and try again.');
       toast({
         title: "Login failed",
         description: "Invalid email or password. Please try again.",
@@ -81,6 +85,13 @@ export function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start space-x-2">
+              <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+          
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <Label htmlFor="email">Email</Label>
@@ -88,10 +99,13 @@ export function LoginPage() {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setError(''); // Clear error when user types
+                }}
                 placeholder="Enter your email"
                 required
-                className="mt-1"
+                className={`mt-1 ${error ? 'border-red-300 focus:border-red-500' : ''}`}
               />
             </div>
             <div>
@@ -101,9 +115,13 @@ export function LoginPage() {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError(''); // Clear error when user types
+                  }}
                   placeholder="Enter your password"
                   required
+                  className={error ? 'border-red-300 focus:border-red-500 pr-10' : 'pr-10'}
                 />
                 <button
                   type="button"
