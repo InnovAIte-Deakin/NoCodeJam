@@ -15,6 +15,7 @@ import { AdminDashboard } from '@/pages/AdminDashboard';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { LearnPage } from '@/pages/LearnPage';
 import OnboardingStepPage from '@/pages/onboarding/[step]';
+import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
 import './App.css';
 
 function AppRoutes() {
@@ -53,6 +54,12 @@ function AppRoutes() {
       <Route path="/onboarding/:step" element={
         <ProtectedRoute>
           <OnboardingStepPage />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/onboarding/complete" element={
+        <ProtectedRoute>
+          <OnboardingCompleteScreen />
         </ProtectedRoute>
       } />
       

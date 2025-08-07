@@ -97,7 +97,7 @@ serve(async (req) => {
       challengeData = fallbackChallenge
     }
 
-    // Query user's completed onboarding submissions
+    // Query user's onboarding submissions (both pending and approved)
     const { data: submissions, error: submissionsError } = await supabase
       .from('submissions')
       .select(`
@@ -113,7 +113,7 @@ serve(async (req) => {
       `)
       .eq('user_id', user.id)
       .eq('challenge_id', challengeData.id)
-      .eq('status', 'completed_step')
+      .in('status', ['pending', 'approved'])
       .not('onboarding_step_id', 'is', null)
       .order('created_at', { ascending: false })
 
@@ -131,35 +131,36 @@ serve(async (req) => {
       )
     }
 
-    // Process submissions to get completed step information
+    // Process submissions to get step information
     const completedSteps = submissions?.map(submission => ({
       stepId: submission.onboarding_step_id,
       stepNumber: submission.onboarding_steps?.step_number,
       stepTitle: submission.onboarding_steps?.title,
-      completedAt: submission.created_at
+      submittedAt: submission.created_at,
+      status: submission.status
     })).filter(step => step.stepNumber !== null) || []
 
-    // Find the highest completed step number
-    const highestCompletedStep = completedSteps.length > 0 
+    // Find the highest submitted step number
+    const highestSubmittedStep = completedSteps.length > 0 
       ? Math.max(...completedSteps.map(step => step.stepNumber))
       : 0
 
-    // The current step is the one after the highest completed step
-    const currentStepNumber = highestCompletedStep + 1
+    // The current step is the one after the highest submitted step
+    const currentStepNumber = highestSubmittedStep + 1
 
-    // Get list of completed step IDs for easy lookup
-    const completedStepIds = completedSteps.map(step => step.stepId)
+    // Get list of submitted step IDs for easy lookup
+    const submittedStepIds = completedSteps.map(step => step.stepId)
 
     // Return successful response
     return new Response(
       JSON.stringify({ 
         success: true,
         challengeId: challengeData.id,
-        completedSteps,
-        completedStepIds,
-        highestCompletedStep,
+        submittedSteps: completedSteps,
+        submittedStepIds,
+        highestSubmittedStep,
         currentStepNumber,
-        totalCompletedSteps: completedSteps.length
+        totalSubmittedSteps: completedSteps.length
       }),
       { 
         status: 200,

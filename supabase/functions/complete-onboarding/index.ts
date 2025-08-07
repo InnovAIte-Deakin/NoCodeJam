@@ -114,8 +114,8 @@ serve(async (req) => {
       const { data: updatedMaster, error: updateError } = await supabase
         .from('submissions')
         .update({
-          status: 'pending_review',
-          updated_at: new Date().toISOString()
+          status: 'pending_review'
+          // Remove updated_at - let Supabase handle this automatically
         })
         .eq('id', existingMaster.id)
         .select('id')
@@ -149,9 +149,8 @@ serve(async (req) => {
             type: 'onboarding_completion',
             completedAt: new Date().toISOString(),
             challengeTitle: challengeData.title
-          },
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          }
+          // Remove created_at and updated_at - let Supabase handle these automatically
         })
         .select('id')
         .single()
@@ -203,8 +202,8 @@ serve(async (req) => {
       const { error: linkError } = await supabase
         .from('submissions')
         .update({
-          parent_submission_id: masterSubmissionId,
-          updated_at: new Date().toISOString()
+          parent_submission_id: masterSubmissionId
+          // Remove updated_at - let Supabase handle this automatically
         })
         .in('id', stepIds)
 
