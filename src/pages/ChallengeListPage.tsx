@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, Filter, Star, Clock, CheckCircle, Circle } from 'lucide-react';
+import { OnboardingChallengeCard } from '@/components/OnboardingChallengeCard';
+import { Search, Filter, Star, Clock, CheckCircle, Circle, Eye } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -20,24 +21,51 @@ export function ChallengeListPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [challenges, setChallenges] = useState<any[]>([]);
+  const [onboardingChallenge, setOnboardingChallenge] = useState<any>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [isOnboardingHidden, setIsOnboardingHidden] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+      
+      // Fetch all challenges
       const { data: challengesData } = await supabase
         .from('challenges')
         .select('*');
-      setChallenges(challengesData || []);
+      
+      if (challengesData) {
+        // Separate onboarding challenge from regular challenges
+        const onboarding = challengesData.find(c => c.challenge_type === 'onboarding');
+        const regularChallenges = challengesData.filter(c => c.challenge_type !== 'onboarding');
+        
+        setOnboardingChallenge(onboarding);
+        setChallenges(regularChallenges);
+      }
+
+      // Fetch user-specific data
       if (user) {
+        // Fetch submissions
         const { data: submissionsData } = await supabase
           .from('submissions')
           .select('*')
           .eq('user_id', user.id);
         setSubmissions(submissionsData || []);
+
+        // Fetch user's onboarding visibility preference
+        const { data: userData } = await supabase
+          .from('users')
+          .select('onboarding_hidden')
+          .eq('id', user.id)
+          .single();
+        
+        if (userData) {
+          setIsOnboardingHidden(userData.onboarding_hidden || false);
+        }
       } else {
         setSubmissions([]);
+        setIsOnboardingHidden(false);
       }
       setLoading(false);
     };
@@ -47,6 +75,37 @@ export function ChallengeListPage() {
   const getChallengeStatus = (challengeId: string) => {
     const submission = submissions.find(s => s.challenge_id === challengeId);
     return submission?.status || 'not-attempted';
+  };
+
+  const handleHideOnboarding = async () => {
+    setIsOnboardingHidden(true);
+  };
+
+  const handleShowOnboarding = async () => {
+    if (!user) return;
+    
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        return;
+      }
+
+      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/set-onboarding-visibility`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isHidden: false }),
+      });
+
+      if (response.ok) {
+        setIsOnboardingHidden(false);
+      }
+    } catch (error) {
+      console.error('Error showing onboarding:', error);
+    }
   };
 
   const filteredChallenges = challenges.filter(challenge => {
@@ -118,7 +177,34 @@ export function ChallengeListPage() {
         {loading ? (
           <div className="text-center py-12 text-lg text-gray-500">Loading challenges...</div>
         ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <>
+          {/* Onboarding Challenge Card or Show Button */}
+          {onboardingChallenge && !isOnboardingHidden && (
+            <div className="mb-8">
+              <OnboardingChallengeCard 
+                title={onboardingChallenge.title}
+                description={onboardingChallenge.description}
+                onHide={handleHideOnboarding}
+              />
+            </div>
+          )}
+          
+          {/* Show Onboarding Button */}
+          {onboardingChallenge && isOnboardingHidden && (
+            <div className="mb-8">
+              <Button 
+                onClick={handleShowOnboarding}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Show Onboarding Tutorial
+              </Button>
+            </div>
+          )}
+          
+          {/* Regular Challenges Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredChallenges.map((challenge) => {
             const status = getChallengeStatus(challenge.id);
             // Parse requirements string to array for display
@@ -171,18 +257,20 @@ export function ChallengeListPage() {
               </Card>
             );
           })}
-        </div>
-        )}
-        {filteredChallenges.length === 0 && !loading && (
-          <div className="text-center py-12">
-            <div className="text-gray-400 mb-4">
-              <Filter className="w-12 h-12 mx-auto" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No challenges found</h3>
-            <p className="text-gray-600">
-              Try adjusting your search terms or filters
-            </p>
           </div>
+          
+          {filteredChallenges.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Filter className="w-12 h-12 mx-auto" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No challenges found</h3>
+              <p className="text-gray-600">
+                Try adjusting your search terms or filters
+              </p>
+            </div>
+          )}
+        </>
         )}
       </div>
     </div>

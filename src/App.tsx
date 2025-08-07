@@ -14,6 +14,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { LearnPage } from '@/pages/LearnPage';
+import OnboardingStepPage from '@/pages/onboarding/[step]';
 import './App.css';
 
 function AppRoutes() {
@@ -47,6 +48,14 @@ function AppRoutes() {
           <ChallengeDetailPage />
         </ProtectedRoute>
       } />
+      
+      {/* Onboarding routes */}
+      <Route path="/onboarding/:step" element={
+        <ProtectedRoute>
+          <OnboardingStepPage />
+        </ProtectedRoute>
+      } />
+      
       <Route path="/leaderboard" element={
         <ProtectedRoute>
           <LeaderboardPage />
