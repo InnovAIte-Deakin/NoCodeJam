@@ -15,8 +15,7 @@ import {
   Plus, 
   Users, 
   FileText, 
-  ExternalLink,
-  Settings 
+  ExternalLink
 } from 'lucide-react';
 import {
   Select,
@@ -44,18 +43,33 @@ export function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       setLoadingSubmissions(true);
-      // Fetch pending submissions
+      // Fetch pending submissions with user information
       const { data: submissions, error: subError } = await supabase
         .from('submissions')
-        .select('*')
+        .select(`
+          *,
+          users!submissions_user_id_fkey (
+            id,
+            username
+          )
+        `)
         .eq('status', 'pending');
+      
+      // Add debugging
+      console.log('Admin Dashboard - Submissions query result:', { submissions, subError });
+      
       // Fetch all challenges (for lookup)
       const { data: challengesData, error: chalError } = await supabase
         .from('challenges')
         .select('*');
+      
+      console.log('Admin Dashboard - Challenges query result:', { challengesData, chalError });
+      
       if (!subError && !chalError && submissions && challengesData) {
         setPendingSubmissions(submissions);
         setChallenges(challengesData);
+      } else {
+        console.error('Query errors:', { subError, chalError });
       }
       setLoadingSubmissions(false);
     };
@@ -145,7 +159,13 @@ export function AdminDashboard() {
     setLoadingSubmissions(true);
     const { data: submissions, error: subError } = await supabase
       .from('submissions')
-      .select('*')
+      .select(`
+        *,
+        users!submissions_user_id_fkey (
+          id,
+          username
+        )
+      `)
       .eq('status', 'pending');
     if (!subError && submissions) {
       setPendingSubmissions(submissions);
@@ -397,7 +417,9 @@ export function AdminDashboard() {
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h3 className="font-semibold text-lg">{challenge?.title || 'Unknown Challenge'}</h3>
-                              <p className="text-gray-600">Submitted by User #{submission.user_id}</p>
+                              <p className="text-gray-600">
+                                From {submission.users?.username || 'Unknown User'} - {submission.user_id}
+                              </p>
                               <p className="text-sm text-gray-500">
                                 {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
                               </p>

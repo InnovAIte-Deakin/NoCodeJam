@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { OnboardingVisibilityToggle } from './OnboardingVisibilityToggle';
-import { PlayCircle, Sparkles } from 'lucide-react';
+import { PlayCircle, Sparkles, CheckCircle } from 'lucide-react';
+import { supabase } from '@/lib/supabaseClient';
 
 interface OnboardingChallengeCardProps {
   title: string;
@@ -13,14 +14,78 @@ interface OnboardingChallengeCardProps {
 }
 
 export function OnboardingChallengeCard({ title, description, onHide }: OnboardingChallengeCardProps) {
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    checkOnboardingCompletion();
+  }, []);
+
+  const checkOnboardingCompletion = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Get user's current session to check auth status
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !session) {
+        setIsCompleted(false);
+        return;
+      }
+
+      // Direct query to check user's onboarding submissions
+      const { data: challengeData, error: challengeError } = await supabase
+        .from('challenges')
+        .select('id')
+        .eq('challenge_type', 'onboarding')
+        .single();
+
+      if (challengeError || !challengeData) {
+        setIsCompleted(false);
+        return;
+      }
+
+      // Check user's submissions for this challenge
+      const { data: submissions, error: submissionsError } = await supabase
+        .from('submissions')
+        .select('id, onboarding_step_id, status')
+        .eq('user_id', session.user.id)
+        .eq('challenge_id', challengeData.id)
+        .in('status', ['pending', 'approved'])
+        .not('onboarding_step_id', 'is', null);
+
+      if (submissionsError) {
+        console.error('Error checking submissions:', submissionsError);
+        setIsCompleted(false);
+        return;
+      }
+
+      // Count unique onboarding steps submitted (regardless of status)
+      const uniqueSteps = new Set(submissions?.map(sub => sub.onboarding_step_id) || []);
+      const completedStepsCount = uniqueSteps.size;
+      
+      // Check if user has completed all 3 steps
+      setIsCompleted(completedStepsCount >= 3);
+    } catch (error) {
+      console.error('Error checking onboarding completion:', error);
+      setIsCompleted(false);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const buttonLink = isCompleted ? "/onboarding/complete" : "/onboarding/1";
+  const buttonText = isCompleted ? "View Completion" : "Start Tutorial";
+  const badgeText = isCompleted ? "Completed" : "Start Here";
+  const badgeIcon = isCompleted ? CheckCircle : Sparkles;
+
   return (
     <Card className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-blue-600 to-indigo-700 text-white border-0 shadow-2xl hover:shadow-3xl transition-all duration-300 hover:scale-[1.02] group">
       
       {/* Start Here Banner */}
       <div className="absolute top-4 right-4 z-20">
-        <Badge className="bg-gradient-to-r from-yellow-400 to-orange-400 text-black font-bold px-3 py-1.5 shadow-lg animate-bounce border-0">
-          <Sparkles className="w-3 h-3 mr-1" />
-          Start Here
+        <Badge className={`${isCompleted ? 'bg-gradient-to-r from-green-400 to-emerald-400' : 'bg-gradient-to-r from-yellow-400 to-orange-400'} text-black font-bold px-3 py-1.5 shadow-lg ${isCompleted ? '' : 'animate-bounce'} border-0`}>
+          {React.createElement(badgeIcon, { className: "w-3 h-3 mr-1" })}
+          {badgeText}
         </Badge>
       </div>
 
@@ -66,10 +131,11 @@ export function OnboardingChallengeCard({ title, description, onHide }: Onboardi
             <Button 
               asChild 
               size="lg" 
-              className="bg-white text-purple-700 hover:bg-purple-50 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 border-0 min-w-[140px] h-12"
+              className={`${isCompleted ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-white text-purple-700 hover:bg-purple-50'} font-semibold shadow-lg hover:shadow-xl transition-all duration-200 border-0 min-w-[140px] h-12`}
+              disabled={isLoading}
             >
-              <Link to="/onboarding/1" className="flex items-center justify-center">
-                Start Tutorial
+              <Link to={buttonLink} className="flex items-center justify-center">
+                {isLoading ? 'Loading...' : buttonText}
               </Link>
             </Button>
           </div>
