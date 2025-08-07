@@ -32,7 +32,6 @@ export default function OnboardingStepPage() {
   
   // State for submission handling
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isStepSubmitted, setIsStepSubmitted] = useState(false);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
   
   // State for completion
@@ -43,6 +42,7 @@ export default function OnboardingStepPage() {
   // State for progress tracking
   const [userProgress, setUserProgress] = useState<{
     completedStepIds: number[];
+    allSubmittedStepIds: number[];
     highestCompletedStep: number;
     currentStepNumber: number;
     challengeId: number;
@@ -58,6 +58,9 @@ export default function OnboardingStepPage() {
   
   // Check if current step is already completed
   const isCurrentStepCompleted = userProgress?.completedStepIds.includes(currentStepData?.id || 0) || false;
+  
+  // Check if current step has been submitted (but may not be completed yet)
+  const isCurrentStepSubmitted = userProgress?.allSubmittedStepIds.includes(currentStepData?.id || 0) || false;
   
   // Check if we're on the last step and all steps are completed
   const isLastStep = currentStep === totalSteps;
@@ -119,6 +122,7 @@ export default function OnboardingStepPage() {
           const progressData = progressResponse.data;
           setUserProgress({
             completedStepIds: progressData.completedStepIds || [],
+            allSubmittedStepIds: progressData.allSubmittedStepIds || [],
             highestCompletedStep: progressData.highestCompletedStep || 0,
             currentStepNumber: progressData.currentStepNumber || 1,
             challengeId: progressData.challengeId
@@ -138,7 +142,7 @@ export default function OnboardingStepPage() {
           // Check if current step is already completed for form state
           const currentStepInData = stepsData.find((s: any) => s.step_number === urlStep);
           if (currentStepInData && progressData.completedStepIds?.includes(currentStepInData.id)) {
-            setIsStepSubmitted(true);
+            // Step is already completed - form should show as submitted
           }
         }
 
@@ -202,15 +206,15 @@ export default function OnboardingStepPage() {
         throw new Error(data.error);
       }
 
-      // Mark step as submitted and update progress
-      setIsStepSubmitted(true);
-      
-      // Update local progress state
+      // Update local progress state - add to submitted steps immediately
       setUserProgress(prev => prev ? {
         ...prev,
-        completedStepIds: [...prev.completedStepIds, currentStepData.id],
-        highestCompletedStep: Math.max(prev.highestCompletedStep, currentStep),
-        currentStepNumber: currentStep + 1
+        // Add current step to submitted steps (if not already there)
+        allSubmittedStepIds: prev.allSubmittedStepIds.includes(currentStepData.id) 
+          ? prev.allSubmittedStepIds 
+          : [...prev.allSubmittedStepIds, currentStepData.id],
+        // Only update if this step moves us forward
+        currentStepNumber: Math.max(prev.currentStepNumber, currentStep)
       } : null);
       
       console.log('Step submitted successfully:', data);
@@ -430,7 +434,7 @@ export default function OnboardingStepPage() {
                         submissionLabel={currentStepData.submission_label}
                         onSubmit={handleStepSubmission}
                         isSubmitting={isSubmitting || isCompleting}
-                        isSubmitted={isStepSubmitted || isCurrentStepCompleted}
+                        isSubmitted={isCurrentStepSubmitted || isCurrentStepCompleted}
                       />
                       
                       {/* Submission Error Display */}
@@ -509,7 +513,7 @@ export default function OnboardingStepPage() {
                 onClick={handleNext}
                 disabled={
                   currentStep === totalSteps || 
-                  (currentStepData?.submission_type && !isStepSubmitted && !isCurrentStepCompleted)
+                  (currentStepData?.submission_type && !(isCurrentStepSubmitted || isCurrentStepCompleted))
                 }
                 className="flex items-center space-x-2"
               >

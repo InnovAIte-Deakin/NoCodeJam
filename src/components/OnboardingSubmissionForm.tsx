@@ -94,9 +94,9 @@ export function OnboardingSubmissionForm({
           <div className="flex items-center space-x-3">
             <CheckCircle className="w-6 h-6 text-green-600" />
             <div>
-              <h3 className="font-semibold text-green-900">Step Completed!</h3>
+              <h3 className="font-semibold text-green-900">Step Submitted!</h3>
               <p className="text-green-700 text-sm">
-                Your submission has been saved successfully.
+                Your submission has been saved and is pending review.
               </p>
             </div>
           </div>
