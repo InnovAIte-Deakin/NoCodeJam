@@ -17,6 +17,8 @@ import { LearnPage } from '@/pages/LearnPage';
 
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
+import OnboardingStepPage from '@/pages/onboarding/[step]';
+import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
 import './App.css';
 
 function AppRoutes() {
@@ -52,6 +54,20 @@ function AppRoutes() {
           <ChallengeDetailPage />
         </ProtectedRoute>
       } />
+      
+      {/* Onboarding routes */}
+      <Route path="/onboarding/:step" element={
+        <ProtectedRoute>
+          <OnboardingStepPage />
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/onboarding/complete" element={
+        <ProtectedRoute>
+          <OnboardingCompleteScreen />
+        </ProtectedRoute>
+      } />
+      
       <Route path="/leaderboard" element={
         <ProtectedRoute>
           <LeaderboardPage />
