@@ -11,6 +11,7 @@ import { User, Github, Mail, Calendar, ExternalLink, Trophy } from 'lucide-react
 import { supabase } from '@/lib/supabaseClient';
 import { Link, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 
 export function ProfilePage() {
   const { user: currentUser, setUser } = useAuth();
@@ -144,7 +145,19 @@ export function ProfilePage() {
                     {user?.username?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <CardTitle className="text-2xl font-bold">{user?.username}</CardTitle>
+                <CardTitle className="text-2xl font-bold">
+                  {isEditing ? (
+                    <Input
+                      value={formData.username}
+                      onChange={e => setFormData({ ...formData, username: e.target.value })}
+                      className="text-center text-2xl font-bold"
+                      maxLength={32}
+                      required
+                    />
+                  ) : (
+                    user?.username
+                  )}
+                </CardTitle>
                 <CardDescription className="mb-2">{user?.email}</CardDescription>
                 {user?.bio && <p className="text-gray-600 text-sm mb-2">{user.bio}</p>}
                 {user?.githubUsername && (
@@ -163,9 +176,21 @@ export function ProfilePage() {
                   <span>Joined {user?.joinedAt?.toLocaleDateString()}</span>
                 </div>
                 {isOwnProfile && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/profile">Edit Profile</Link>
-                  </Button>
+                  isEditing ? (
+                    <div className="flex gap-2 justify-center">
+                      <Button variant="default" size="sm" className="mt-3" onClick={handleSave}>Save</Button>
+                      <Button variant="outline" size="sm" className="mt-3" onClick={handleCancel}>Cancel</Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => setIsEditing(true)}
+                    >
+                      Edit Profile
+                    </Button>
+                  )
                 )}
               </CardHeader>
             </Card>
@@ -179,6 +204,24 @@ export function ProfilePage() {
                   <div className="flex justify-between">
                     <span className="text-gray-600">Total XP</span>
                     <span className="font-bold text-purple-600">{user.xp}</span>
+                  </div>
+                  {/* XP Progress Bar */}
+                  <div className="mt-2">
+                    <Progress
+                      className="bg-transparent h-3 rounded-full border border-gray-300 dark:border-gray-600"
+                      barClassName="bg-green-500"
+                      value={
+                        user.xp && user.nextLevelXp
+                          ? Math.min(100, Math.round((user.xp / user.nextLevelXp) * 100))
+                          : user.xp
+                            ? Math.min(100, Math.round((user.xp / 1000) * 100))
+                            : 0
+                      }
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>{user.xp} XP</span>
+                      <span>{user.nextLevelXp ? `${user.nextLevelXp} XP to next level` : '1000 XP to next level'}</span>
+                    </div>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Badges Earned</span>
@@ -223,8 +266,8 @@ export function ProfilePage() {
                           </div>
                           <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-center">
                             <Badge
-                              variant={submission.status === 'approved' ? 'default' : 
-                                     submission.status === 'pending' ? 'secondary' : 'destructive'}
+                              variant={submission.status === 'approved' ? 'default' :
+                                submission.status === 'pending' ? 'secondary' : 'destructive'}
                               className="text-xs"
                             >
                               {submission.status}
