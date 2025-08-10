@@ -38,7 +38,9 @@ export function ChallengeListPage() {
       if (challengesData) {
         // Separate onboarding challenge from regular challenges
         const onboarding = challengesData.find(c => c.challenge_type === 'onboarding');
-        const regularChallenges = challengesData.filter(c => c.challenge_type !== 'onboarding');
+        const regularChallenges = challengesData.filter(
+          c => c.challenge_type !== 'onboarding' && c.status === 'approved'
+        );
         
         setOnboardingChallenge(onboarding);
         setChallenges(regularChallenges);
@@ -272,6 +274,18 @@ export function ChallengeListPage() {
           )}
         </>
         )}
+        {/* Request Challenge Section */}
+        <Card className="mb-8">
+          <CardContent className="p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Request a Challenge</h2>
+            <p className="text-gray-600 mb-4">
+              Have an idea for a challenge? Submit your request and our team will review it.
+            </p>
+            <Button asChild className="w-full sm:w-auto">
+              <Link to="/request-challenge">Request Challenge</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -16,6 +16,7 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { LearnPage } from '@/pages/LearnPage';
 import OnboardingStepPage from '@/pages/onboarding/[step]';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
+import { RequestChallengePage } from '@/pages/RequestChallengePage';
 import './App.css';
 
 function AppRoutes() {
@@ -47,6 +48,11 @@ function AppRoutes() {
       <Route path="/challenges/:id" element={
         <ProtectedRoute>
           <ChallengeDetailPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/request-challenge" element={
+        <ProtectedRoute>
+          <RequestChallengePage />
         </ProtectedRoute>
       } />
       

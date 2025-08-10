@@ -336,6 +336,131 @@ export function AdminDashboard() {
     refreshUsers();
   };
 
+  // Add logic to handle challenge requests for admins
+  const [challengeRequests, setChallengeRequests] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchChallengeRequests = async () => {
+      const { data: requests, error } = await supabase
+        .from('challenges')
+        .select('*')
+        .eq('challenge_type', 'user_requested')
+        .eq('status', 'pending');
+
+      if (error) {
+        console.error('Error fetching challenge requests:', error);
+        return;
+      }
+
+      setChallengeRequests(requests || []);
+    };
+
+    fetchChallengeRequests();
+  }, []);
+
+  const handleApproveRequest = async (challengeId: string) => {
+    const { error } = await supabase
+      .from('challenges')
+      .update({ status: 'approved' })
+      .eq('id', challengeId);
+
+    if (error) {
+      console.error('Error approving challenge request:', error);
+      alert('Failed to approve challenge request.');
+      return;
+    }
+
+    alert('Challenge request approved successfully!');
+    setChallengeRequests((prev) => prev.filter((req) => req.id !== challengeId));
+  };
+
+  const handleRejectRequest = async (challengeId: string) => {
+    const { error } = await supabase
+      .from('challenges')
+      .update({ status: 'rejected' })
+      .eq('id', challengeId);
+
+    if (error) {
+      console.error('Error rejecting challenge request:', error);
+      alert('Failed to reject challenge request.');
+      return;
+    }
+
+    alert('Challenge request rejected successfully!');
+    setChallengeRequests((prev) => prev.filter((req) => req.id !== challengeId));
+  };
+
+  const [editingChallenge, setEditingChallenge] = useState<any | null>(null);
+
+  const openEditModal = (challenge: any) => {
+    setEditingChallenge({
+      ...challenge,
+      requirements: Array.isArray(challenge.requirements)
+        ? challenge.requirements
+        : (challenge.requirements || '').split(';').map((r: string) => r.trim()).filter(Boolean),
+    });
+  };
+
+  const closeEditModal = () => {
+    setEditingChallenge(null);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingChallenge) return;
+
+    const { error } = await supabase
+      .from('challenges')
+      .update({
+        title: editingChallenge.title,
+        description: editingChallenge.description,
+        difficulty: editingChallenge.difficulty,
+        xp_reward: editingChallenge.xp_reward,
+        requirements: editingChallenge.requirements.join('; '),
+      })
+      .eq('id', editingChallenge.id);
+
+    if (error) {
+      toast({
+        title: 'Failed to update challenge',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Challenge updated',
+      description: 'The challenge has been successfully updated.',
+    });
+    closeEditModal();
+    refreshChallenges();
+  };
+
+  const handleDeleteChallenge = async (challengeId: string) => {
+    if (!window.confirm('Are you sure you want to delete this challenge? This action cannot be undone.')) return;
+
+    const { error } = await supabase
+      .from('challenges')
+      .delete()
+      .eq('id', challengeId);
+
+    if (error) {
+      toast({
+        title: 'Failed to delete challenge',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Challenge deleted',
+      description: 'The challenge has been successfully deleted.',
+    });
+    refreshChallenges();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -390,6 +515,12 @@ export function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="users" className="admin-tabs-trigger">
               Manage Users
+            </TabsTrigger>
+            <TabsTrigger value="view-requests" className="admin-tabs-trigger">
+              View Requests
+            </TabsTrigger>
+            <TabsTrigger value="manage-challenges" className="admin-tabs-trigger">
+              Manage Challenges
             </TabsTrigger>
           </TabsList>
 
@@ -651,7 +782,193 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* View Requests */}
+          <TabsContent value="view-requests">
+            <Card>
+              <CardHeader>
+                <CardTitle>View Requests</CardTitle>
+                <CardDescription>
+                  Review and manage user-submitted challenge requests with full details
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {challengeRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">No pending challenge requests</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {challengeRequests.map((request) => (
+                      <Card key={request.id} className="border border-gray-200 rounded-lg p-4">
+                        <CardHeader>
+                          <CardTitle>{request.title}</CardTitle>
+                          <CardDescription>{request.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <p><strong>Difficulty:</strong> {request.difficulty}</p>
+                          <p><strong>XP Reward:</strong> {request.xp_reward}</p>
+                          <p><strong>Requirements:</strong> {request.requirements}</p>
+                          <div className="flex gap-4 mt-4">
+                            <Button 
+                              onClick={() => handleApproveRequest(request.id)} 
+                              className="bg-green-600 hover:bg-green-700 text-white shadow-sm"
+                            >
+                              Approve
+                            </Button>
+                            <Button 
+                              onClick={() => handleRejectRequest(request.id)} 
+                              variant="destructive"
+                              className="shadow-sm"
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Manage Challenges */}
+          <TabsContent value="manage-challenges">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Challenges</CardTitle>
+                <CardDescription>
+                  View and manage all challenges in the system
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {challenges.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-600">No challenges available</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {challenges.map((challenge) => (
+                      <Card key={challenge.id} className="border border-gray-200 rounded-lg p-4">
+                        <CardHeader>
+                          <CardTitle>{challenge.title}</CardTitle>
+                          <CardDescription>{challenge.description}</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="flex gap-4">
+                            <Button 
+                              onClick={() => alert(JSON.stringify(challenge, null, 2))} 
+                              className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                            >
+                              View Details
+                            </Button>
+                            <Button 
+                              onClick={() => openEditModal(challenge)} 
+                              className="bg-yellow-600 hover:bg-yellow-700 text-white shadow-sm"
+                            >
+                              Edit
+                            </Button>
+                            <Button 
+                              onClick={() => handleDeleteChallenge(challenge.id)} 
+                              variant="destructive"
+                              className="shadow-sm"
+                            >
+                              Delete
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
+
+        {/* Edit Challenge Modal */}
+        {editingChallenge && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
+              <h2 className="text-xl font-bold mb-4">Edit Challenge</h2>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-700">Title</label>
+                  <input
+                    id="title"
+                    type="text"
+                    value={editingChallenge.title}
+                    onChange={(e) => setEditingChallenge({ ...editingChallenge, title: e.target.value })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">Description</label>
+                  <textarea
+                    id="description"
+                    value={editingChallenge.description}
+                    onChange={(e) => setEditingChallenge({ ...editingChallenge, description: e.target.value })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    rows={4}
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="difficulty" className="block text-sm font-medium text-gray-700">Difficulty</label>
+                  <select
+                    id="difficulty"
+                    value={editingChallenge.difficulty}
+                    onChange={(e) => setEditingChallenge({ ...editingChallenge, difficulty: e.target.value })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    required
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Expert">Expert</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="xp_reward" className="block text-sm font-medium text-gray-700">XP Reward</label>
+                  <input
+                    id="xp_reward"
+                    type="number"
+                    value={editingChallenge.xp_reward}
+                    onChange={(e) => setEditingChallenge({ ...editingChallenge, xp_reward: parseInt(e.target.value) })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label htmlFor="requirements" className="block text-sm font-medium text-gray-700">Requirements</label>
+                  <textarea
+                    id="requirements"
+                    value={editingChallenge.requirements.join('; ')}
+                    onChange={(e) => setEditingChallenge({ ...editingChallenge, requirements: e.target.value.split(';').map((r) => r.trim()) })}
+                    className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    rows={2}
+                  />
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={closeEditModal}
+                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
