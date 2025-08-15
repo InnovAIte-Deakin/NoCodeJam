@@ -14,6 +14,9 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { LearnPage } from '@/pages/LearnPage';
+
+import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import OnboardingStepPage from '@/pages/onboarding/[step]';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
 import './App.css';
@@ -27,7 +30,9 @@ function AppRoutes() {
       <Route path="/" element={!user ? <LandingPage /> : <Navigate to="/dashboard" replace />} />
       <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/dashboard" replace />} />
       <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
-      
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      {/* Redirect logged-in users from public pages */}
       {/* Protected routes */}
       <Route path="/dashboard" element={
         <ProtectedRoute>

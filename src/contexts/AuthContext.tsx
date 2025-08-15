@@ -41,35 +41,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error || !data.session) {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      
+      if (error) {
+        console.error('Login error:', error);
+        setIsLoading(false);
+        return false;
+      }
+      
+      if (!data.session) {
+        setIsLoading(false);
+        return false;
+      }
+
+      // Fetch user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', data.user.id)
+        .single();
+        
+      if (profile && !profileError) {
+        setUser({
+          id: profile.id,
+          email: profile.email,
+          username: profile.username,
+          role: profile.role,
+          xp: profile.total_xp,
+          bio: profile.bio,
+          githubUsername: profile.github_username,
+          avatar: profile.avatar,
+          badges: [],
+          joinedAt: new Date(profile.created_at)
+        });
+        setIsLoading(false);
+        return true;
+      }
+      
+      setIsLoading(false);
+      return false;
+    } catch (error) {
+      console.error('Unexpected login error:', error);
       setIsLoading(false);
       return false;
     }
-    // Fetch user profile
-    const { data: profile, error: profileError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('id', data.user.id)
-      .single();
-    if (profile && !profileError) {
-      setUser({
-        id: profile.id,
-        email: profile.email,
-        username: profile.username,
-        role: profile.role,
-        xp: profile.total_xp,
-        bio: profile.bio,
-        githubUsername: profile.github_username,
-        avatar: profile.avatar,
-        badges: [],
-        joinedAt: new Date(profile.created_at)
-      });
-      setIsLoading(false);
-      return true;
-    }
-    setIsLoading(false);
-    return false;
   };
 
   const register = async (email: string, password: string, username: string): Promise<boolean> => {
