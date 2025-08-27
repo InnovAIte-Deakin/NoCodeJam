@@ -8,14 +8,16 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  Plus, 
-  Users, 
-  FileText, 
-  ExternalLink
+import {
+  CheckCircle,
+  XCircle,
+  Clock,
+  Plus,
+  Users,
+  FileText,
+  ExternalLink,
+  Trash2,
+  Edit
 } from 'lucide-react';
 import {
   Select,
@@ -263,6 +265,9 @@ export function AdminDashboard() {
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null);
 
+  // Step 5: Challenge management state
+  const [deletingChallengeId, setDeletingChallengeId] = useState<string | null>(null);
+
   useEffect(() => {
     const fetchUsers = async () => {
       setLoadingUsers(true);
@@ -336,6 +341,58 @@ export function AdminDashboard() {
     refreshUsers();
   };
 
+  // Admin action: Delete challenge
+  const handleDeleteChallenge = async (challengeId: string) => {
+    // First check if challenge has submissions
+    const { data: submissions, error: subError } = await supabase
+      .from('submissions')
+      .select('id')
+      .eq('challenge_id', challengeId);
+
+    if (subError) {
+      toast({
+        title: 'Error checking submissions',
+        description: subError.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (submissions && submissions.length > 0) {
+      const confirmMessage = `This challenge has ${submissions.length} submission(s). Deleting it will also delete all related submissions. Are you sure you want to continue?`;
+      if (!window.confirm(confirmMessage)) return;
+    } else {
+      if (!window.confirm('Are you sure you want to delete this challenge? This cannot be undone.')) return;
+    }
+
+    setDeletingChallengeId(challengeId);
+
+    // Delete the challenge (submissions will be cascade deleted if foreign key is set up)
+    const { error } = await supabase
+      .from('challenges')
+      .delete()
+      .eq('id', challengeId);
+
+    setDeletingChallengeId(null);
+
+    if (error) {
+      toast({
+        title: 'Failed to delete challenge',
+        description: error.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Challenge deleted',
+      description: 'The challenge has been deleted successfully.',
+    });
+
+    // Refresh challenges list
+    refreshChallenges();
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -385,8 +442,11 @@ export function AdminDashboard() {
             <TabsTrigger value="submissions" className="admin-tabs-trigger">
               Pending Submissions
             </TabsTrigger>
-            <TabsTrigger value="challenges" className="admin-tabs-trigger">
+            <TabsTrigger value="create-challenge" className="admin-tabs-trigger">
               Create Challenge
+            </TabsTrigger>
+            <TabsTrigger value="manage-challenges" className="admin-tabs-trigger">
+              Manage Challenges
             </TabsTrigger>
             <TabsTrigger value="users" className="admin-tabs-trigger">
               Manage Users
@@ -471,7 +531,7 @@ export function AdminDashboard() {
           </TabsContent>
 
           {/* Create Challenge */}
-          <TabsContent value="challenges">
+          <TabsContent value="create-challenge">
             <Card>
               <CardHeader>
                 <CardTitle>Create New Challenge</CardTitle>
@@ -593,6 +653,86 @@ export function AdminDashboard() {
                     Create Challenge
                   </Button>
                 </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Manage Challenges */}
+          <TabsContent value="manage-challenges">
+            <Card>
+              <CardHeader>
+                <CardTitle>Manage Challenges</CardTitle>
+                <CardDescription>
+                  View, edit, and delete existing challenges
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {challenges.length > 0 ? (
+                  <div className="space-y-4">
+                    {challenges.map((challenge) => (
+                      <div key={challenge.id} className="border border-gray-200 rounded-lg p-4">
+                        <div className="flex justify-between items-start mb-4">
+                          <div className="flex-1">
+                            <h3 className="font-semibold text-lg">{challenge.title}</h3>
+                            <p className="text-gray-600 text-sm mb-2">
+                              {challenge.description?.length > 100
+                                ? `${challenge.description.substring(0, 100)}...`
+                                : challenge.description}
+                            </p>
+                            <div className="flex items-center space-x-4 text-sm text-gray-500">
+                              <Badge variant="secondary">
+                                {challenge.difficulty || 'Unknown'}
+                              </Badge>
+                              <span>{challenge.xp_reward || 0} XP</span>
+                              <span>
+                                Created: {challenge.created_at ? new Date(challenge.created_at).toLocaleDateString() : 'Unknown'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2 ml-4">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                // TODO: Implement edit functionality
+                                toast({
+                                  title: "Edit functionality",
+                                  description: "Edit functionality will be implemented soon.",
+                                });
+                              }}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => handleDeleteChallenge(challenge.id)}
+                              disabled={deletingChallengeId === challenge.id}
+                            >
+                              {deletingChallengeId === challenge.id ? (
+                                <>
+                                  <Clock className="w-4 h-4 mr-1 animate-spin" />
+                                  Deleting...
+                                </>
+                              ) : (
+                                <>
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  Delete
+                                </>
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">No challenges found</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
