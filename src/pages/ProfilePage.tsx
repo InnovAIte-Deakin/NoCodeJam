@@ -139,33 +139,105 @@ export function ProfilePage() {
             <Card>
               <CardHeader className="text-center">
                 <Avatar className="w-24 h-24 mx-auto mb-4">
-                  <AvatarImage src={user?.avatar} alt={user?.username} />
+                  <AvatarImage src={isEditing ? formData.avatar : user?.avatar} alt={user?.username} />
                   <AvatarFallback className="text-2xl">
-                    {user?.username?.charAt(0).toUpperCase()}
+                    {(isEditing ? formData.username : user?.username)?.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <CardTitle className="text-2xl font-bold">{user?.username}</CardTitle>
-                <CardDescription className="mb-2">{user?.email}</CardDescription>
-                {user?.bio && <p className="text-gray-600 text-sm mb-2">{user.bio}</p>}
-                {user?.githubUsername && (
-                  <a
-                    href={`https://github.com/${user.githubUsername}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-blue-600 hover:underline text-sm mb-2"
-                  >
-                    <Github className="w-4 h-4 mr-1" />
-                    {user.githubUsername}
-                  </a>
+
+                {isEditing ? (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="username" className="text-sm font-medium">Username</Label>
+                      <Input
+                        id="username"
+                        value={formData.username}
+                        onChange={(e) => setFormData({...formData, username: e.target.value})}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="avatar" className="text-sm font-medium">Avatar URL</Label>
+                      <Input
+                        id="avatar"
+                        type="url"
+                        value={formData.avatar}
+                        onChange={(e) => setFormData({...formData, avatar: e.target.value})}
+                        placeholder="https://example.com/avatar.jpg"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="bio" className="text-sm font-medium">Bio</Label>
+                      <Textarea
+                        id="bio"
+                        value={formData.bio}
+                        onChange={(e) => setFormData({...formData, bio: e.target.value})}
+                        placeholder="Tell us about yourself..."
+                        className="mt-1"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="github" className="text-sm font-medium">GitHub Username</Label>
+                      <Input
+                        id="github"
+                        value={formData.githubUsername}
+                        onChange={(e) => setFormData({...formData, githubUsername: e.target.value})}
+                        placeholder="your-github-username"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <CardTitle className="text-2xl font-bold">{user?.username}</CardTitle>
+                    <CardDescription className="mb-2">{user?.email}</CardDescription>
+                    {user?.bio && <p className="text-gray-600 text-sm mb-2">{user.bio}</p>}
+                    {user?.githubUsername && (
+                      <a
+                        href={`https://github.com/${user.githubUsername}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center text-blue-600 hover:underline text-sm mb-2"
+                      >
+                        <Github className="w-4 h-4 mr-1" />
+                        {user.githubUsername}
+                      </a>
+                    )}
+                    <div className="flex items-center justify-center space-x-2 text-xs text-gray-500 mb-2">
+                      <Calendar className="w-4 h-4" />
+                      <span>Joined {user?.joinedAt?.toLocaleDateString()}</span>
+                    </div>
+                  </>
                 )}
-                <div className="flex items-center justify-center space-x-2 text-xs text-gray-500 mb-2">
-                  <Calendar className="w-4 h-4" />
-                  <span>Joined {user?.joinedAt?.toLocaleDateString()}</span>
-                </div>
-                {isOwnProfile && (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/profile">Edit Profile</Link>
+
+                {isOwnProfile && !isEditing && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit Profile
                   </Button>
+                )}
+
+                {isEditing && (
+                  <div className="flex space-x-2 mt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancel}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSave}
+                    >
+                      Save Changes
+                    </Button>
+                  </div>
                 )}
               </CardHeader>
             </Card>
