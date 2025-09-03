@@ -357,16 +357,7 @@ export function LeaderboardPage() {
                             }`}>
                               {developer.username}
                             </h3>
-                            {isCurrentUser && (
-                              <Badge variant="secondary" className={`text-xs font-semibold px-2 py-1 ${
-                                position === 1 ? 'bg-yellow-500/20 text-yellow-700 border-yellow-400/30' :
-                                position === 2 ? 'bg-slate-400/20 text-slate-700 border-slate-300/30' :
-                                position === 3 ? 'bg-orange-500/20 text-orange-700 border-orange-400/30' :
-                                'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                              }`}>
-                                You
-                              </Badge>
-                            )}
+
                           </div>
                           <div className={`flex items-center space-x-4 text-sm font-bold ${
                             position === 1 ? 'text-yellow-300 drop-shadow-sm' :
@@ -492,16 +483,7 @@ export function LeaderboardPage() {
                             }`}>
                               {developer.username}
                             </h3>
-                            {isCurrentUser && (
-                              <Badge variant="secondary" className={`text-xs font-semibold px-2 py-1 ${
-                                position === 1 ? 'bg-yellow-500/20 text-yellow-700 border-yellow-400/30' :
-                                position === 2 ? 'bg-slate-400/20 text-slate-700 border-slate-300/30' :
-                                position === 3 ? 'bg-orange-500/20 text-orange-700 border-orange-400/30' :
-                                'bg-purple-100 text-purple-700 hover:bg-purple-200'
-                              }`}>
-                                You
-                              </Badge>
-                            )}
+
                           </div>
                           <div className={`flex items-center space-x-4 text-sm font-bold ${
                             position === 1 ? 'text-yellow-300 drop-shadow-sm' :
