@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,10 @@ interface OnboardingStep {
 export default function OnboardingStepPage() {
   const { step } = useParams<{ step: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Check if we're in review mode - now reactive to URL changes
+  const isReviewMode = searchParams.get('review') === 'true';
   
   // State for data fetching
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
@@ -47,8 +51,10 @@ export default function OnboardingStepPage() {
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [verificationSuccess, setVerificationSuccess] = useState<boolean>(false);
   
-  // Parse the step number from the URL
-  const currentStep = parseInt(step || '1', 10);
+  // Parse the step number from the URL or handle special cases
+  const urlStep = step || '1';
+  const isCompleteRoute = urlStep === 'complete';
+  const currentStep = isCompleteRoute ? 1 : parseInt(urlStep, 10);
   const totalSteps = steps.length;
   
   // Find the current step data
@@ -110,23 +116,23 @@ export default function OnboardingStepPage() {
         if (progressResponse) {
           setLatestCompletedStep(progressResponse.latest_completed_step);
 
-          // Check if user has completed all steps
+          // Check if user has completed all steps (skip in review mode)
           const totalStepsFromData = stepsData.length;
-          if (progressResponse.latest_completed_step >= totalStepsFromData) {
+          if (progressResponse.latest_completed_step >= totalStepsFromData && !isReviewMode) {
             // User has completed all steps, show completion screen
             setIsCompleted(true);
             setProgressLoading(false);
             return;
           }
 
-          // Auto-redirect logic: if user is on a step they should skip
+          // Auto-redirect logic: if user is on a step they should skip (skip in review mode)
           const urlStep = parseInt(step || '1', 10);
           const recommendedStep = progressResponse.latest_completed_step + 1;
 
-          if (urlStep <= progressResponse.latest_completed_step && stepsData.length > 0) {
+          if (urlStep <= progressResponse.latest_completed_step && stepsData.length > 0 && !isReviewMode) {
             // User is trying to access a step they've already completed
             // Redirect them to their current step
-            navigate(`/onboarding/${recommendedStep}`, { replace: true });
+            navigate(`/onboarding/${recommendedStep}?review=true`, { replace: true });
             return; // Exit early since we're redirecting
           }
         }
@@ -141,19 +147,37 @@ export default function OnboardingStepPage() {
     };
 
     fetchOnboardingData();
-  }, [step, navigate]);
+  }, [step, navigate, isReviewMode]);
 
-  // Check for completion after data is loaded
-  useEffect(() => {
-    if (!loading && !progressLoading && steps.length > 0 && latestCompletedStep >= steps.length) {
-      setIsCompleted(true);
+  // Refetch function for progress synchronization
+  const refetchProgress = async () => {
+    try {
+      console.log('🔄 Refetching progress data...');
+      const progressResponse = await getOnboardingProgress();
+      if (progressResponse) {
+        setLatestCompletedStep(progressResponse.latest_completed_step);
+        console.log('✅ Progress updated:', progressResponse.latest_completed_step);
+      }
+    } catch (err) {
+      console.error('❌ Error refetching progress:', err);
     }
-  }, [loading, progressLoading, steps, latestCompletedStep]);
+  };
+
+  // Check for completion after data is loaded (skip in review mode)
+  useEffect(() => {
+    if (!loading && !progressLoading && steps.length > 0 && latestCompletedStep >= steps.length && !isReviewMode) {
+      setIsCompleted(true);
+    } else if (isReviewMode) {
+      // Reset completion state when entering review mode
+      setIsCompleted(false);
+    }
+  }, [loading, progressLoading, steps, latestCompletedStep, isReviewMode]);
 
   // Navigation handlers
   const handlePrevious = () => {
     if (currentStep > 1) {
-      navigate(`/onboarding/${currentStep - 1}`);
+      const url = isReviewMode ? `/onboarding/${currentStep - 1}?review=true` : `/onboarding/${currentStep - 1}`;
+      navigate(url);
     }
   };
 
@@ -164,9 +188,30 @@ export default function OnboardingStepPage() {
       return;
     }
     
-    // Otherwise, navigate to next step
+    // If step doesn't require verification and we haven't completed it yet,
+    // mark it as completed before navigating
+    if (currentStepData?.submission_type !== 'text' && currentStep > latestCompletedStep) {
+      try {
+        console.log(`📝 Marking step ${currentStep} as completed (no verification required)`);
+        await updateOnboardingProgress(currentStep);
+        await refetchProgress();
+      } catch (err) {
+        console.error('❌ Error marking step as completed:', err);
+        // Continue with navigation even if marking fails
+      }
+    }
+    
+    // Handle final step completion
+    if (currentStep === totalSteps) {
+      console.log('🎉 Final step completed, showing completion screen');
+      setIsCompleted(true);
+      return;
+    }
+    
+    // Navigate to next step
     if (currentStep < totalSteps) {
-      navigate(`/onboarding/${currentStep + 1}`);
+      const url = isReviewMode ? `/onboarding/${currentStep + 1}?review=true` : `/onboarding/${currentStep + 1}`;
+      navigate(url);
     }
   };
 
@@ -186,7 +231,11 @@ export default function OnboardingStepPage() {
         
         // Update progress to mark this step as completed
         await updateOnboardingProgress(currentStep);
-        setLatestCompletedStep(currentStep);
+        
+        // Refetch progress to synchronize UI state with server
+        await refetchProgress();
+        
+        console.log('✅ Step verification and progress update completed');
       } else {
         throw new Error(verificationResult.message || 'Verification failed');
       }
@@ -227,8 +276,8 @@ export default function OnboardingStepPage() {
 
   return (
     <>
-      {/* Show completion screen if onboarding is completed */}
-      {isCompleted ? (
+      {/* Show completion screen if onboarding is completed or accessing complete route */}
+      {(isCompleted || isCompleteRoute) ? (
         <OnboardingCompleteScreen 
           challengeTitle="NoCodeJam Onboarding"
           totalSteps={totalSteps}
@@ -456,33 +505,57 @@ export default function OnboardingStepPage() {
                 Step {currentStep} of {totalSteps}
               </div>
 
-              {/* Next/Verify Button */}
-              <Button
-                onClick={handleNextOrVerify}
-                disabled={
-                  currentStep === totalSteps || 
-                  (currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationCode.trim() && !verificationSuccess) ||
-                  verificationLoading
-                }
-                className="flex items-center space-x-2"
-              >
-                {verificationLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Verifying...</span>
+              {/* Exit Review Mode Button (only in review mode on last step) */}
+              {isReviewMode && currentStep === totalSteps ? (
+                <Button
+                  onClick={() => navigate('/onboarding/complete')}
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                >
+                  <span>Exit Review</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : isReviewMode ? (
+                /* Next Button in Review Mode */
+                <Button
+                  onClick={() => navigate(`/onboarding/${currentStep + 1}?review=true`)}
+                  className="flex items-center space-x-2"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                /* Next/Verify Button */
+                <Button
+                  onClick={handleNextOrVerify}
+                  disabled={
+                    (currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationCode.trim() && !verificationSuccess) ||
+                    verificationLoading
+                  }
+                  className="flex items-center space-x-2"
+                >
+                  {verificationLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Verifying...</span>
+                    </>
+                  ) : currentStep === totalSteps ? (
+                    <>
+                      <span>Complete Onboarding</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  ) : currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationSuccess ? (
+                    <>
+                      <span>Verify</span>
+                      <ChevronRight className="w-4 h-4" />
                   </>
-                ) : currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationSuccess ? (
-                  <>
-                    <span>Verify</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </>
-                ) : (
-                  <>
-                    <span>Next</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </>
-                )}
-              </Button>
+                  ) : (
+                    <>
+                      <span>Next</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* Additional Footer Info */}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Trophy, Rocket, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -13,6 +13,7 @@ export function OnboardingCompleteScreen({
   challengeTitle = 'NoCodeJam Onboarding',
   totalSteps = 3 
 }: OnboardingCompleteScreenProps) {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
@@ -91,25 +92,31 @@ export function OnboardingCompleteScreen({
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
-              <Button asChild className="w-full sm:w-44 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" size="lg">
-                <Link to="/onboarding/1" className="flex items-center justify-center space-x-2">
-                  <ArrowLeft className="w-5 h-5" />
-                  <span>Review Steps</span>
-                </Link>
+              <Button 
+                onClick={() => navigate('/onboarding/1?review=true')}
+                className="w-full sm:w-44 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white flex items-center justify-center space-x-2"
+                size="lg"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Review Steps</span>
               </Button>
               
-              <Button asChild className="w-full sm:w-48 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" size="lg">
-                <Link to="/challenges" className="flex items-center justify-center space-x-2">
-                  <Rocket className="w-5 h-5" />
-                  <span>Browse More Challenges</span>
-                </Link>
+              <Button 
+                onClick={() => navigate('/challenges')}
+                className="w-full sm:w-48 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white flex items-center justify-center space-x-2"
+                size="lg"
+              >
+                <Rocket className="w-5 h-5" />
+                <span>Browse More Challenges</span>
               </Button>
               
-              <Button asChild className="w-full sm:w-44 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" size="lg">
-                <Link to="/dashboard" className="flex items-center justify-center space-x-2">
-                  <span>Go to Dashboard</span>
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
+              <Button 
+                onClick={() => navigate('/dashboard')}
+                className="w-full sm:w-44 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white flex items-center justify-center space-x-2"
+                size="lg"
+              >
+                <span>Go to Dashboard</span>
+                <ArrowRight className="w-5 h-5" />
               </Button>
             </div>
 
