@@ -155,25 +155,25 @@ export function Dashboard() {
           <div className="space-y-4 sm:space-y-6">
             {/* Profile Card */}
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <CardTitle className="text-lg sm:text-xl">Profile</CardTitle>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex flex-col items-center text-center space-y-3">
                   <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
                     <AvatarImage src={user.avatar} alt={user.username} />
                     <AvatarFallback className="text-lg sm:text-xl">
                       {user.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
+                  <div className="space-y-1">
                     <h3 className="font-bold text-base sm:text-lg">{user.username}</h3>
                     <p className="text-sm sm:text-base text-gray-600">{user.email}</p>
                     {user.bio && (
-                      <p className="text-xs sm:text-sm text-gray-500 mt-2">{user.bio}</p>
+                      <p className="text-xs sm:text-sm text-gray-500 mt-1">{user.bio}</p>
                     )}
                     {user.githubUsername && (
-                      <div className="flex items-center justify-center space-x-1 mt-2 text-xs sm:text-sm text-gray-600">
+                      <div className="flex items-center justify-center space-x-1 mt-1 text-xs sm:text-sm text-gray-600">
                         <Github className="w-4 h-4" />
                         <span>{user.githubUsername}</span>
                       </div>
