@@ -7,6 +7,7 @@ import { OnboardingSubmissionForm } from '@/components/OnboardingSubmissionForm'
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { getOnboardingProgress, updateOnboardingProgress } from '@/services/onboardingService';
 
 interface OnboardingStep {
   id: number;
@@ -40,13 +41,7 @@ export default function OnboardingStepPage() {
   const [completionError, setCompletionError] = useState<string | null>(null);
   
   // State for progress tracking
-  const [userProgress, setUserProgress] = useState<{
-    completedStepIds: number[];
-    allSubmittedStepIds: number[];
-    highestCompletedStep: number;
-    currentStepNumber: number;
-    challengeId: number;
-  } | null>(null);
+  const [latestCompletedStep, setLatestCompletedStep] = useState<number>(0);
   const [progressLoading, setProgressLoading] = useState(true);
   
   // Parse the step number from the URL
@@ -56,15 +51,15 @@ export default function OnboardingStepPage() {
   // Find the current step data
   const currentStepData = steps.find(s => s.step_number === currentStep);
   
-  // Check if current step is already completed
-  const isCurrentStepCompleted = userProgress?.completedStepIds.includes(currentStepData?.id || 0) || false;
+  // Calculate current step number based on latest completed step
+  const currentStepNumber = latestCompletedStep + 1;
   
-  // Check if current step has been submitted (but may not be completed yet)
-  const isCurrentStepSubmitted = userProgress?.allSubmittedStepIds.includes(currentStepData?.id || 0) || false;
+  // Check if current step is already completed
+  const isCurrentStepCompleted = currentStep <= latestCompletedStep;
   
   // Check if we're on the last step and all steps are completed
   const isLastStep = currentStep === totalSteps;
-  const allStepsCompleted = userProgress?.completedStepIds.length === totalSteps;
+  const allStepsCompleted = latestCompletedStep >= totalSteps;
 
   // Fetch onboarding steps data
   useEffect(() => {
@@ -92,12 +87,8 @@ export default function OnboardingStepPage() {
               Authorization: `Bearer ${session.access_token}`,
             },
           }),
-          // Fetch user progress
-          supabase.functions.invoke('get-onboarding-progress', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          })
+          // Fetch user progress using new service
+          getOnboardingProgress()
         ]);
 
         // Handle steps response
@@ -113,36 +104,27 @@ export default function OnboardingStepPage() {
         setSteps(stepsData);
 
         // Handle progress response
-        if (progressResponse.error) {
-          console.warn('Failed to fetch progress:', progressResponse.error);
-          // Don't throw here - progress is optional
-        } else if (progressResponse.data?.error) {
-          console.warn('Progress error:', progressResponse.data.error);
-        } else {
-          const progressData = progressResponse.data;
-          setUserProgress({
-            completedStepIds: progressData.completedStepIds || [],
-            allSubmittedStepIds: progressData.allSubmittedStepIds || [],
-            highestCompletedStep: progressData.highestCompletedStep || 0,
-            currentStepNumber: progressData.currentStepNumber || 1,
-            challengeId: progressData.challengeId
-          });
+        if (progressResponse) {
+          setLatestCompletedStep(progressResponse.latest_completed_step);
+
+          // Check if user has completed all steps
+          const totalStepsFromData = stepsData.length;
+          if (progressResponse.latest_completed_step >= totalStepsFromData) {
+            // User has completed all steps, show completion screen
+            setIsCompleted(true);
+            setProgressLoading(false);
+            return;
+          }
 
           // Auto-redirect logic: if user is on a step they should skip
           const urlStep = parseInt(step || '1', 10);
-          const recommendedStep = progressData.currentStepNumber || 1;
-          
-          if (urlStep < recommendedStep && stepsData.length > 0) {
+          const recommendedStep = progressResponse.latest_completed_step + 1;
+
+          if (urlStep <= progressResponse.latest_completed_step && stepsData.length > 0) {
             // User is trying to access a step they've already completed
             // Redirect them to their current step
             navigate(`/onboarding/${recommendedStep}`, { replace: true });
             return; // Exit early since we're redirecting
-          }
-
-          // Check if current step is already completed for form state
-          const currentStepInData = stepsData.find((s: any) => s.step_number === urlStep);
-          if (currentStepInData && progressData.completedStepIds?.includes(currentStepInData.id)) {
-            // Step is already completed - form should show as submitted
           }
         }
 
@@ -157,6 +139,13 @@ export default function OnboardingStepPage() {
 
     fetchOnboardingData();
   }, [step, navigate]);
+
+  // Check for completion after data is loaded
+  useEffect(() => {
+    if (!loading && !progressLoading && steps.length > 0 && latestCompletedStep >= steps.length) {
+      setIsCompleted(true);
+    }
+  }, [loading, progressLoading, steps, latestCompletedStep]);
 
   // Navigation handlers
   const handlePrevious = () => {
@@ -173,51 +162,19 @@ export default function OnboardingStepPage() {
 
   // Submission handler
   const handleStepSubmission = async (submissionData: { url?: string; text?: string }) => {
-    if (!currentStepData || !userProgress) return;
+    if (!currentStepData) return;
     
     try {
       setIsSubmitting(true);
       setSubmissionError(null);
 
-      // Get the current user's session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // For the new system, we need to verify the code first
+      // This is a placeholder - we'll update this when we implement the verification
+      console.log('Step submitted successfully:', submissionData);
       
-      if (sessionError || !session) {
-        throw new Error('Authentication required');
-      }
-
-      // Call the Edge Function to submit the step
-      const { data, error: functionError } = await supabase.functions.invoke('submit-onboarding-step', {
-        body: {
-          challengeId: userProgress.challengeId,
-          stepId: currentStepData.id,
-          submissionData,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (functionError) {
-        throw new Error(functionError.message || 'Failed to submit step');
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      // Update local progress state - add to submitted steps immediately
-      setUserProgress(prev => prev ? {
-        ...prev,
-        // Add current step to submitted steps (if not already there)
-        allSubmittedStepIds: prev.allSubmittedStepIds.includes(currentStepData.id) 
-          ? prev.allSubmittedStepIds 
-          : [...prev.allSubmittedStepIds, currentStepData.id],
-        // Only update if this step moves us forward
-        currentStepNumber: Math.max(prev.currentStepNumber, currentStep)
-      } : null);
-      
-      console.log('Step submitted successfully:', data);
+      // Update progress to mark this step as completed
+      await updateOnboardingProgress(currentStep);
+      setLatestCompletedStep(currentStep);
       
       // Check if this was the last step - trigger completion
       if (currentStep === totalSteps) {
@@ -234,41 +191,14 @@ export default function OnboardingStepPage() {
 
   // Completion handler for when all steps are done
   const handleOnboardingCompletion = async () => {
-    if (!userProgress) return;
-    
     try {
       setIsCompleting(true);
       setCompletionError(null);
 
-      // Get the current user's session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        throw new Error('Authentication required');
-      }
-
-      // Call the completion Edge Function
-      const { data, error: functionError } = await supabase.functions.invoke('complete-onboarding', {
-        body: {
-          challengeId: userProgress.challengeId,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (functionError) {
-        throw new Error(functionError.message || 'Failed to complete onboarding');
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
       // Mark as completed
       setIsCompleted(true);
       
-      console.log('Onboarding completed successfully:', data);
+      console.log('Onboarding completed successfully');
       
     } catch (err) {
       console.error('Error completing onboarding:', err);
@@ -310,7 +240,7 @@ export default function OnboardingStepPage() {
           {/* Progress Bar - only show when data is loaded */}
           {!loading && totalSteps > 0 && (
             <OnboardingProgressBar 
-              currentStep={currentStep} 
+              latestCompletedStep={latestCompletedStep} 
               totalSteps={totalSteps} 
             />
           )}
@@ -434,7 +364,7 @@ export default function OnboardingStepPage() {
                         submissionLabel={currentStepData.submission_label}
                         onSubmit={handleStepSubmission}
                         isSubmitting={isSubmitting || isCompleting}
-                        isSubmitted={isCurrentStepSubmitted || isCurrentStepCompleted}
+                        isSubmitted={isCurrentStepCompleted}
                       />
                       
                       {/* Submission Error Display */}
@@ -513,7 +443,7 @@ export default function OnboardingStepPage() {
                 onClick={handleNext}
                 disabled={
                   currentStep === totalSteps || 
-                  (currentStepData?.submission_type && !(isCurrentStepSubmitted || isCurrentStepCompleted))
+                  (Boolean(currentStepData?.submission_type) && !isCurrentStepCompleted)
                 }
                 className="flex items-center space-x-2"
               >

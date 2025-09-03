@@ -30,9 +30,9 @@ vi.mock('react-router-dom', async () => {
 
 // Mock components
 vi.mock('../src/components/OnboardingProgressBar', () => ({
-  OnboardingProgressBar: ({ currentStep, totalSteps }: any) => (
+  OnboardingProgressBar: ({ latestCompletedStep, totalSteps }: any) => (
     <div data-testid="progress-bar">
-      Step {currentStep} of {totalSteps}
+      Step {latestCompletedStep + 1} of {totalSteps}
     </div>
   ),
 }));

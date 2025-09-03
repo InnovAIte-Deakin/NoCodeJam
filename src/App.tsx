@@ -19,6 +19,7 @@ import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import OnboardingStepPage from '@/pages/onboarding/[step]';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
+import TestingPage from '@/pages/TestingPage';
 import './App.css';
 
 function AppRoutes() {
@@ -42,6 +43,11 @@ function AppRoutes() {
       <Route path="/learn" element={
         <ProtectedRoute>
           <LearnPage />
+        </ProtectedRoute>
+      } />
+      <Route path="/testing" element={
+        <ProtectedRoute>
+          <TestingPage />
         </ProtectedRoute>
       } />
       <Route path="/challenges" element={
