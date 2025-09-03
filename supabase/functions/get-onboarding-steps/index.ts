@@ -27,7 +27,7 @@ serve(async (req) => {
     // Query onboarding steps ordered by step_number
     const { data, error } = await supabase
       .from('onboarding_steps')
-      .select('id, step_number, title, description, prompt_instructions, video_url, submission_type, submission_label, download_url, created_at, updated_at')
+      .select('*')
       .order('step_number', { ascending: true })
 
     if (error) {

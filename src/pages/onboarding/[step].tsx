@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { OnboardingProgressBar } from '@/components/OnboardingProgressBar';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { getOnboardingProgress, updateOnboardingProgress } from '@/services/onboardingService';
+import { getOnboardingProgress, updateOnboardingProgress, verifyOnboardingStep } from '@/services/onboardingService';
 
 interface OnboardingStep {
   id: number;
@@ -39,6 +40,12 @@ export default function OnboardingStepPage() {
   // State for progress tracking
   const [latestCompletedStep, setLatestCompletedStep] = useState<number>(0);
   const [progressLoading, setProgressLoading] = useState(true);
+  
+  // State for verification
+  const [verificationCode, setVerificationCode] = useState<string>('');
+  const [verificationLoading, setVerificationLoading] = useState<boolean>(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verificationSuccess, setVerificationSuccess] = useState<boolean>(false);
   
   // Parse the step number from the URL
   const currentStep = parseInt(step || '1', 10);
@@ -150,9 +157,45 @@ export default function OnboardingStepPage() {
     }
   };
 
-  const handleNext = () => {
+  const handleNextOrVerify = async () => {
+    // If step requires verification and isn't completed yet
+    if (currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationSuccess) {
+      await handleVerify();
+      return;
+    }
+    
+    // Otherwise, navigate to next step
     if (currentStep < totalSteps) {
       navigate(`/onboarding/${currentStep + 1}`);
+    }
+  };
+
+  // Verification handler
+  const handleVerify = async () => {
+    if (!verificationCode.trim()) return;
+    
+    try {
+      setVerificationLoading(true);
+      setVerificationError(null);
+      
+      // Call the actual verification API
+      const verificationResult = await verifyOnboardingStep(verificationCode);
+      
+      if (verificationResult.success) {
+        setVerificationSuccess(true);
+        
+        // Update progress to mark this step as completed
+        await updateOnboardingProgress(currentStep);
+        setLatestCompletedStep(currentStep);
+      } else {
+        throw new Error(verificationResult.message || 'Verification failed');
+      }
+      
+    } catch (err) {
+      console.error('Verification error:', err);
+      setVerificationError(err instanceof Error ? err.message : 'Verification failed');
+    } finally {
+      setVerificationLoading(false);
     }
   };
 
@@ -339,7 +382,40 @@ export default function OnboardingStepPage() {
                           </a>
                         </div>
                       )}
-                      {/* Verification Form will go here in a future step */}
+
+                      {/* Verification Form */}
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="verification-code" className="block text-sm font-medium text-gray-700 mb-2">
+                            Verification Code
+                          </label>
+                          <Input
+                            id="verification-code"
+                            type="text"
+                            placeholder="Enter your verification code"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                            onFocus={() => setVerificationError(null)}
+                            className={`w-full ${verificationError ? 'border-red-500 focus:border-red-500' : ''}`}
+                            disabled={verificationLoading}
+                          />
+                          {verificationError && (
+                            <p className="mt-1 text-sm text-red-600">{verificationError}</p>
+                          )}
+                        </div>
+
+                        {/* Success State */}
+                        {verificationSuccess && (
+                          <div className="flex items-center justify-center p-4 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="flex items-center space-x-2 text-green-700">
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="font-medium">Verification Successful!</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -380,17 +456,32 @@ export default function OnboardingStepPage() {
                 Step {currentStep} of {totalSteps}
               </div>
 
-              {/* Next Button */}
+              {/* Next/Verify Button */}
               <Button
-                onClick={handleNext}
+                onClick={handleNextOrVerify}
                 disabled={
                   currentStep === totalSteps || 
-                  (Boolean(currentStepData?.submission_type) && !isCurrentStepCompleted)
+                  (currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationCode.trim() && !verificationSuccess) ||
+                  verificationLoading
                 }
                 className="flex items-center space-x-2"
               >
-                <span>Next</span>
-                <ChevronRight className="w-4 h-4" />
+                {verificationLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Verifying...</span>
+                  </>
+                ) : currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationSuccess ? (
+                  <>
+                    <span>Verify</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                ) : (
+                  <>
+                    <span>Next</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
               </Button>
             </div>
 
