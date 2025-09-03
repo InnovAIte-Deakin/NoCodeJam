@@ -1,32 +1,45 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
-};
-serve(async (req)=>{
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: corsHeaders
-    });
+    return new Response('ok', { headers: corsHeaders })
   }
+
+  // Only allow GET requests
+  if (req.method !== 'GET') {
+    return new Response(
+      JSON.stringify({ error: 'Method not allowed' }),
+      { 
+        status: 405,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      }
+    )
+  }
+
   try {
-    console.log('Starting get-onboarding-progress function');
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
-    const authHeader = req.headers.get('Authorization');
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    
+    // Get authorization header
+    const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
-      console.log('No authorization header found');
-      return new Response(JSON.stringify({
-        error: 'Authorization header required'
-      }), {
-        status: 401,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
+      return new Response(
+        JSON.stringify({ error: 'Authorization header required' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
-      });
+      )
     }
+
     const supabase = createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
         autoRefreshToken: false,
@@ -37,94 +50,135 @@ serve(async (req)=>{
           Authorization: authHeader
         }
       }
-    });
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    })
+
+    // Get the authenticated user
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
     if (authError || !user) {
-      console.log('Auth error:', authError);
-      return new Response(JSON.stringify({
-        error: 'Authentication failed',
-        details: authError?.message
-      }), {
-        status: 401,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
+      return new Response(
+        JSON.stringify({ error: 'Authentication failed' }),
+        { 
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
-      });
+      )
     }
-    console.log('User found:', user.id);
 
-    // First, let's check if the user exists in the users table
-    const { data: existingUser, error: checkError } = await supabase
-      .from('users')
-      .select('id, latest_completed_step')
-      .eq('id', user.id)
-      .maybeSingle();
+    // Get the onboarding challenge ID
+    // For now, we'll assume there's a challenge with a specific type or name for onboarding
+    // You may need to adjust this query based on your actual challenge structure
+    let { data: challengeData, error: challengeError } = await supabase
+      .from('challenges')
+      .select('id')
+      .eq('challenge_type', 'onboarding')
+      .single()
 
-    console.log('Existing user check:', { existingUser, checkError });
+    if (challengeError) {
+      // If no specific onboarding challenge type, try to get the first challenge as fallback
+      const { data: fallbackChallenge, error: fallbackError } = await supabase
+        .from('challenges')
+        .select('id')
+        .limit(1)
+        .single()
 
-    // If user doesn't exist, create a record with default values
-    if (!existingUser) {
-      console.log('User not found in users table, creating new record...');
-      const { data: newUser, error: insertError } = await supabase
-        .from('users')
-        .insert({
-          id: user.id,
-          latest_completed_step: 0,
-          // Add other default fields if needed
-        })
-        .select('latest_completed_step')
-        .single();
-
-      if (insertError) {
-        console.log('Error creating user record:', insertError);
-        return new Response(JSON.stringify({
-          error: 'Failed to initialize user record',
-          details: insertError.message
-        }), {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json'
+      if (fallbackError || !fallbackChallenge) {
+        return new Response(
+          JSON.stringify({ 
+            error: 'Onboarding challenge not found',
+            details: challengeError?.message || 'No challenges available'
+          }),
+          { 
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
           }
-        });
+        )
       }
-
-      console.log('Created new user record:', newUser);
-      return new Response(JSON.stringify({
-        latest_completed_step: newUser.latest_completed_step
-      }), {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          'Content-Type': 'application/json'
-        }
-      });
+      
+      challengeData = fallbackChallenge
     }
 
-    // User exists, return their progress
-    console.log('Latest completed step:', existingUser.latest_completed_step);
+    // Query user's onboarding submissions (both pending and approved)
+    const { data: submissions, error: submissionsError } = await supabase
+      .from('submissions')
+      .select(`
+        id,
+        onboarding_step_id,
+        status,
+        created_at,
+        onboarding_steps (
+          id,
+          step_number,
+          title
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('challenge_id', challengeData.id)
+      .in('status', ['pending', 'approved'])
+      .not('onboarding_step_id', 'is', null)
+      .order('created_at', { ascending: false })
 
-    return new Response(JSON.stringify({
-      latest_completed_step: existingUser.latest_completed_step
-    }), {
-      status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
+    if (submissionsError) {
+      console.error('Database error:', submissionsError)
+      return new Response(
+        JSON.stringify({ 
+          error: 'Failed to fetch onboarding progress',
+          details: submissionsError.message 
+        }),
+        { 
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Process submissions to get step information
+    const completedSteps = submissions?.map(submission => ({
+      stepId: submission.onboarding_step_id,
+      stepNumber: submission.onboarding_steps?.step_number,
+      stepTitle: submission.onboarding_steps?.title,
+      submittedAt: submission.created_at,
+      status: submission.status
+    })).filter(step => step.stepNumber !== null) || []
+
+    // Find the highest submitted step number
+    const highestSubmittedStep = completedSteps.length > 0 
+      ? Math.max(...completedSteps.map(step => step.stepNumber))
+      : 0
+
+    // The current step is the one after the highest submitted step
+    const currentStepNumber = highestSubmittedStep + 1
+
+    // Get list of submitted step IDs for easy lookup
+    const submittedStepIds = completedSteps.map(step => step.stepId)
+
+    // Return successful response
+    return new Response(
+      JSON.stringify({ 
+        success: true,
+        challengeId: challengeData.id,
+        submittedSteps: completedSteps,
+        submittedStepIds,
+        highestSubmittedStep,
+        currentStepNumber,
+        totalSubmittedSteps: completedSteps.length
+      }),
+      { 
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    });
+    )
+
   } catch (error) {
-    console.error('Unexpected error:', error);
-    return new Response(JSON.stringify({
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }), {
-      status: 500,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json'
+    console.error('Unexpected error:', error)
+    return new Response(
+      JSON.stringify({ 
+        error: 'Internal server error',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }),
+      { 
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       }
-    });
+    )
   }
-});
+})

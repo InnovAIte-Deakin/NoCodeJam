@@ -33,9 +33,9 @@ vi.mock('@/lib/supabaseClient', () => ({
 
 // Mock the OnboardingProgressBar component
 vi.mock('@/components/OnboardingProgressBar', () => ({
-  OnboardingProgressBar: ({ latestCompletedStep, totalSteps }: { latestCompletedStep: number; totalSteps: number }) => (
+  OnboardingProgressBar: ({ currentStep, totalSteps }: { currentStep: number; totalSteps: number }) => (
     <div data-testid="progress-bar">
-      Progress: {latestCompletedStep}/{totalSteps}
+      Progress: {currentStep}/{totalSteps}
     </div>
   ),
 }));

@@ -1,13 +1,12 @@
 import React from 'react';
 
 interface OnboardingProgressBarProps {
-  latestCompletedStep: number;
+  currentStep: number;
   totalSteps: number;
 }
 
-export function OnboardingProgressBar({ latestCompletedStep, totalSteps }: OnboardingProgressBarProps) {
-  const progressPercentage = Math.min((latestCompletedStep / totalSteps) * 100, 100);
-  const currentStep = latestCompletedStep + 1;
+export function OnboardingProgressBar({ currentStep, totalSteps }: OnboardingProgressBarProps) {
+  const progressPercentage = Math.min((currentStep / totalSteps) * 100, 100);
 
   return (
     <div className="w-full max-w-md mx-auto">
@@ -25,10 +24,10 @@ export function OnboardingProgressBar({ latestCompletedStep, totalSteps }: Onboa
           className="bg-gradient-to-r from-purple-500 to-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out"
           style={{ width: `${progressPercentage}%` }}
           role="progressbar"
-          aria-valuenow={latestCompletedStep}
-          aria-valuemin={0}
+          aria-valuenow={currentStep}
+          aria-valuemin={1}
           aria-valuemax={totalSteps}
-          aria-label={`Completed ${latestCompletedStep} of ${totalSteps} steps`}
+          aria-label={`Step ${currentStep} of ${totalSteps}`}
         />
       </div>
       
@@ -36,7 +35,7 @@ export function OnboardingProgressBar({ latestCompletedStep, totalSteps }: Onboa
       <div className="flex justify-between items-center">
         {Array.from({ length: totalSteps }, (_, index) => {
           const stepNumber = index + 1;
-          const isCompleted = stepNumber <= latestCompletedStep;
+          const isCompleted = stepNumber < currentStep;
           const isCurrent = stepNumber === currentStep;
           
           return (
