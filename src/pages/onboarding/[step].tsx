@@ -3,9 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { OnboardingProgressBar } from '@/components/OnboardingProgressBar';
-import { OnboardingSubmissionForm } from '@/components/OnboardingSubmissionForm';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { getOnboardingProgress, updateOnboardingProgress } from '@/services/onboardingService';
 
@@ -18,6 +17,7 @@ interface OnboardingStep {
   video_url: string | null;
   submission_type: 'url' | 'text' | null;
   submission_label: string | null;
+  download_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -30,10 +30,6 @@ export default function OnboardingStepPage() {
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // State for submission handling
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionError, setSubmissionError] = useState<string | null>(null);
   
   // State for completion
   const [isCompleting, setIsCompleting] = useState(false);
@@ -157,35 +153,6 @@ export default function OnboardingStepPage() {
   const handleNext = () => {
     if (currentStep < totalSteps) {
       navigate(`/onboarding/${currentStep + 1}`);
-    }
-  };
-
-  // Submission handler
-  const handleStepSubmission = async (submissionData: { url?: string; text?: string }) => {
-    if (!currentStepData) return;
-    
-    try {
-      setIsSubmitting(true);
-      setSubmissionError(null);
-
-      // For the new system, we need to verify the code first
-      // This is a placeholder - we'll update this when we implement the verification
-      console.log('Step submitted successfully:', submissionData);
-      
-      // Update progress to mark this step as completed
-      await updateOnboardingProgress(currentStep);
-      setLatestCompletedStep(currentStep);
-      
-      // Check if this was the last step - trigger completion
-      if (currentStep === totalSteps) {
-        await handleOnboardingCompletion();
-      }
-      
-    } catch (err) {
-      console.error('Error submitting step:', err);
-      setSubmissionError(err instanceof Error ? err.message : 'An unexpected error occurred');
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -356,53 +323,28 @@ export default function OnboardingStepPage() {
                     </div>
                   )}
 
-                  {/* Submission Form */}
-                  {currentStepData.submission_type && currentStepData.submission_label && (
+                  {/* New structure for submission/verification */}
+                  {currentStepData.submission_type === 'text' && (
                     <div className="mb-6">
-                      <OnboardingSubmissionForm
-                        submissionType={currentStepData.submission_type}
-                        submissionLabel={currentStepData.submission_label}
-                        onSubmit={handleStepSubmission}
-                        isSubmitting={isSubmitting || isCompleting}
-                        isSubmitted={isCurrentStepCompleted}
-                      />
-                      
-                      {/* Submission Error Display */}
-                      {submissionError && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                          <div className="flex items-center space-x-2 text-red-600">
-                            <AlertCircle className="w-5 h-5" />
-                            <span className="font-medium">Submission Error</span>
-                          </div>
-                          <p className="text-red-700 text-sm mt-1">{submissionError}</p>
+                      {/* Download Button */}
+                      {currentStepData.download_url && (
+                        <div className="mb-4">
+                          <a
+                            href={currentStepData.download_url}
+                            download
+                            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download Challenge Files
+                          </a>
                         </div>
                       )}
-                      
-                      {/* Completion Error Display */}
-                      {completionError && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                          <div className="flex items-center space-x-2 text-red-600">
-                            <AlertCircle className="w-5 h-5" />
-                            <span className="font-medium">Completion Error</span>
-                          </div>
-                          <p className="text-red-700 text-sm mt-1">{completionError}</p>
-                        </div>
-                      )}
-                      
-                      {/* Completion Loading Display */}
-                      {isCompleting && (
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex items-center space-x-2 text-blue-600">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span className="font-medium">Completing Onboarding...</span>
-                          </div>
-                          <p className="text-blue-700 text-sm mt-1">
-                            Please wait while we finalize your onboarding submission.
-                          </p>
-                        </div>
-                      )}
+                      {/* Verification Form will go here in a future step */}
                     </div>
                   )}
+
+                  {/* Note: We don't need a special case for submission_type === null, 
+                      because the main "Next" button in the footer already handles navigation for view-only steps. */}
 
                   {/* Step Indicator */}
                   <div className="text-center">
