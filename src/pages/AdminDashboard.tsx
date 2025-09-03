@@ -26,6 +26,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 export function AdminDashboard() {
   const [newChallenge, setNewChallenge] = useState({
@@ -267,6 +275,8 @@ export function AdminDashboard() {
 
   // Step 5: Challenge management state
   const [deletingChallengeId, setDeletingChallengeId] = useState<string | null>(null);
+  const [editingChallenge, setEditingChallenge] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -391,6 +401,89 @@ export function AdminDashboard() {
 
     // Refresh challenges list
     refreshChallenges();
+  };
+
+  // Edit challenge functions
+  const handleEditChallenge = (challenge: any) => {
+    setEditingChallenge({
+      id: challenge.id,
+      title: challenge.title,
+      description: challenge.description,
+      difficulty: challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1),
+      xpReward: challenge.xp_reward,
+      imageUrl: challenge.image || '',
+      requirements: challenge.requirements ? challenge.requirements.split('; ').filter((r: string) => r.trim()) : ['']
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateChallenge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingChallenge.title || !editingChallenge.description) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('challenges')
+      .update({
+        title: editingChallenge.title,
+        description: editingChallenge.description,
+        difficulty: editingChallenge.difficulty.toLowerCase(),
+        xp_reward: editingChallenge.xpReward,
+        image: editingChallenge.imageUrl,
+        requirements: editingChallenge.requirements.join('; ')
+      })
+      .eq('id', editingChallenge.id);
+
+    if (error) {
+      console.error('Update challenge error:', error);
+      toast({
+        title: "Failed to update challenge",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Challenge updated",
+      description: "The challenge has been successfully updated.",
+    });
+
+    setIsEditDialogOpen(false);
+    setEditingChallenge(null);
+    refreshChallenges();
+  };
+
+  const updateEditingRequirement = (index: number, value: string) => {
+    const updated = [...editingChallenge.requirements];
+    updated[index] = value;
+    setEditingChallenge({
+      ...editingChallenge,
+      requirements: updated
+    });
+  };
+
+  const addEditingRequirement = () => {
+    setEditingChallenge({
+      ...editingChallenge,
+      requirements: [...editingChallenge.requirements, '']
+    });
+  };
+
+  const removeEditingRequirement = (index: number) => {
+    if (editingChallenge.requirements.length > 1) {
+      const updated = editingChallenge.requirements.filter((_: string, i: number) => i !== index);
+      setEditingChallenge({
+        ...editingChallenge,
+        requirements: updated
+      });
+    }
   };
 
   return (
@@ -693,13 +786,7 @@ export function AdminDashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                // TODO: Implement edit functionality
-                                toast({
-                                  title: "Edit functionality",
-                                  description: "Edit functionality will be implemented soon.",
-                                });
-                              }}
+                              onClick={() => handleEditChallenge(challenge)}
                             >
                               <Edit className="w-4 h-4 mr-1" />
                               Edit
@@ -736,6 +823,148 @@ export function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Edit Challenge Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Challenge</DialogTitle>
+                <DialogDescription>
+                  Update the challenge details below
+                </DialogDescription>
+              </DialogHeader>
+              {editingChallenge && (
+                <form onSubmit={handleUpdateChallenge} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-title">Challenge Title</Label>
+                      <Input
+                        id="edit-title"
+                        value={editingChallenge.title}
+                        onChange={(e) => setEditingChallenge({...editingChallenge, title: e.target.value})}
+                        placeholder="Enter challenge title"
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-imageUrl">Image URL</Label>
+                      <Input
+                        id="edit-imageUrl"
+                        type="url"
+                        value={editingChallenge.imageUrl}
+                        onChange={(e) => setEditingChallenge({...editingChallenge, imageUrl: e.target.value})}
+                        placeholder="https://example.com/image.jpg"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-description">Description</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={editingChallenge.description}
+                      onChange={(e) => setEditingChallenge({...editingChallenge, description: e.target.value})}
+                      placeholder="Describe the challenge and what users need to build"
+                      rows={4}
+                      required
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-difficulty">Difficulty</Label>
+                      <Select
+                        value={editingChallenge.difficulty}
+                        onValueChange={(value: 'Beginner' | 'Intermediate' | 'Expert') =>
+                          setEditingChallenge({...editingChallenge, difficulty: value})
+                        }
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Beginner">Beginner</SelectItem>
+                          <SelectItem value="Intermediate">Intermediate</SelectItem>
+                          <SelectItem value="Expert">Expert</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-xpReward">XP Reward</Label>
+                      <Input
+                        id="edit-xpReward"
+                        type="number"
+                        min="50"
+                        max="1000"
+                        step="50"
+                        value={editingChallenge.xpReward}
+                        onChange={(e) => setEditingChallenge({...editingChallenge, xpReward: parseInt(e.target.value)})}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Requirements</Label>
+                    <div className="space-y-2 mt-2">
+                      {editingChallenge.requirements.map((req: string, index: number) => (
+                        <div key={index} className="flex space-x-2">
+                          <Input
+                            value={req}
+                            onChange={(e) => updateEditingRequirement(index, e.target.value)}
+                            placeholder={`Requirement ${index + 1}`}
+                          />
+                          {editingChallenge.requirements.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeEditingRequirement(index)}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addEditingRequirement}
+                        className="mt-2 text-sm border-[#30363d] bg-[#161b22] hover:bg-[#23272e] text-[#c9d1d9]"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Requirement
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditDialogOpen(false);
+                        setEditingChallenge(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-gradient-to-r from-purple-700 to-blue-700 text-white shadow-md hover:from-purple-600 hover:to-blue-600"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Update Challenge
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
 
           {/* Manage Users */}
           <TabsContent value="users">
