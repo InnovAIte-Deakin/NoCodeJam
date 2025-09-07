@@ -8,8 +8,10 @@ export interface UpdateProgressRequest {
   completed_step: number;
 }
 
+
 export interface VerifyStepRequest {
   code: string;
+  challengeId: string;
 }
 
 export interface VerifyStepResponse {
@@ -74,31 +76,75 @@ export async function updateOnboardingProgress(completed_step: number): Promise<
  * @param code The verification code to submit
  * @returns Promise<VerifyStepResponse>
  */
-export async function verifyOnboardingStep(code: string): Promise<VerifyStepResponse> {
+
+export async function verifyOnboardingStep(code: string, challengeId: string): Promise<VerifyStepResponse> {
   try {
     if (!code || typeof code !== 'string' || code.trim().length === 0) {
       throw new Error('Invalid code: must be a non-empty string');
     }
+    if (!challengeId || typeof challengeId !== 'string' || challengeId.trim().length === 0) {
+      throw new Error('Invalid challengeId: must be a non-empty string');
+    }
 
-    const { data, error } = await supabase.functions.invoke('verify', {
-      body: { code: code.trim() }
+    const endpoint = 'verify';
+    const requestBody = { code: code.trim(), challengeId: challengeId.trim() };
+    console.log(`[verifyOnboardingStep] Invoking edge function: ${endpoint}`);
+    console.log('[verifyOnboardingStep] Request body:', requestBody);
+    const { data, error } = await supabase.functions.invoke(endpoint, {
+      body: requestBody
     });
+    console.log('[verifyOnboardingStep] Raw response:', data, error);
 
     if (error) {
-      console.error('Error verifying onboarding step:', error);
+      console.error(`[verifyOnboardingStep] Error from edge function (${endpoint}):`, error, data);
       return {
         success: false,
-        message: error.message || 'Verification failed'
+        message: (error && error.message) || (data && data.error) || 'Verification failed'
       };
     }
 
     // Assuming the verify function returns { success: boolean, message?: string }
     return data as VerifyStepResponse;
   } catch (error) {
-    console.error('verifyOnboardingStep error:', error);
+    console.error('[verifyOnboardingStep] Exception:', error);
     return {
       success: false,
       message: error instanceof Error ? error.message : 'Verification failed'
     };
+  }
+}
+
+/**
+ * Fetches the challengeId for a given onboarding step
+ * @param stepId The onboarding step's id
+ * @returns Promise<string>
+ */
+export async function getChallengeId(stepId: number): Promise<string> {
+  try {
+    const endpoint = 'get-challenge-id';
+    console.log(`[getChallengeId] Invoking edge function: ${endpoint}`);
+    console.log('[getChallengeId] Request body:', { step_id: stepId });
+    const { data, error } = await supabase.functions.invoke(endpoint, {
+      body: { step_id: stepId }
+    });
+    console.log('[getChallengeId] Raw response:', data, error);
+    if (error) {
+      console.error(`[getChallengeId] Error from edge function (${endpoint}):`, error, data);
+      throw new Error((error && error.message) || (data && data.error) || 'Failed to fetch challengeId');
+    }
+    if (!data || typeof data !== 'object') {
+      throw new Error('[getChallengeId] Response is not an object: ' + JSON.stringify(data));
+    }
+    if (!('challenge_id' in data)) {
+      throw new Error('[getChallengeId] challenge_id property missing: ' + JSON.stringify(data));
+    }
+    if (!data.challenge_id || typeof data.challenge_id !== 'string') {
+      throw new Error('[getChallengeId] challenge_id is empty or not a string: ' + JSON.stringify(data));
+    }
+    console.log('[getChallengeId] challenge_id:', data.challenge_id);
+    return data.challenge_id as string;
+  } catch (error) {
+    console.error('[getChallengeId] Exception:', error);
+    throw error;
   }
 }

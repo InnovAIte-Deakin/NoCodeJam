@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, Trophy, Home, List, Shield, Menu, GraduationCap } from 'lucide-react';
+import { LogOut, User, Trophy, Home, List, Shield, Menu, GraduationCap, Search } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,

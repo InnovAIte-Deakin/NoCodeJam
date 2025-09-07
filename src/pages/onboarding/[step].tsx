@@ -7,7 +7,7 @@ import { OnboardingProgressBar } from '@/components/OnboardingProgressBar';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { getOnboardingProgress, updateOnboardingProgress, verifyOnboardingStep } from '@/services/onboardingService';
+import { getOnboardingProgress, updateOnboardingProgress, verifyOnboardingStep, getChallengeId } from '@/services/onboardingService';
 
 interface OnboardingStep {
   id: number;
@@ -129,11 +129,16 @@ export default function OnboardingStepPage() {
           const urlStep = parseInt(step || '1', 10);
           const recommendedStep = progressResponse.latest_completed_step + 1;
 
-          if (urlStep <= progressResponse.latest_completed_step && stepsData.length > 0 && !isReviewMode) {
-            // User is trying to access a step they've already completed
-            // Redirect them to their current step
+          if (
+            urlStep <= progressResponse.latest_completed_step &&
+            stepsData.length > 0 &&
+            progressResponse.latest_completed_step >= totalStepsFromData &&
+            !isReviewMode
+          ) {
+            // User has completed all steps and is trying to access a previous step
+            // Redirect to review mode
             navigate(`/onboarding/${recommendedStep}?review=true`, { replace: true });
-            return; // Exit early since we're redirecting
+            return;
           }
         }
 
@@ -218,30 +223,38 @@ export default function OnboardingStepPage() {
   // Verification handler
   const handleVerify = async () => {
     if (!verificationCode.trim()) return;
-    
+    if (!currentStepData?.id) {
+      setVerificationError('Step data missing.');
+      return;
+    }
     try {
       setVerificationLoading(true);
       setVerificationError(null);
-      
-      // Call the actual verification API
-      const verificationResult = await verifyOnboardingStep(verificationCode);
-      
+
+      console.log('[handleVerify] Step ID:', currentStepData.id);
+      // Fetch challengeId for this step
+      const challengeId = await getChallengeId(currentStepData.id);
+      console.log('[handleVerify] challengeId:', challengeId);
+      // Call the actual verification API with code and challengeId
+      const verificationResult = await verifyOnboardingStep(verificationCode, challengeId);
+      console.log('[handleVerify] verificationResult:', verificationResult);
+
       if (verificationResult.success) {
         setVerificationSuccess(true);
-        
+
         // Update progress to mark this step as completed
         await updateOnboardingProgress(currentStep);
-        
+
         // Refetch progress to synchronize UI state with server
         await refetchProgress();
-        
+
         console.log('✅ Step verification and progress update completed');
       } else {
         throw new Error(verificationResult.message || 'Verification failed');
       }
-      
+
     } catch (err) {
-      console.error('Verification error:', err);
+      console.error('[handleVerify] Verification error:', err);
       setVerificationError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
       setVerificationLoading(false);
@@ -348,10 +361,25 @@ export default function OnboardingStepPage() {
                     Step {currentStep} doesn't exist. Please check the URL or go back to step 1.
                   </p>
                   <Button 
-                    onClick={() => navigate('/onboarding/1')} 
+                    onClick={async () => {
+                      try {
+                        const progress = await getOnboardingProgress();
+                        const nextStep = progress.latest_completed_step + 1;
+                        const maxStep = steps.length > 0 ? Math.max(...steps.map(s => s.step_number)) : 1;
+                        if (nextStep > maxStep) {
+                          // Show completion screen
+                          navigate('/onboarding/complete');
+                        } else {
+                          navigate(`/onboarding/${nextStep}`);
+                        }
+                      } catch (err) {
+                        console.error('Error fetching progress for navigation:', err);
+                        navigate('/onboarding/1');
+                      }
+                    }}
                     variant="outline"
                   >
-                    Go to Step 1
+                    Go to Next StepOk
                   </Button>
                 </div>
               ) : (
@@ -454,7 +482,7 @@ export default function OnboardingStepPage() {
                         </div>
 
                         {/* Success State */}
-                        {verificationSuccess && (
+                        {isCurrentStepCompleted && (
                           <div className="flex items-center justify-center p-4 bg-green-50 border border-green-200 rounded-lg">
                             <div className="flex items-center space-x-2 text-green-700">
                               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
