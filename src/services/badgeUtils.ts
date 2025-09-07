@@ -49,19 +49,49 @@ class BadgeUtils {
    * Get all badges for a specific user
    */
   static async getUserBadges(userId: string) {
-    console.log(`🏆 Fetching badges for user: ${userId}`);
+    console.log(`🏆 Getting badges for user: ${userId}`);
     try {
       const badges = await BadgeService.getUserBadges(userId);
       console.log(`✅ Found ${badges.length} badges:`, badges.map(b => b.name));
-      console.table(badges.map(b => ({
-        name: b.name,
-        icon: b.icon,
-        description: b.description,
-        earnedAt: b.unlockedAt.toLocaleDateString()
-      })));
       return badges;
     } catch (error) {
-      console.error('❌ Error fetching user badges:', error);
+      console.error('❌ Error getting user badges:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Debug database state
+   */
+  static async debugDatabase() {
+    console.log('🔍 Debugging database state...');
+    try {
+      await BadgeService.debugDatabaseState();
+      console.log('✅ Debug complete! Check console for details.');
+    } catch (error) {
+      console.error('❌ Error debugging database:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Test badge award for first user
+   */
+  static async testBadgeAward() {
+    console.log('🧪 Testing badge award...');
+    try {
+      // Get first user
+      const { supabase } = await import('../lib/supabaseClient');
+      const { data: users } = await supabase.from('users').select('id').limit(1);
+      
+      if (users && users.length > 0) {
+        await BadgeService.testBadgeAward(users[0].id);
+        console.log('✅ Test complete! Check console for details.');
+      } else {
+        console.log('❌ No users found to test with.');
+      }
+    } catch (error) {
+      console.error('❌ Error testing badge award:', error);
       throw error;
     }
   }
@@ -78,6 +108,20 @@ class BadgeUtils {
       return progress;
     } catch (error) {
       console.error('❌ Error fetching user progress:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Simple test to manually insert a badge
+   */
+  static async simpleTest() {
+    console.log('🧪 Running simple badge insert test...');
+    try {
+      await BadgeService.simpleTestBadgeInsert();
+      console.log('✅ Simple test complete! Check console for details.');
+    } catch (error) {
+      console.error('❌ Simple test failed:', error);
       throw error;
     }
   }
@@ -106,7 +150,7 @@ badgeUtils.getUserBadges('123e4567-e89b-12d3-a456-426614174000')
 
 // Make available globally for console access
 if (typeof window !== 'undefined') {
-  (window as any).badgeUtils = BadgeUtils;
+  (window as Window & typeof globalThis & { badgeUtils: typeof BadgeUtils }).badgeUtils = BadgeUtils;
 }
 
 export { BadgeUtils };

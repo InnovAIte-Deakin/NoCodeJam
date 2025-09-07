@@ -35,7 +35,17 @@ export interface UserProgress {
 // Predefined badge definitions based on requirements - matches database exactly
 export const BADGE_DEFINITIONS: BadgeDefinition[] = [
   {
-    id: '0ed6f802-dbff-48e7-8ee3-bbe3328818f4',
+    id: 'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+    name: 'Welcome Badge',
+    description: 'Awarded for signing up to the platform',
+    icon_url: '👋',
+    criteria: {
+      type: 'xp_earned',
+      value: 0 // Award to anyone with 0 or more XP (everyone)
+    }
+  },
+  {
+    id: 'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
     name: 'Novice',
     description: 'Complete your first challenge',
     icon_url: '🌟',
@@ -206,19 +216,32 @@ export class BadgeService {
    * Check which badges a user should earn based on their progress
    */
   static async checkEligibleBadges(userId: string): Promise<BadgeDefinition[]> {
+    console.log(`Checking eligible badges for user: ${userId}`);
+    
     const progress = await this.getUserProgress(userId);
+    console.log(`User progress:`, progress);
+    
     const eligibleBadges: BadgeDefinition[] = [];
 
     for (const badge of BADGE_DEFINITIONS) {
-      if (await this.checkBadgeCriteria(badge, progress)) {
+      console.log(`Checking badge: ${badge.name} (${badge.id})`);
+      
+      const meetsCriteria = await this.checkBadgeCriteria(badge, progress);
+      console.log(`Meets criteria for ${badge.name}: ${meetsCriteria}`);
+      
+      if (meetsCriteria) {
         // Check if user already has this badge
         const hasBadge = await this.userHasBadge(userId, badge.id);
+        console.log(`User already has ${badge.name}: ${hasBadge}`);
+        
         if (!hasBadge) {
+          console.log(`Adding ${badge.name} to eligible badges`);
           eligibleBadges.push(badge);
         }
       }
     }
 
+    console.log(`Total eligible badges: ${eligibleBadges.length}`, eligibleBadges.map(b => b.name));
     return eligibleBadges;
   }
 
@@ -227,24 +250,34 @@ export class BadgeService {
    */
   static async awardBadges(userId: string, badges: BadgeDefinition[]): Promise<void> {
     try {
+      console.log(`Attempting to award ${badges.length} badges to user ${userId}`);
+      
       for (const badge of badges) {
+        console.log(`Processing badge: ${badge.name} (${badge.id})`);
+        
         // First, ensure the badge exists in the badges table
         await this.ensureBadgeExists(badge);
+        console.log(`Badge ${badge.name} exists in badges table`);
 
         // Use the badge ID directly since we have the exact UUIDs from the database
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('user_badges')
           .insert({
             user_id: userId,
             badge_id: badge.id, // Direct use of UUID
             earned_at: new Date().toISOString()
-          });
+          })
+          .select();
 
-        if (error && !error.message.includes('duplicate')) {
-          console.error(`Error awarding badge ${badge.name} (${badge.id}):`, error);
-          throw error;
+        if (error) {
+          if (error.message.includes('duplicate')) {
+            console.log(`Badge ${badge.name} already awarded to user ${userId} (duplicate key)`);
+          } else {
+            console.error(`Error awarding badge ${badge.name} (${badge.id}):`, error);
+            throw error;
+          }
         } else {
-          console.log(`Successfully awarded badge ${badge.name} to user ${userId}`);
+          console.log(`Successfully awarded badge ${badge.name} to user ${userId}`, data);
         }
       }
     } catch (error) {
@@ -269,6 +302,194 @@ export class BadgeService {
     } catch (error) {
       console.error('Error processing user action:', error);
       return [];
+    }
+  }
+
+  /**
+   * Simple test to manually insert a badge for a user
+   */
+  static async simpleTestBadgeInsert(): Promise<void> {
+    try {
+      console.log('=== SIMPLE BADGE INSERT TEST ===');
+      
+      // Get first user
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, username')
+        .limit(1);
+      
+      if (usersError || !users || users.length === 0) {
+        console.error('No users found or error:', usersError);
+        return;
+      }
+      
+      const user = users[0];
+      console.log('Testing with user:', user);
+      
+      // Get the Welcome Badge
+      const welcomeBadge = BADGE_DEFINITIONS.find(b => b.name === 'Welcome Badge');
+      if (!welcomeBadge) {
+        console.error('Welcome badge not found');
+        return;
+      }
+      
+      console.log('Testing with badge:', welcomeBadge);
+      
+      // First, insert the badge into badges table
+      const { error: badgeInsertError } = await supabase
+        .from('badges')
+        .upsert({
+          id: welcomeBadge.id,
+          name: welcomeBadge.name,
+          description: welcomeBadge.description,
+          icon_url: welcomeBadge.icon_url,
+          criteria: JSON.stringify(welcomeBadge.criteria)
+        }, {
+          onConflict: 'id'
+        });
+      
+      if (badgeInsertError) {
+        console.error('Error inserting badge:', badgeInsertError);
+        return;
+      }
+      
+      console.log('Badge inserted/updated successfully');
+      
+      // Check if user already has this badge
+      const { data: existingBadge, error: checkError } = await supabase
+        .from('user_badges')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('badge_id', welcomeBadge.id)
+        .single();
+      
+      if (!checkError && existingBadge) {
+        console.log('User already has this badge:', existingBadge);
+        return;
+      }
+      
+      // Try to insert user_badge
+      const { data: insertResult, error: insertError } = await supabase
+        .from('user_badges')
+        .insert({
+          user_id: user.id,
+          badge_id: welcomeBadge.id,
+          earned_at: new Date().toISOString()
+        })
+        .select();
+      
+      if (insertError) {
+        console.error('Error inserting user badge:', insertError);
+        return;
+      }
+      
+      console.log('✅ SUCCESS! User badge inserted:', insertResult);
+      
+      // Verify it exists
+      const { data: verification, error: verifyError } = await supabase
+        .from('user_badges')
+        .select('*')
+        .eq('user_id', user.id);
+      
+      console.log('All user badges for this user:', verification);
+      
+    } catch (error) {
+      console.error('Test failed:', error);
+    }
+  }
+
+  /**
+   * Debug method to check database state
+   */
+  static async debugDatabaseState(): Promise<void> {
+    try {
+      console.log('=== DEBUG: Database State ===');
+      
+      // Check if badges table exists and has data
+      const { data: badges, error: badgesError } = await supabase
+        .from('badges')
+        .select('*');
+      
+      console.log('Badges table:', badges?.length || 0, 'badges found');
+      if (badgesError) console.error('Badges error:', badgesError);
+      
+      // Check if users table exists and has data
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, total_xp');
+      
+      console.log('Users table:', users?.length || 0, 'users found');
+      if (usersError) console.error('Users error:', usersError);
+      
+      // Check user_badges table
+      const { data: userBadges, error: userBadgesError } = await supabase
+        .from('user_badges')
+        .select('*');
+      
+      console.log('User badges table:', userBadges?.length || 0, 'records found');
+      if (userBadgesError) console.error('User badges error:', userBadgesError);
+      
+      // Check submissions
+      const { data: submissions, error: submissionsError } = await supabase
+        .from('submissions')
+        .select('id, user_id, status')
+        .eq('status', 'approved');
+      
+      console.log('Approved submissions:', submissions?.length || 0, 'found');
+      if (submissionsError) console.error('Submissions error:', submissionsError);
+      
+      console.log('=== END DEBUG ===');
+      
+    } catch (error) {
+      console.error('Debug database state error:', error);
+    }
+  }
+
+  /**
+   * Debug method to test badge awarding for a specific user
+   */
+  static async testBadgeAward(userId: string): Promise<void> {
+    try {
+      console.log(`Testing badge award for user: ${userId}`);
+      
+      // Try to award the first badge (Novice badge for completing first challenge)
+      const noviceBadge = BADGE_DEFINITIONS.find(b => b.name === 'Novice');
+      if (!noviceBadge) {
+        console.error('Novice badge not found');
+        return;
+      }
+      
+      console.log(`Attempting to award Novice badge:`, noviceBadge);
+      
+      // Check if user exists
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, username')
+        .eq('id', userId)
+        .single();
+        
+      if (userError) {
+        console.error('User not found:', userError);
+        return;
+      }
+      
+      console.log(`User found:`, user);
+      
+      // Check current user badges
+      const { data: currentBadges, error: badgesError } = await supabase
+        .from('user_badges')
+        .select('*')
+        .eq('user_id', userId);
+        
+      console.log(`Current user badges:`, currentBadges);
+      
+      // Try to award badge
+      await this.awardBadges(userId, [noviceBadge]);
+      
+      console.log(`Badge award completed`);
+      
+    } catch (error) {
+      console.error('Error in test badge award:', error);
     }
   }
 
@@ -372,10 +593,244 @@ export class BadgeService {
     }
   }
 
+  /**
+   * Get all badge definitions from database
+   */
+  static async getAllBadges(): Promise<BadgeDefinition[]> {
+    try {
+      const { data, error } = await supabase
+        .from('badges')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      return (data || []).map(badge => ({
+        id: badge.id,
+        name: badge.name,
+        description: badge.description,
+        icon_url: badge.icon_url,
+        criteria: typeof badge.criteria === 'string' ? JSON.parse(badge.criteria) : badge.criteria
+      }));
+    } catch (error) {
+      console.error('Error getting all badges:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Create a new badge
+   */
+  static async createBadge(badge: Omit<BadgeDefinition, 'id'>): Promise<BadgeDefinition> {
+    try {
+      // Validate badge data
+      this.validateBadgeData(badge);
+
+      const { data, error } = await supabase
+        .from('badges')
+        .insert({
+          name: badge.name,
+          description: badge.description,
+          icon_url: badge.icon_url,
+          criteria: JSON.stringify(badge.criteria)
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newBadge = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        icon_url: data.icon_url,
+        criteria: typeof data.criteria === 'string' ? JSON.parse(data.criteria) : data.criteria
+      };
+
+      console.log('Created new badge:', newBadge.name);
+      return newBadge;
+    } catch (error) {
+      console.error('Error creating badge:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update an existing badge
+   */
+  static async updateBadge(id: string, updates: Partial<Omit<BadgeDefinition, 'id'>>): Promise<BadgeDefinition> {
+    try {
+      // Validate updated data
+      if (updates.name || updates.description || updates.icon_url || updates.criteria) {
+        this.validateBadgeData(updates as BadgeDefinition);
+      }
+
+      const updateData: Record<string, unknown> = {};
+      if (updates.name) updateData.name = updates.name;
+      if (updates.description) updateData.description = updates.description;
+      if (updates.icon_url) updateData.icon_url = updates.icon_url;
+      if (updates.criteria) updateData.criteria = JSON.stringify(updates.criteria);
+
+      const { data, error } = await supabase
+        .from('badges')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const updatedBadge = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        icon_url: data.icon_url,
+        criteria: typeof data.criteria === 'string' ? JSON.parse(data.criteria) : data.criteria
+      };
+
+      console.log('Updated badge:', updatedBadge.name);
+      return updatedBadge;
+    } catch (error) {
+      console.error('Error updating badge:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a badge (with safety checks)
+   */
+  static async deleteBadge(id: string): Promise<void> {
+    try {
+      // Check if any users have earned this badge
+      const { data: userBadges, error: checkError } = await supabase
+        .from('user_badges')
+        .select('user_id')
+        .eq('badge_id', id)
+        .limit(1);
+
+      if (checkError) throw checkError;
+
+      if (userBadges && userBadges.length > 0) {
+        throw new Error('Cannot delete badge: Users have already earned this badge');
+      }
+
+      const { error } = await supabase
+        .from('badges')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      console.log('Deleted badge:', id);
+    } catch (error) {
+      console.error('Error deleting badge:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get count of users who have earned a specific badge
+   */
+  static async getBadgeUserCount(badgeId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('user_badges')
+        .select('*', { count: 'exact', head: true })
+        .eq('badge_id', badgeId);
+
+      if (error) throw error;
+      return count || 0;
+    } catch (error) {
+      console.error('Error getting badge user count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Validate badge data
+   */
+  private static validateBadgeData(badge: Partial<BadgeDefinition>): void {
+    if (badge.name && badge.name.trim().length === 0) {
+      throw new Error('Badge name is required');
+    }
+
+    if (badge.description && badge.description.trim().length === 0) {
+      throw new Error('Badge description is required');
+    }
+
+    if (badge.icon_url && badge.icon_url.trim().length === 0) {
+      throw new Error('Badge icon is required');
+    }
+
+    if (badge.criteria) {
+      const { criteria } = badge;
+      
+      if (!criteria.type) {
+        throw new Error('Badge criteria type is required');
+      }
+
+      if (typeof criteria.value !== 'number' || criteria.value <= 0) {
+        throw new Error('Badge criteria value must be a positive number');
+      }
+
+      // Validate specific criteria types
+      switch (criteria.type) {
+        case 'difficulty_master': {
+          if (!criteria.additional?.difficulty || criteria.additional.difficulty.length === 0) {
+            throw new Error('Difficulty master badges must specify difficulty levels');
+          }
+          const validDifficulties = ['Beginner', 'Intermediate', 'Expert'];
+          for (const diff of criteria.additional.difficulty) {
+            if (!validDifficulties.includes(diff)) {
+              throw new Error(`Invalid difficulty: ${diff}. Must be one of: ${validDifficulties.join(', ')}`);
+            }
+          }
+          break;
+        }
+
+        case 'streak': {
+          if (criteria.additional?.consecutiveDays && criteria.additional.consecutiveDays !== criteria.value) {
+            throw new Error('For streak badges, consecutiveDays should match the main value');
+          }
+          break;
+        }
+
+        case 'leaderboard_position': {
+          if (criteria.value > 100) {
+            throw new Error('Leaderboard position should be reasonable (1-100)');
+          }
+          break;
+        }
+
+        case 'xp_earned': {
+          if (criteria.value > 1000000) {
+            throw new Error('XP value should be reasonable (max 1,000,000)');
+          }
+          break;
+        }
+
+        case 'challenges_completed':
+        case 'expert_challenges': {
+          if (criteria.value > 1000) {
+            throw new Error('Challenge count should be reasonable (max 1000)');
+          }
+          break;
+        }
+      }
+    }
+  }
+
   // Private helper methods
   private static async checkBadgeCriteria(badge: BadgeDefinition, progress: UserProgress): Promise<boolean> {
+    console.log(`Checking criteria for ${badge.name}:`, badge.criteria, 'against progress:', progress);
+    
     switch (badge.criteria.type) {
-      case 'first_challenge':
+      case 'first_challenge': {
+        const result = progress.totalChallenges >= badge.criteria.value;
+        console.log(`First challenge check: ${progress.totalChallenges} >= ${badge.criteria.value} = ${result}`);
+        return result;
+      }
+        
       case 'challenges_completed':
         return progress.totalChallenges >= badge.criteria.value;
 
