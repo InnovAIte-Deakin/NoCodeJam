@@ -11,6 +11,9 @@ import { User, Github, Mail, Calendar, ExternalLink, Trophy } from 'lucide-react
 import { supabase } from '@/lib/supabaseClient';
 import { Link, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { BadgeService } from '@/services/badgeService';
+import type { Badge as BadgeType } from '@/types';
+import { BadgesCard } from '@/components/BadgesCard';
 
 export function ProfilePage() {
   const { user: currentUser, setUser } = useAuth();
@@ -26,6 +29,7 @@ export function ProfilePage() {
   const [completedChallenges, setCompletedChallenges] = useState(0);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
+  const [userBadges, setUserBadges] = useState<BadgeType[]>([]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -74,8 +78,19 @@ export function ProfilePage() {
         .select('id, title');
       setChallenges(challengesData || []);
     };
+    const fetchBadges = async () => {
+      if (user?.id) {
+        try {
+          const badges = await BadgeService.getUserBadges(user.id);
+          setUserBadges(badges);
+        } catch (error) {
+          console.error('Error fetching user badges:', error);
+        }
+      }
+    };
     fetchCompleted();
     fetchChallenges();
+    fetchBadges();
   }, [user]);
 
   const handleSave = async () => {
@@ -254,7 +269,7 @@ export function ProfilePage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Badges Earned</span>
-                    <span className="font-bold text-yellow-600">{(user?.badges?.length ?? 0)}</span>
+                    <span className="font-bold text-yellow-600">{userBadges.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-600">Account Type</span>
@@ -264,6 +279,30 @@ export function ProfilePage() {
                     <span className="text-gray-600">Challenges Completed</span>
                     <span className="font-bold text-green-600">{completedChallenges}</span>
                   </div>
+                  
+                  {/* Badges Preview */}
+                  {userBadges.length > 0 && (
+                    <div className="pt-2">
+                      <span className="text-muted-foreground text-sm">Recent Badges</span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {userBadges.slice(0, 5).map((badge) => (
+                          <div
+                            key={badge.id}
+                            className="flex items-center gap-1 bg-card border border-border px-2 py-1 rounded-md hover:border-primary/50 transition-colors"
+                            title={badge.description}
+                          >
+                            <span className="text-lg">{badge.icon}</span>
+                            <span className="text-xs font-medium text-foreground">{badge.name}</span>
+                          </div>
+                        ))}
+                        {userBadges.length > 5 && (
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            +{userBadges.length - 5} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -323,31 +362,7 @@ export function ProfilePage() {
               </CardContent>
             </Card>
             {/* Badges Section */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Badges</CardTitle>
-                <CardDescription>Your achievements and milestones</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-6">
-                {(user?.badges?.length ?? 0) > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {(user.badges || []).map((badge: any) => (
-                      <div key={badge.id} className="text-center p-2 sm:p-3 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
-                        <div className="text-xl sm:text-2xl mb-1 sm:mb-2">{badge.icon}</div>
-                        <div className="font-medium text-xs sm:text-sm text-gray-900">{badge.name}</div>
-                        <div className="text-xs text-gray-600 mt-1">{badge.description}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4 sm:py-6">
-                    <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-xs sm:text-sm text-gray-600">No badges yet</p>
-                    <p className="text-xs text-gray-500 mt-1">Complete challenges to earn your first badge!</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <BadgesCard />
           </div>
         </div>
       </div>
