@@ -134,6 +134,22 @@ export function AdminDashboard() {
       });
       return;
     }
+
+    // Badge awarding logic
+    try {
+      const { BadgeService } = await import('@/services/badgeService');
+      const newBadges = await BadgeService.processUserAction(submission.user_id);
+      if (newBadges && newBadges.length > 0) {
+        toast({
+          title: `User earned ${newBadges.length} badge${newBadges.length > 1 ? 's' : ''}!`,
+          description: newBadges.map(b => b.name).join(', '),
+        });
+      }
+    } catch (err) {
+      // Ignore badge errors for admin
+      console.error('Badge awarding error:', err);
+    }
+
     toast({
       title: "Submission approved",
       description: "The submission has been approved and the user has been awarded XP.",
