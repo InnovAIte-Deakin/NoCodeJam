@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { BadgeService } from '@/services/badgeService';
 import {
   CheckCircle,
   XCircle,
@@ -17,7 +18,8 @@ import {
   FileText,
   ExternalLink,
   Trash2,
-  Edit
+  Edit,
+  Award
 } from 'lucide-react';
 import {
   Select,
@@ -49,6 +51,10 @@ export function AdminDashboard() {
   const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+
+  // Badge management state
+  const [badgeProcessing, setBadgeProcessing] = useState(false);
+  const [badgeResults, setBadgeResults] = useState<{ userId: string; newBadges: any[] }[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -557,6 +563,9 @@ export function AdminDashboard() {
             <TabsTrigger value="manage-challenges" className="admin-tabs-trigger">
               Manage Challenges
             </TabsTrigger>
+            <TabsTrigger value="badges" className="admin-tabs-trigger">
+              Badge Management
+            </TabsTrigger>
             <TabsTrigger value="users" className="admin-tabs-trigger">
               Manage Users
             </TabsTrigger>
@@ -1033,6 +1042,152 @@ export function AdminDashboard() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Badge Management */}
+          <TabsContent value="badges">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="h-5 w-5" />
+                  Badge Management
+                </CardTitle>
+                <CardDescription>
+                  Retroactively award badges to users based on their current progress
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Process All Users</CardTitle>
+                      <CardDescription>
+                        Check all users and award badges based on their current progress
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <Button 
+                        onClick={async () => {
+                          setBadgeProcessing(true);
+                          try {
+                            const results = await BadgeService.processAllUsers();
+                            setBadgeResults(results);
+                            toast({
+                              title: "Badge processing complete",
+                              description: `${results.length} users received new badges`,
+                            });
+                          } catch (error) {
+                            toast({
+                              title: "Error processing badges",
+                              description: "Failed to process badges for all users",
+                              variant: "destructive",
+                            });
+                          } finally {
+                            setBadgeProcessing(false);
+                          }
+                        }}
+                        disabled={badgeProcessing}
+                        className="w-full"
+                      >
+                        {badgeProcessing ? 'Processing...' : 'Process All Users'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Badge Statistics</CardTitle>
+                      <CardDescription>
+                        Overview of badge awards and distribution
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>Total Badges Available:</span>
+                          <span className="font-medium">9</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Last Processing:</span>
+                          <span className="font-medium">
+                            {badgeResults.length > 0 ? 'Just completed' : 'Not yet run'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>Users Processed:</span>
+                          <span className="font-medium">{badgeResults.length}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Results Display */}
+                {badgeResults.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Processing Results</CardTitle>
+                      <CardDescription>
+                        Recent badge processing results
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {badgeResults.map((result, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                            <div>
+                              <span className="font-medium">User: {result.userId}</span>
+                              <div className="text-sm text-muted-foreground">
+                                {result.newBadges.length > 0 
+                                  ? `Awarded: ${result.newBadges.map(b => b.name).join(', ')}`
+                                  : 'No new badges'
+                                }
+                              </div>
+                            </div>
+                            <Badge variant={result.newBadges.length > 0 ? "default" : "secondary"}>
+                              {result.newBadges.length} badges
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Badge Definitions Preview */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Available Badges</CardTitle>
+                    <CardDescription>
+                      Current badge definitions and criteria
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {[
+                        { name: 'Novice', icon: '🌟', desc: 'Complete first challenge' },
+                        { name: 'Pioneer', icon: '🚀', desc: 'Complete 5 challenges' },
+                        { name: 'Master Builder', icon: '🏗️', desc: 'Complete 15 challenges' },
+                        { name: 'AI Expert', icon: '🤖', desc: 'Complete 10 expert challenges' },
+                        { name: 'No Code Champion', icon: '🏆', desc: 'Complete all difficulty levels' },
+                        { name: 'Legend', icon: '👑', desc: 'Reach top 10 on leaderboard' },
+                        { name: 'XP Collector', icon: '💎', desc: 'Earn 1000 XP' },
+                        { name: 'Consistent Learner', icon: '📅', desc: '7-day streak' },
+                        { name: 'Speed Demon', icon: '⚡', desc: '3 challenges in one day' },
+                      ].map((badge, index) => (
+                        <div key={index} className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+                          <span className="text-2xl">{badge.icon}</span>
+                          <div>
+                            <div className="font-medium text-sm">{badge.name}</div>
+                            <div className="text-xs text-muted-foreground">{badge.desc}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               </CardContent>
             </Card>
           </TabsContent>

@@ -362,7 +362,7 @@ export function ProfilePage() {
               </CardContent>
             </Card>
             {/* Badges Section */}
-            <BadgesCard />
+            <BadgesCard userId={user?.id} />
           </div>
         </div>
       </div>

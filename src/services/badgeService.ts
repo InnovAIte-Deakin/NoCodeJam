@@ -273,6 +273,69 @@ export class BadgeService {
   }
 
   /**
+   * Process all users and award badges based on their current progress
+   * This is useful for retroactively awarding badges to existing users
+   */
+  static async processAllUsers(): Promise<{ userId: string; newBadges: BadgeDefinition[] }[]> {
+    try {
+      console.log('Starting batch badge processing for all users...');
+      
+      // Get all users
+      const { data: users, error: usersError } = await supabase
+        .from('users')
+        .select('id, username');
+
+      if (usersError) throw usersError;
+
+      const results: { userId: string; newBadges: BadgeDefinition[] }[] = [];
+
+      for (const user of users || []) {
+        try {
+          console.log(`Processing badges for user: ${user.username} (${user.id})`);
+          const newBadges = await this.processUserAction(user.id);
+          
+          if (newBadges.length > 0) {
+            console.log(`Awarded ${newBadges.length} new badges to ${user.username}:`, newBadges.map(b => b.name));
+            results.push({ userId: user.id, newBadges });
+          } else {
+            console.log(`No new badges for ${user.username}`);
+          }
+        } catch (error) {
+          console.error(`Error processing user ${user.username}:`, error);
+        }
+      }
+
+      console.log(`Batch processing complete. ${results.length} users received new badges.`);
+      return results;
+    } catch (error) {
+      console.error('Error in batch badge processing:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Process badges for a specific user based on their current progress
+   * This is useful for retroactively awarding badges to a single user
+   */
+  static async processUserBadges(userId: string): Promise<BadgeDefinition[]> {
+    try {
+      console.log(`Processing badges for user: ${userId}`);
+      const newBadges = await this.processUserAction(userId);
+      
+      if (newBadges.length > 0) {
+        console.log(`Awarded ${newBadges.length} new badges:`, newBadges.map(b => b.name));
+      } else {
+        console.log('No new badges awarded');
+      }
+      
+      return newBadges;
+    } catch (error) {
+      console.error('Error processing user badges:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get all badges earned by a user
    */
   static async getUserBadges(userId: string): Promise<Badge[]> {
@@ -294,13 +357,15 @@ export class BadgeService {
       if (error) throw error;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (data || []).map((item: any) => ({
+      const badges = (data || []).map((item: any) => ({
         id: item.badges.id,
         name: item.badges.name,
         description: item.badges.description,
         icon: item.badges.icon_url,
         unlockedAt: new Date(item.earned_at)
       }) as Badge);
+
+      return badges;
     } catch (error) {
       console.error('Error getting user badges:', error);
       return [];
