@@ -16,6 +16,7 @@ interface OnboardingChallengeCardProps {
 export function OnboardingChallengeCard({ title, description, onHide }: OnboardingChallengeCardProps) {
   const [isCompleted, setIsCompleted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [nextStep, setNextStep] = useState(1);
 
   useEffect(() => {
     checkOnboardingCompletion();
@@ -24,56 +25,34 @@ export function OnboardingChallengeCard({ title, description, onHide }: Onboardi
   const checkOnboardingCompletion = async () => {
     try {
       setIsLoading(true);
-      
       // Get user's current session to check auth status
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !session) {
         setIsCompleted(false);
+        setNextStep(1);
         return;
       }
 
-      // Direct query to check user's onboarding submissions
-      const { data: challengeData, error: challengeError } = await supabase
-        .from('challenges')
-        .select('id')
-        .eq('challenge_type', 'onboarding')
-        .single();
-
-      if (challengeError || !challengeData) {
-        setIsCompleted(false);
-        return;
-      }
-
-      // Check user's submissions for this challenge
-      const { data: submissions, error: submissionsError } = await supabase
-        .from('submissions')
-        .select('id, onboarding_step_id, status')
-        .eq('user_id', session.user.id)
-        .eq('challenge_id', challengeData.id)
-        .in('status', ['pending', 'approved'])
-        .not('onboarding_step_id', 'is', null);
-
-      if (submissionsError) {
-        console.error('Error checking submissions:', submissionsError);
-        setIsCompleted(false);
-        return;
-      }
-
-      // Count unique onboarding steps submitted (regardless of status)
-      const uniqueSteps = new Set(submissions?.map(sub => sub.onboarding_step_id) || []);
-      const completedStepsCount = uniqueSteps.size;
-      
-      // Check if user has completed all 3 steps
-      setIsCompleted(completedStepsCount >= 3);
+      // Fetch onboarding progress
+      const { data: progress, error: progressError } = await supabase.functions.invoke('get-onboarding-progress');
+      // Fetch onboarding steps
+      const { data: stepsData, error: stepsError } = await supabase.functions.invoke('get-onboarding-steps');
+      const steps = stepsData?.steps || [];
+      const maxStep = steps.length > 0 ? Math.max(...steps.map((s: any) => s.step_number)) : 1;
+      const latestCompletedStep = progress?.latest_completed_step ?? 0;
+      const next = latestCompletedStep + 1;
+      setNextStep(next > maxStep ? maxStep : next);
+      setIsCompleted(latestCompletedStep >= maxStep);
     } catch (error) {
       console.error('Error checking onboarding completion:', error);
       setIsCompleted(false);
+      setNextStep(1);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const buttonLink = isCompleted ? "/onboarding/complete" : "/onboarding/1";
+  const buttonLink = isCompleted ? "/onboarding/complete" : `/onboarding/${nextStep}`;
   const buttonText = isCompleted ? "View Completion" : "Start Tutorial";
   const badgeText = isCompleted ? "Completed" : "Start Here";
   const badgeIcon = isCompleted ? CheckCircle : Sparkles;
@@ -128,15 +107,17 @@ export function OnboardingChallengeCard({ title, description, onHide }: Onboardi
               </div>
             </div>
             
-            <Button 
-              asChild 
-              size="lg" 
+            <Button
+              size="lg"
               className={`${isCompleted ? 'bg-green-600 hover:bg-green-700 text-white' : 'bg-white text-purple-700 hover:bg-purple-50'} font-semibold shadow-lg hover:shadow-xl transition-all duration-200 border-0 min-w-[140px] h-12`}
               disabled={isLoading}
+              onClick={() => {
+                if (!isLoading) {
+                  window.location.href = buttonLink;
+                }
+              }}
             >
-              <Link to={buttonLink} className="flex items-center justify-center">
-                {isLoading ? 'Loading...' : buttonText}
-              </Link>
+              {isLoading ? 'Loading...' : buttonText}
             </Button>
           </div>
         </CardContent>
