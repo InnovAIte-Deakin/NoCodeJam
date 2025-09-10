@@ -39,33 +39,33 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 items-center">
         {/* Left side - Welcome content */}
         <div className="hidden lg:block">
           <div className="text-center lg:text-left">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl font-bold text-white mb-4">
               Welcome Back to
-              <span className="block bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+              <span className="block bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
                 NoCodeJam
               </span>
             </h1>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-xl text-gray-300 mb-8 leading-relaxed">
               Continue your no-code development journey. Complete challenges, earn XP, 
               and climb the leaderboards with fellow developers.
             </p>
             <div className="grid grid-cols-3 gap-6 text-center">
               <div>
-                <div className="text-2xl font-bold text-purple-600">1,000+</div>
-                <div className="text-sm text-gray-600">Active Developers</div>
+                <div className="text-2xl font-bold text-purple-400">1,000+</div>
+                <div className="text-sm text-gray-300">Active Developers</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-blue-600">50+</div>
-                <div className="text-sm text-gray-600">Challenges</div>
+                <div className="text-2xl font-bold text-blue-400">50+</div>
+                <div className="text-sm text-gray-300">Challenges</div>
               </div>
               <div>
-                <div className="text-2xl font-bold text-green-600">25</div>
-                <div className="text-sm text-gray-600">Badges</div>
+                <div className="text-2xl font-bold text-green-400">25</div>
+                <div className="text-sm text-gray-300">Badges</div>
               </div>
             </div>
           </div>

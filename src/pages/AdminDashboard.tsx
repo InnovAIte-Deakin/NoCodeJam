@@ -487,43 +487,43 @@ export function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+          <p className="text-gray-300">
             Manage challenges, submissions, and users
           </p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
               <Clock className="w-8 h-8 text-yellow-500" />
-              <p className="text-gray-600 mt-1 mb-0">Pending Reviews</p>
+              <p className="text-gray-300 mt-1 mb-0">Pending Reviews</p>
               <p className="text-2xl font-bold mt-0 mb-0">{pendingSubmissions.length}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
               <FileText className="w-8 h-8 text-blue-500" />
-              <p className="text-gray-600 mt-1 mb-0">Total Challenges</p>
+              <p className="text-gray-300 mt-1 mb-0">Total Challenges</p>
               <p className="text-2xl font-bold mt-0 mb-0">{challenges.length}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
               <Users className="w-8 h-8 text-green-500" />
-              <p className="text-gray-600 mt-1 mb-0">Active Users</p>
+              <p className="text-gray-300 mt-1 mb-0">Active Users</p>
               <p className="text-2xl font-bold mt-0 mb-0">{users.length}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
               <CheckCircle className="w-8 h-8 text-purple-500" />
-              <p className="text-gray-600 mt-1 mb-0">Admin Users</p>
+              <p className="text-gray-300 mt-1 mb-0">Admin Users</p>
               <p className="text-2xl font-bold mt-0 mb-0">{users.filter(u => u.role === 'admin').length}</p>
             </CardContent>
           </Card>
@@ -548,7 +548,7 @@ export function AdminDashboard() {
 
           {/* Pending Submissions */}
           <TabsContent value="submissions">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle>Pending Submissions</CardTitle>
                 <CardDescription>
@@ -559,7 +559,7 @@ export function AdminDashboard() {
                 {loadingSubmissions ? (
                   <div className="text-center py-8">
                     <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
-                    <p className="text-gray-600">Loading pending submissions...</p>
+                    <p className="text-gray-300">Loading pending submissions...</p>
                   </div>
                 ) : pendingSubmissions.length > 0 ? (
                   <div className="space-y-4">
@@ -570,7 +570,7 @@ export function AdminDashboard() {
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h3 className="font-semibold text-lg">{challenge?.title || 'Unknown Challenge'}</h3>
-                              <p className="text-gray-600">
+                              <p className="text-gray-300">
                                 From {submission.users?.username || 'Unknown User'} - {submission.user_id}
                               </p>
                               <p className="text-sm text-gray-500">
@@ -616,7 +616,7 @@ export function AdminDashboard() {
                 ) : (
                   <div className="text-center py-8">
                     <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No pending submissions</p>
+                    <p className="text-gray-300">No pending submissions</p>
                   </div>
                 )}
               </CardContent>
@@ -625,7 +625,7 @@ export function AdminDashboard() {
 
           {/* Create Challenge */}
           <TabsContent value="create-challenge">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle>Create New Challenge</CardTitle>
                 <CardDescription>
@@ -752,7 +752,7 @@ export function AdminDashboard() {
 
           {/* Manage Challenges */}
           <TabsContent value="manage-challenges">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle>Manage Challenges</CardTitle>
                 <CardDescription>
@@ -767,7 +767,7 @@ export function AdminDashboard() {
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg">{challenge.title}</h3>
-                            <p className="text-gray-600 text-sm mb-2">
+                            <p className="text-gray-300 text-sm mb-2">
                               {challenge.description?.length > 100
                                 ? `${challenge.description.substring(0, 100)}...`
                                 : challenge.description}
@@ -817,7 +817,7 @@ export function AdminDashboard() {
                 ) : (
                   <div className="text-center py-8">
                     <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No challenges found</p>
+                    <p className="text-gray-300">No challenges found</p>
                   </div>
                 )}
               </CardContent>
@@ -968,7 +968,7 @@ export function AdminDashboard() {
 
           {/* Manage Users */}
           <TabsContent value="users">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle>User Management</CardTitle>
                 <CardDescription>
@@ -979,7 +979,7 @@ export function AdminDashboard() {
                 {loadingUsers ? (
                   <div className="text-center py-8">
                     <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
-                    <p className="text-gray-600">Loading users...</p>
+                    <p className="text-gray-300">Loading users...</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -987,7 +987,7 @@ export function AdminDashboard() {
                       <div key={user.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                         <div>
                           <h3 className="font-semibold">{user.username}</h3>
-                          <p className="text-sm text-gray-600">{user.email}</p>
+                          <p className="text-sm text-gray-300">{user.email}</p>
                           <p className="text-sm text-purple-600 font-medium">{user.total_xp} XP</p>
                         </div>
                         <div className="flex items-center space-x-2">

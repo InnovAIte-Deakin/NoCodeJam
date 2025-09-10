@@ -181,7 +181,7 @@ export function LeaderboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 relative overflow-hidden">
+    <div className="min-h-screen bg-gray-900 relative overflow-hidden">
       {/* Dynamic animated background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Large gradient orbs */}
@@ -213,19 +213,19 @@ export function LeaderboardPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">🏆 Leaderboard</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-white mb-2">🏆 Leaderboard</h1>
+          <p className="text-gray-300">
             See how you rank against other no-code developers in the community
           </p>
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-lg text-gray-500">Loading leaderboard...</div>
+          <div className="text-center py-12 text-lg text-gray-400">Loading leaderboard...</div>
         ) : (
           <>
             {/* Current User Rank (if not in top 10) */}
             {user && currentUserRank > 10 && (
-              <Card className="mb-6 border-purple-300 shadow-lg bg-gradient-to-r from-purple-50 to-blue-50">
+              <Card className="mb-6 border-purple-500 shadow-lg bg-gray-800">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Star className="w-5 h-5 text-purple-600" />
@@ -270,13 +270,13 @@ export function LeaderboardPage() {
             )}
 
             {/* Top 10 Leaderboard */}
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-white">
                   <Trophy className="w-6 h-6 text-yellow-500" />
                   <span>Top 10 Developers</span>
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-gray-300">
                   The highest-ranking no-code developers in our community
                 </CardDescription>
               </CardHeader>
