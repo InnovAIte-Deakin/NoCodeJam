@@ -345,9 +345,10 @@ button:hover, .btn:hover {
   color: #c9d1d9;
 }
 
-html, body, #root, .min-h-screen, .container-responsive, .bg-gray-50 {
-  background: var(--color-bg) !important;
-  color: var(--color-text) !important;
+/* Only apply dark theme to root elements */
+html, body, #root {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .card, .card-dark, .card-contrast {

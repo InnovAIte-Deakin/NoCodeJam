@@ -8,8 +8,8 @@ export function LandingPage() {
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-purple-600 via-blue-600 to-purple-800 responsive-transition">
-        <div className="absolute inset-0 bg-black/20"></div>
+      <section className="relative overflow-hidden bg-gray-900 responsive-transition">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-purple-800/10"></div>
         <div className="relative container-responsive py-16 sm:py-20 md:py-24 lg:py-32">
           <div className="text-center">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 sm:mb-6 leading-tight responsive-transition">
@@ -35,38 +35,38 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gray-50">
+      <section className="py-12 sm:py-16 md:py-20 bg-gray-900">
         <div className="container-responsive">
           <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
               Why Choose NoCodeJam?
             </h2>
-            <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto px-4 sm:px-0">
+            <p className="text-lg sm:text-xl text-gray-300 max-w-2xl mx-auto px-4 sm:px-0">
               Level up your no-code skills with our gamified learning platform
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-            <Card className="border-0 shadow-lg hover:shadow-xl responsive-transition">
+            <Card className="border-0 shadow-lg hover:shadow-xl responsive-transition bg-gray-800 border-gray-700">
               <CardContent className="p-6 sm:p-8 text-center">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                   <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Earn XP Points</h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Earn XP Points</h3>
+                <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
                   Complete challenges and earn experience points. Track your progress 
                   and see your skills grow with every project you build.
                 </p>
               </CardContent>
             </Card>
 
-            <Card className="border-0 shadow-lg hover:shadow-xl responsive-transition">
+            <Card className="border-0 shadow-lg hover:shadow-xl responsive-transition bg-gray-800 border-gray-700">
               <CardContent className="p-6 sm:p-8 text-center">
                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                   <Award className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Unlock Badges</h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Unlock Badges</h3>
+                <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
                   Showcase your achievements with unique badges. From first steps 
                   to mastery milestones, collect them all!
                 </p>
@@ -78,8 +78,8 @@ export function LandingPage() {
                 <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                   <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
                 </div>
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">Climb Leaderboards</h3>
-                <p className="text-sm sm:text-base text-gray-600 leading-relaxed">
+                <h3 className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-4">Climb Leaderboards</h3>
+                <p className="text-sm sm:text-base text-gray-300 leading-relaxed">
                   Compete with developers worldwide. See where you rank and 
                   challenge yourself to reach the top.
                 </p>
@@ -90,36 +90,36 @@ export function LandingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-white">
+      <section className="py-12 sm:py-16 md:py-20 bg-gray-900">
         <div className="container-responsive">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
               <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-purple-600 mb-1 sm:mb-2">1,000+</div>
-              <div className="text-sm sm:text-base text-gray-600">Active Developers</div>
+              <div className="text-sm sm:text-base text-gray-300">Active Developers</div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-600 mb-1 sm:mb-2">50+</div>
-              <div className="text-sm sm:text-base text-gray-600">Challenges Available</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-blue-400 mb-1 sm:mb-2">50+</div>
+              <div className="text-sm sm:text-base text-gray-300">Challenges Available</div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-600 mb-1 sm:mb-2">10,000+</div>
-              <div className="text-sm sm:text-base text-gray-600">Solutions Submitted</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-green-400 mb-1 sm:mb-2">10,000+</div>
+              <div className="text-sm sm:text-base text-gray-300">Solutions Submitted</div>
             </div>
             <div>
-              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-orange-600 mb-1 sm:mb-2">25</div>
-              <div className="text-sm sm:text-base text-gray-600">Unique Badges</div>
+              <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-orange-400 mb-1 sm:mb-2">25</div>
+              <div className="text-sm sm:text-base text-gray-300">Unique Badges</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-r from-purple-600 to-blue-600">
+      <section className="py-12 sm:py-16 md:py-20 bg-gray-900">
         <div className="container-responsive max-w-4xl text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6 px-4 sm:px-0">
             Ready to Start Your No-Code Journey?
           </h2>
-          <p className="text-lg sm:text-xl text-purple-100 mb-6 sm:mb-8 px-4 sm:px-0">
+          <p className="text-lg sm:text-xl text-gray-300 mb-6 sm:mb-8 px-4 sm:px-0">
             Join thousands of developers already improving their skills on NoCodeJam
           </p>
           <Button size="lg" className="bg-white text-purple-600 hover:bg-gray-100 px-6 sm:px-8 py-3 text-base sm:text-lg font-semibold responsive-transition" asChild>
