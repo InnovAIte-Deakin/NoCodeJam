@@ -313,7 +313,8 @@ export default function OnboardingStepPage() {
           {!loading && totalSteps > 0 && (
             <OnboardingProgressBar 
               latestCompletedStep={latestCompletedStep} 
-              totalSteps={totalSteps} 
+              totalSteps={totalSteps}
+              viewedStep={currentStep}
             />
           )}
         </header>
@@ -385,13 +386,17 @@ export default function OnboardingStepPage() {
               ) : (
                 // Step Content
                 <div>
-                  <div className="text-center mb-8">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-center">
                       {currentStepData.title}
                     </h2>
-                    <p className="text-gray-600 text-lg">
-                      {currentStepData.description}
-                    </p>
+                    <div className="text-gray-600 text-lg text-left">
+                      {currentStepData.description
+                        ? currentStepData.description.split(/\r?\n+/).map((para, idx) => (
+                            para.trim() && <p key={idx} className="mb-2">{para}</p>
+                          ))
+                        : null}
+                    </div>
                   </div>
 
                   {/* Video Content */}

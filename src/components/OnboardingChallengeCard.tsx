@@ -87,8 +87,12 @@ export function OnboardingChallengeCard({ title, description, onHide }: Onboardi
               <CardTitle className="text-2xl font-bold mb-3 text-white leading-tight">
                 {title}
               </CardTitle>
-              <CardDescription className="text-purple-100 text-base leading-relaxed">
-                {description}
+              <CardDescription className="text-purple-100 text-base leading-relaxed text-left">
+                {description
+                  ? description.split(/\r?\n+/).map((para, idx) => (
+                      para.trim() && <p key={idx} className="mb-2">{para}</p>
+                    ))
+                  : null}
               </CardDescription>
             </div>
           </div>

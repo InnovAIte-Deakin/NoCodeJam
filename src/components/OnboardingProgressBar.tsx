@@ -1,11 +1,13 @@
+
 import React from 'react';
 
 interface OnboardingProgressBarProps {
   latestCompletedStep: number;
   totalSteps: number;
+  viewedStep: number;
 }
 
-export function OnboardingProgressBar({ latestCompletedStep, totalSteps }: OnboardingProgressBarProps) {
+export function OnboardingProgressBar({ latestCompletedStep, totalSteps, viewedStep }: OnboardingProgressBarProps) {
   const progressPercentage = Math.min((latestCompletedStep / totalSteps) * 100, 100);
   const currentStep = latestCompletedStep + 1;
 
@@ -14,14 +16,14 @@ export function OnboardingProgressBar({ latestCompletedStep, totalSteps }: Onboa
       {/* Step Counter Text */}
       <div className="text-center mb-2">
         <span className="text-sm font-medium text-gray-600">
-          Step {currentStep} of {totalSteps}
+          Step {viewedStep} of {totalSteps}
         </span>
       </div>
-      
+
       {/* Progress Bar Container */}
       <div className="w-full bg-gray-200 rounded-full h-2.5 mb-4">
         {/* Progress Bar Fill */}
-        <div 
+        <div
           className="bg-gradient-to-r from-purple-500 to-blue-500 h-2.5 rounded-full transition-all duration-300 ease-in-out"
           style={{ width: `${progressPercentage}%` }}
           role="progressbar"
@@ -31,23 +33,28 @@ export function OnboardingProgressBar({ latestCompletedStep, totalSteps }: Onboa
           aria-label={`Completed ${latestCompletedStep} of ${totalSteps} steps`}
         />
       </div>
-      
+
       {/* Step Indicators */}
       <div className="flex justify-between items-center">
         {Array.from({ length: totalSteps }, (_, index) => {
           const stepNumber = index + 1;
           const isCompleted = stepNumber <= latestCompletedStep;
           const isCurrent = stepNumber === currentStep;
-          
+          const isViewed = stepNumber === viewedStep;
+
           return (
-            <div 
+            <div
               key={stepNumber}
-              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-all duration-200 ${
-                isCompleted 
-                  ? 'bg-green-500 text-white' 
-                  : isCurrent 
-                    ? 'bg-purple-500 text-white ring-2 ring-purple-200' 
-                    : 'bg-gray-300 text-gray-600'
+              className={`flex items-center justify-center w-6 h-6 rounded-full text-xs font-medium transition-all duration-200 border-2 ${
+                isViewed
+                  ? 'border-purple-500'
+                  : 'border-transparent'
+              } ${
+                isCompleted
+                  ? 'bg-green-500 text-white'
+                  : isCurrent
+                    ? 'bg-purple-500 text-white'
+                    : 'bg-white text-gray-600'
               }`}
             >
               {isCompleted ? (
