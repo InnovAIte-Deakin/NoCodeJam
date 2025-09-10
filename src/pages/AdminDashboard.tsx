@@ -34,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
+import { EditChallengeRequestModal } from '@/components/EditChallengeRequestModal';
 
 export function AdminDashboard() {
   const [newChallenge, setNewChallenge] = useState({
@@ -48,21 +49,17 @@ export function AdminDashboard() {
   // Step 1: Fetch real pending submissions and challenges
   const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
+  const [challengeRequests, setChallengeRequests] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+  const [userProfiles, setUserProfiles] = useState<{[key: string]: any}>({});
 
   useEffect(() => {
     const fetchData = async () => {
       setLoadingSubmissions(true);
-      // Fetch pending submissions with user information
+      // Fetch pending submissions
       const { data: submissions, error: subError } = await supabase
         .from('submissions')
-        .select(`
-          *,
-          users!submissions_user_id_fkey (
-            id,
-            username
-          )
-        `)
+        .select('*')
         .eq('status', 'pending');
       
       // Add debugging
@@ -73,13 +70,34 @@ export function AdminDashboard() {
         .from('challenges')
         .select('*');
       
-      console.log('Admin Dashboard - Challenges query result:', { challengesData, chalError });
+      // Fetch challenge requests
+      const { data: requestsData, error: reqError } = await supabase
+        .from('challenge_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      if (!subError && !chalError && submissions && challengesData) {
+      // Fetch users for username lookup
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, email');
+      
+      console.log('Admin Dashboard - Challenges query result:', { challengesData, chalError });
+      console.log('Admin Dashboard - Challenge requests query result:', { requestsData, reqError });
+      console.log('Admin Dashboard - Users query result:', { usersData, usersError });
+      
+      if (!subError && !chalError && !reqError && !usersError && submissions && challengesData && requestsData && usersData) {
         setPendingSubmissions(submissions);
         setChallenges(challengesData);
+        setChallengeRequests(requestsData);
+        
+        // Create users lookup map
+        const usersMap: {[key: string]: any} = {};
+        usersData.forEach((user: any) => {
+          usersMap[user.id] = user;
+        });
+        setUserProfiles(usersMap);
       } else {
-        console.error('Query errors:', { subError, chalError });
+        console.error('Query errors:', { subError, chalError, reqError, usersError });
       }
       setLoadingSubmissions(false);
     };
@@ -486,6 +504,38 @@ export function AdminDashboard() {
     }
   };
 
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('challenge_requests')
+        .update({ 
+          status: 'rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Challenge request rejected",
+      });
+
+      // Refresh data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject request",
+        variant: "destructive",
+      });
+    }
+  };
+
+
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -541,6 +591,9 @@ export function AdminDashboard() {
             <TabsTrigger value="manage-challenges" className="admin-tabs-trigger">
               Manage Challenges
             </TabsTrigger>
+            <TabsTrigger value="challenge-requests" className="admin-tabs-trigger">
+              Challenge Requests
+            </TabsTrigger>
             <TabsTrigger value="users" className="admin-tabs-trigger">
               Manage Users
             </TabsTrigger>
@@ -571,7 +624,7 @@ export function AdminDashboard() {
                             <div>
                               <h3 className="font-semibold text-lg">{challenge?.title || 'Unknown Challenge'}</h3>
                               <p className="text-gray-300">
-                                From {submission.users?.username || 'Unknown User'} - {submission.user_id}
+                                From {userProfiles[submission.user_id]?.username || `User ID: ${submission.user_id}`}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
@@ -967,6 +1020,102 @@ export function AdminDashboard() {
           </Dialog>
 
           {/* Manage Users */}
+          {/* Challenge Requests */}
+          <TabsContent value="challenge-requests">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Challenge Requests</CardTitle>
+                <CardDescription className="text-gray-300">
+                  Review and manage challenge requests from users
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {challengeRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-300">No challenge requests found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {challengeRequests.map((request) => (
+                      <Card key={request.id} className="bg-gray-700 border-gray-600">
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold text-white mb-2">{request.title}</h3>
+                              <p className="text-gray-300 text-sm mb-2">
+                                by {userProfiles[request.user_id]?.username || `User ID: ${request.user_id}`}
+                              </p>
+                              <div className="flex gap-2 mb-3">
+                                <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                                  {request.difficulty}
+                                </Badge>
+                                <Badge variant="outline" className="border-gray-500 text-gray-300">
+                                  {request.category}
+                                </Badge>
+                                <Badge 
+                                  variant={request.status === 'pending' ? 'default' : 
+                                         request.status === 'approved' ? 'secondary' : 'destructive'}
+                                  className={
+                                    request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                    'bg-red-100 text-red-800'
+                                  }
+                                >
+                                  {request.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-400">
+                              {new Date(request.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <h4 className="font-medium text-white mb-1">Description</h4>
+                              <p className="text-gray-300 text-sm">{request.description}</p>
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-medium text-white mb-1">Requirements</h4>
+                              <p className="text-gray-300 text-sm">{request.requirements}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-600">
+                            {request.status === 'pending' && (
+                              <>
+                                <EditChallengeRequestModal request={request} onSuccess={() => window.location.reload()}>
+                                  <Button
+                                    size="sm"
+                                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                                  >
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    Create Challenge
+                                  </Button>
+                                </EditChallengeRequestModal>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRejectRequest(request.id)}
+                                  className="border-red-500 text-red-500 hover:bg-red-50"
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="users">
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>

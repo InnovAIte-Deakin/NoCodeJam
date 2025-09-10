@@ -140,7 +140,7 @@ export function LeaderboardPage() {
           <div className="absolute inset-0 w-8 h-8 bg-gradient-to-br from-orange-400 to-red-600 rounded-full opacity-15"></div>
         </div>
       );
-      default: return <div className="w-8 h-8 flex items-center justify-center text-lg font-bold text-gray-500 bg-gray-100 rounded-full">#{position}</div>;
+      default: return <div className="w-8 h-8 flex items-center justify-center text-lg font-bold text-gray-300 bg-gray-700 rounded-full">#{position}</div>;
     }
   };
 
@@ -175,7 +175,7 @@ export function LeaderboardPage() {
       // 3rd Place - Warm metallic bronze with glow
       baseStyle += " bg-gradient-to-br from-amber-500/25 via-orange-500/35 to-red-600/25 backdrop-blur-lg border border-white/25 shadow-lg ring-2 ring-amber-400/40 before:absolute before:inset-0 before:bg-gradient-to-r before:from-amber-400/20 before:via-orange-300/30 before:to-red-400/20";
     } else {
-      baseStyle += " bg-white border border-gray-200 hover:bg-gray-50 hover:shadow-md";
+      baseStyle += " bg-gray-800 border border-gray-700 hover:bg-gray-700 hover:shadow-md";
     }
     return baseStyle;
   };
@@ -227,26 +227,26 @@ export function LeaderboardPage() {
             {user && currentUserRank > 10 && (
               <Card className="mb-6 border-purple-500 shadow-lg bg-gray-800">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
-                    <Star className="w-5 h-5 text-purple-600" />
+                  <CardTitle className="flex items-center space-x-2 text-white">
+                    <Star className="w-5 h-5 text-purple-400" />
                     <span>Your Rank</span>
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-4">
-                    <div className="flex items-center justify-center w-14 h-14 bg-purple-100 rounded-full shadow-md">
-                      <span className="font-bold text-purple-600 text-lg">#{currentUserRank}</span>
+                    <div className="flex items-center justify-center w-14 h-14 bg-purple-600 rounded-full shadow-md">
+                      <span className="font-bold text-white text-lg">#{currentUserRank}</span>
                     </div>
-                    <Avatar className="w-14 h-14 ring-2 ring-purple-200">
+                    <Avatar className="w-14 h-14 ring-2 ring-purple-400">
                       <AvatarImage src={user.avatar} alt={user.username} />
-                      <AvatarFallback className="bg-purple-100 text-purple-700 font-bold">
+                      <AvatarFallback className="bg-purple-600 text-white font-bold">
                         {user.username.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <h3 className="font-semibold text-lg">{user.username}</h3>
-                      <p className="text-sm text-gray-600">{user.xp} XP</p>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500 mt-1">
+                      <h3 className="font-semibold text-lg text-white">{user.username}</h3>
+                      <p className="text-sm text-gray-300">{user.xp} XP</p>
+                      <div className="flex items-center space-x-4 text-sm text-gray-400 mt-1">
                         <span>{currentUserData?.challengeCount || 0} challenges</span>
                         <span>{currentUserData?.badgeCount || 0} badges</span>
                       </div>
@@ -255,8 +255,8 @@ export function LeaderboardPage() {
                       <div className="flex items-center space-x-1">
                         {getRankChangeIcon(currentUserData?.rankChange || 0, false)}
                         <span className={`text-sm font-medium ${
-                          (currentUserData?.rankChange || 0) > 0 ? 'text-green-600' :
-                          (currentUserData?.rankChange || 0) < 0 ? 'text-red-600' : 'text-gray-600'
+                          (currentUserData?.rankChange || 0) > 0 ? 'text-green-400' :
+                          (currentUserData?.rankChange || 0) < 0 ? 'text-red-400' : 'text-gray-400'
                         }`}>
                           {currentUserData?.rankChange === 0 ? 'No change' :
                            (currentUserData?.rankChange || 0) > 0 ? `+${currentUserData?.rankChange}` :
@@ -325,7 +325,7 @@ export function LeaderboardPage() {
                                 position === 1 ? 'bg-gradient-to-br from-yellow-500 to-amber-600 text-white' :
                                 position === 2 ? 'bg-gradient-to-br from-slate-400 to-gray-600 text-white' :
                                 position === 3 ? 'bg-gradient-to-br from-orange-500 to-red-600 text-white' :
-                                'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700'
+                                'bg-gradient-to-br from-gray-600 to-gray-700 text-gray-200'
                               }`}>
                                 {developer.username.charAt(0).toUpperCase()}
                               </AvatarFallback>
@@ -406,9 +406,9 @@ export function LeaderboardPage() {
                           <div className="flex items-center justify-end space-x-2">
                             {getRankChangeIcon(developer.rankChange || 0, false, false)}
                             <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
-                              (developer.rankChange || 0) > 0 ? 'bg-green-100 text-green-700' :
-                              (developer.rankChange || 0) < 0 ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
+                              (developer.rankChange || 0) > 0 ? 'bg-green-600 text-green-100' :
+                              (developer.rankChange || 0) < 0 ? 'bg-red-600 text-red-100' :
+                              'bg-gray-600 text-gray-300'
                             }`}>
                               {developer.rankChange === 0 ? '0' :
                                developer.rankChange! > 0 ? `+${developer.rankChange}` :
@@ -451,7 +451,7 @@ export function LeaderboardPage() {
                                 position === 1 ? 'bg-gradient-to-br from-yellow-500 to-amber-600 text-white' :
                                 position === 2 ? 'bg-gradient-to-br from-slate-400 to-gray-600 text-white' :
                                 position === 3 ? 'bg-gradient-to-br from-orange-500 to-red-600 text-white' :
-                                'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700'
+                                'bg-gradient-to-br from-gray-600 to-gray-700 text-gray-200'
                               }`}>
                                 {developer.username.charAt(0).toUpperCase()}
                               </AvatarFallback>
@@ -532,9 +532,9 @@ export function LeaderboardPage() {
                           <div className="flex items-center justify-end space-x-2">
                             {getRankChangeIcon(developer.rankChange || 0, false, false)}
                             <span className={`text-sm font-semibold px-2 py-0.5 rounded-full ${
-                              (developer.rankChange || 0) > 0 ? 'bg-green-100 text-green-700' :
-                              (developer.rankChange || 0) < 0 ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
+                              (developer.rankChange || 0) > 0 ? 'bg-green-600 text-green-100' :
+                              (developer.rankChange || 0) < 0 ? 'bg-red-600 text-red-100' :
+                              'bg-gray-600 text-gray-300'
                             }`}>
                               {developer.rankChange === 0 ? '0' :
                                developer.rankChange! > 0 ? `+${developer.rankChange}` :
@@ -551,31 +551,31 @@ export function LeaderboardPage() {
 
             {/* Stats */}
             <div className="grid md:grid-cols-3 gap-6 mt-8">
-              <Card className="shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+              <Card className="shadow-lg hover:shadow-xl transition-shadow bg-gray-800 border-gray-700">
                 <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-purple-600 mb-2">
+                  <div className="text-3xl font-bold text-purple-400 mb-2">
                     {leaderboard.reduce((sum, dev) => sum + (dev.total_xp || 0), 0).toLocaleString()}
                   </div>
-                  <div className="text-gray-600 font-medium">Total XP Earned</div>
-                  <div className="text-sm text-gray-500 mt-1">Across all users</div>
+                  <div className="text-gray-300 font-medium">Total XP Earned</div>
+                  <div className="text-sm text-gray-400 mt-1">Across all users</div>
                 </CardContent>
               </Card>
-              <Card className="shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
+              <Card className="shadow-lg hover:shadow-xl transition-shadow bg-gray-800 border-gray-700">
                 <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-blue-600 mb-2">
+                  <div className="text-3xl font-bold text-blue-400 mb-2">
                     {leaderboard.reduce((sum, dev) => sum + (dev.challengeCount || 0), 0).toLocaleString()}
                   </div>
-                  <div className="text-gray-600 font-medium">Challenges Completed</div>
-                  <div className="text-sm text-gray-500 mt-1">Total submissions approved</div>
+                  <div className="text-gray-300 font-medium">Challenges Completed</div>
+                  <div className="text-sm text-gray-400 mt-1">Total submissions approved</div>
                 </CardContent>
               </Card>
-              <Card className="shadow-lg hover:shadow-xl transition-shadow bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+              <Card className="shadow-lg hover:shadow-xl transition-shadow bg-gray-800 border-gray-700">
                 <CardContent className="p-6 text-center">
-                  <div className="text-3xl font-bold text-green-600 mb-2">
+                  <div className="text-3xl font-bold text-green-400 mb-2">
                     {leaderboard.reduce((sum, dev) => sum + (dev.badgeCount || 0), 0).toLocaleString()}
                   </div>
-                  <div className="text-gray-600 font-medium">Badges Earned</div>
-                  <div className="text-sm text-gray-500 mt-1">Achievement unlocks</div>
+                  <div className="text-gray-300 font-medium">Badges Earned</div>
+                  <div className="text-sm text-gray-400 mt-1">Achievement unlocks</div>
                 </CardContent>
               </Card>
             </div>

@@ -340,8 +340,8 @@ export function LearnPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">🎓 No-Code Platform Learning</h1>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <h1 className="text-3xl font-bold text-white mb-2">🎓 No-Code Platform Learning</h1>
+          <p className="text-gray-300 max-w-2xl mx-auto">
             Discover the best no-code platforms and learn how to build amazing applications without writing a single line of code.
           </p>
         </div>
@@ -351,7 +351,7 @@ export function LearnPage() {
           {platforms.map((platform) => (
             <Card 
               key={platform.id} 
-              className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${
+              className={`cursor-pointer transition-all duration-200 hover:shadow-lg bg-gray-800 border-gray-700 ${
                 selectedPlatform === platform.id ? 'ring-2 ring-purple-500' : ''
               }`}
               onClick={() => scrollToPlatform(platform.id)}
@@ -364,14 +364,14 @@ export function LearnPage() {
                     className="w-full h-full object-contain"
                   />
                 </div>
-                <h3 className="font-semibold text-lg mb-2">{platform.name}</h3>
+                <h3 className="font-semibold text-lg mb-2 text-white">{platform.name}</h3>
                 <div className="flex items-center justify-center space-x-2 mb-3">
                   {getCategoryIcon(platform.category)}
                   <Badge className={getDifficultyColor(platform.difficulty)}>
                     {platform.difficulty}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-600 line-clamp-3">
+                <p className="text-sm text-gray-300 line-clamp-3">
                   {platform.description}
                 </p>
               </CardContent>
@@ -386,7 +386,7 @@ export function LearnPage() {
               key={platform.id} 
               className={`space-y-6 ${selectedPlatform === platform.id ? 'block' : 'hidden'}`}
             >
-                            <Card>
+                            <Card className="bg-gray-800 border-gray-700">
                 <CardHeader ref={(el) => (platformRefs.current[platform.id] = el)}>
                   <div className="flex items-center space-x-4">
                     <div className="w-16 h-12 p-1">
@@ -397,8 +397,8 @@ export function LearnPage() {
                       />
                     </div>
                     <div>
-                      <CardTitle className="text-2xl">{platform.name}</CardTitle>
-                      <CardDescription className="text-base">
+                      <CardTitle className="text-2xl text-white">{platform.name}</CardTitle>
+                      <CardDescription className="text-base text-gray-300">
                         {platform.description}
                       </CardDescription>
                     </div>
@@ -407,10 +407,10 @@ export function LearnPage() {
                 <CardContent className="space-y-6">
                   {/* Platform Features */}
                   <div>
-                    <h3 className="font-semibold text-lg mb-3">Key Features</h3>
+                    <h3 className="font-semibold text-lg mb-3 text-white">Key Features</h3>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                       {platform.features.map((feature) => (
-                        <Badge key={feature} variant="secondary" className="justify-center">
+                        <Badge key={feature} variant="secondary" className="justify-center bg-gray-700 text-gray-200">
                           {feature}
                         </Badge>
                       ))}
@@ -421,15 +421,15 @@ export function LearnPage() {
                   <div className="grid md:grid-cols-3 gap-4">
                     <div className="flex items-center space-x-2">
                       <Globe className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Category: {platform.category}</span>
+                      <span className="text-sm text-gray-300">Category: {platform.category}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <Zap className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">Difficulty: {platform.difficulty}</span>
+                      <span className="text-sm text-gray-300">Difficulty: {platform.difficulty}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <BookOpen className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{platform.tutorials.length} Tutorials</span>
+                      <span className="text-sm text-gray-300">{platform.tutorials.length} Tutorials</span>
                     </div>
                   </div>
 
@@ -461,31 +461,31 @@ export function LearnPage() {
               </Card>
 
               {/* Tutorials Section */}
-              <Card>
+              <Card className="bg-gray-800 border-gray-700">
                 <CardHeader>
-                  <CardTitle className="flex items-center space-x-2">
+                  <CardTitle className="flex items-center space-x-2 text-white">
                     <Play className="w-5 h-5" />
                     <span>Learning Path</span>
                   </CardTitle>
-                  <CardDescription>
+                  <CardDescription className="text-gray-300">
                     Follow these tutorials to master {platform.name}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
                     {platform.tutorials.map((tutorial) => (
-                      <div key={tutorial.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                      <div key={tutorial.id} className="flex items-center justify-between p-4 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
                         <div className="flex-1">
-                          <h4 className="font-medium text-gray-900">{tutorial.title}</h4>
-                          <p className="text-sm text-gray-600 mt-1">{tutorial.description}</p>
+                          <h4 className="font-medium text-white">{tutorial.title}</h4>
+                          <p className="text-sm text-gray-300 mt-1">{tutorial.description}</p>
                           <div className="flex items-center space-x-4 mt-2">
                             <Badge className={getDifficultyColor(tutorial.difficulty)}>
                               {tutorial.difficulty}
                             </Badge>
-                            <span className="text-xs text-gray-500">{tutorial.duration}</span>
+                            <span className="text-xs text-gray-400">{tutorial.duration}</span>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" asChild>
+                        <Button variant="outline" size="sm" asChild className="border-gray-600 text-gray-300 hover:bg-gray-700">
                           <a href={tutorial.url} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4 mr-1" />
                             Start
@@ -501,42 +501,42 @@ export function LearnPage() {
         </div>
 
         {/* Getting Started Guide */}
-        <Card className="mt-8">
+        <Card className="mt-8 bg-gray-800 border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className="flex items-center space-x-2 text-white">
               <Zap className="w-5 h-5" />
               <span>Getting Started Guide</span>
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-gray-300">
               New to no-code development? Follow this step-by-step guide
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid md:grid-cols-3 gap-6">
               <div className="text-center">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-purple-600 font-bold">1</span>
+                <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold">1</span>
                 </div>
-                <h3 className="font-semibold mb-2">Choose Your Platform</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold mb-2 text-white">Choose Your Platform</h3>
+                <p className="text-sm text-gray-300">
                   Start with Lovable for visual building or Windsurf for AI-powered development
                 </p>
               </div>
               <div className="text-center">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-blue-600 font-bold">2</span>
+                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold">2</span>
                 </div>
-                <h3 className="font-semibold mb-2">Follow Tutorials</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold mb-2 text-white">Follow Tutorials</h3>
+                <p className="text-sm text-gray-300">
                   Complete the beginner tutorials to understand the platform basics
                 </p>
               </div>
               <div className="text-center">
-                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-green-600 font-bold">3</span>
+                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold">3</span>
                 </div>
-                <h3 className="font-semibold mb-2">Build & Practice</h3>
-                <p className="text-sm text-gray-600">
+                <h3 className="font-semibold mb-2 text-white">Build & Practice</h3>
+                <p className="text-sm text-gray-300">
                   Create your first project and practice with our challenges
                 </p>
               </div>
@@ -545,51 +545,51 @@ export function LearnPage() {
         </Card>
 
         {/* InnovAIte Section */}
-        <Card className="mt-8 bg-gradient-to-r from-purple-50 to-blue-50 border-purple-200">
+        <Card className="mt-8 bg-gray-800 border-gray-700">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-2xl">
+            <CardTitle className="flex items-center space-x-2 text-2xl text-white">
               <img src={innovAIteLogo} alt="InnovAIte Logo" className="w-8 h-8" />
               <span>About InnovAIte</span>
             </CardTitle>
-            <CardDescription className="text-lg">
+            <CardDescription className="text-lg text-gray-300">
               Meet the team behind NoCodeJam and learn about our mission
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="prose max-w-none">
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-300 mb-4">
                 <strong>InnovAIte</strong> is focused on testing and validating two key programs that will make up SPARK when it launches in 2026 - the AI Generalist Program and the AI Prototyping Lab.
               </p>
               
-              <p className="text-gray-700 mb-4">
+              <p className="text-gray-300 mb-4">
                 Our mission is to understand how AI tools and platforms can dramatically compress startup development cycles from months to days, making entrepreneurship more accessible to everyone regardless of technical background.
               </p>
 
-              <div className="bg-white p-4 rounded-lg border border-purple-200 mb-4">
-                <h4 className="font-semibold text-purple-800 mb-2">Our Structure</h4>
-                <p className="text-gray-700 mb-3">
+              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600 mb-4">
+                <h4 className="font-semibold text-purple-400 mb-2">Our Structure</h4>
+                <p className="text-gray-300 mb-3">
                   At InnovAIte, we operate with a collaborative structure that encourages team leadership and contributions. While Jesse McMeikan serves as our Product Owner, Dr Leon Yang as the Acting Academic Company Director, and Scott West as our Industry Mentor, we focus on contributions made by students to our validation projects.
                 </p>
               </div>
 
-              <div className="bg-white p-4 rounded-lg border border-blue-200 mb-4">
-                <h4 className="font-semibold text-blue-800 mb-2">Our Operations: "The Three C's"</h4>
+              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600 mb-4">
+                <h4 className="font-semibold text-blue-400 mb-2">Our Operations: "The Three C's"</h4>
                 <div className="space-y-3">
                   <div>
                     <h5 className="font-medium text-white">Code</h5>
-                    <p className="text-gray-700 text-sm">
+                    <p className="text-gray-300 text-sm">
                       We use GitLab as our code repository with Code Integration Leads who help manage AI coding tools, establish best practices, and manage the handoff between AI-generated code and human refinement.
                     </p>
                   </div>
                   <div>
                     <h5 className="font-medium text-white">Communication</h5>
-                    <p className="text-gray-700 text-sm">
+                    <p className="text-gray-300 text-sm">
                       We use MS Teams for direct communication with students and for updates about events, managed by Comms Leads who also make Company-wide OnTrack submissions.
                     </p>
                   </div>
                   <div>
                     <h5 className="font-medium text-white">Coordination</h5>
-                    <p className="text-gray-700 text-sm">
+                    <p className="text-gray-300 text-sm">
                       We use Microsoft Planner as our main source of truth for all activities. Sprint Leads manage the challenge of adapting traditional agile frameworks to AI-accelerated development cycles.
                     </p>
                   </div>
@@ -645,14 +645,14 @@ export function LearnPage() {
               </Card>
             </div>
 
-            <div className="bg-white p-4 rounded-lg border border-green-200">
-              <h4 className="font-semibold text-green-800 mb-2">Get Involved</h4>
-              <p className="text-gray-700 mb-3">
+            <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
+              <h4 className="font-semibold text-green-400 mb-2">Get Involved</h4>
+              <p className="text-gray-300 mb-3">
                 Deakin students can access our GitLab repository and contribute to our validation projects. Look for the SSO sign-in button.
               </p>
               <Button 
                 variant="outline" 
-                className="border-green-300 text-green-700 hover:bg-green-50"
+                className="border-green-400 text-green-400 hover:bg-green-400 hover:text-white"
                 onClick={() => window.open('https://gitlab.deakin.edu.au/innovaite-lab', '_blank')}
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
