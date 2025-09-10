@@ -46,14 +46,14 @@ export function Dashboard() {
   const progressToNextLevel = (user.xp % 1000) / 10;
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="container-responsive py-6 sm:py-8">
         {/* Welcome Header */}
         <header className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Welcome back, {user.username}! 👋
           </h1>
-          <p className="text-sm sm:text-base text-gray-600">
+          <p className="text-sm sm:text-base text-gray-300">
             Ready to take on some new challenges today?
           </p>
         </header>
@@ -62,9 +62,9 @@ export function Dashboard() {
           {/* Left Column - Stats & Progress */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* XP and Level Progress */}
-            <Card className="card-gradient-bar">
+            <Card className="card-gradient-bar bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl">
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl text-white">
                   <Star className="w-5 h-5 text-yellow-500" />
                   <span>Your Progress</span>
                 </CardTitle>
@@ -72,11 +72,11 @@ export function Dashboard() {
               <CardContent className="p-4 sm:p-6">
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs sm:text-sm font-medium text-gray-600">Current XP</span>
-                    <span className="text-xl sm:text-2xl font-bold text-purple-600">{user.xp}</span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-300">Current XP</span>
+                    <span className="text-xl sm:text-2xl font-bold text-purple-400">{user.xp}</span>
                   </div>
                   <div>
-                    <div className="flex justify-between text-xs sm:text-sm text-gray-600 mb-2">
+                    <div className="flex justify-between text-xs sm:text-sm text-gray-300 mb-2">
                       <span>Progress to next milestone</span>
                       <span>{nextLevelXP - user.xp} XP remaining</span>
                     </div>
@@ -84,12 +84,12 @@ export function Dashboard() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4">
                     <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-purple-600">{completedChallenges}</div>
-                      <div className="text-xs sm:text-sm text-gray-400">Challenges Completed</div>
+                      <div className="text-xl sm:text-2xl font-bold text-purple-400">{completedChallenges}</div>
+                      <div className="text-xs sm:text-sm text-gray-300">Challenges Completed</div>
                     </div>
                     <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-orange-600">{user.badges.length}</div>
-                      <div className="text-xs sm:text-sm text-gray-400">Badges Earned</div>
+                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{user.badges.length}</div>
+                      <div className="text-xs sm:text-sm text-gray-300">Badges Earned</div>
                     </div>
                   </div>
                 </div>
@@ -97,10 +97,10 @@ export function Dashboard() {
             </Card>
 
             {/* Recent Submissions */}
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Recent Submissions</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl text-white">Recent Submissions</CardTitle>
+                <CardDescription className="text-gray-300">
                   Your latest challenge submissions and their status
                 </CardDescription>
               </CardHeader>
@@ -110,14 +110,14 @@ export function Dashboard() {
                     {submissions.slice(0, 3).map((submission) => {
                       const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
                       return (
-                        <div key={submission.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg space-y-2 sm:space-y-0">
+                        <div key={submission.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-700 rounded-lg space-y-2 sm:space-y-0">
                           <div className="flex-1">
-                            <h4 className="font-medium text-sm sm:text-base text-gray-900">{challenge?.title}</h4>
-                            <p className="text-xs sm:text-sm text-gray-600">
+                            <h4 className="font-medium text-sm sm:text-base text-white">{challenge?.title}</h4>
+                            <p className="text-xs sm:text-sm text-gray-300">
                               Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
                             </p>
                             {submission.admin_feedback && (
-                              <p className="text-xs sm:text-sm text-gray-500 mt-1">{submission.admin_feedback}</p>
+                              <p className="text-xs sm:text-sm text-gray-400 mt-1">{submission.admin_feedback}</p>
                             )}
                           </div>
                           <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-center">
@@ -141,7 +141,7 @@ export function Dashboard() {
                 ) : (
                   <div className="text-center py-6 sm:py-8">
                     <Trophy className="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 mx-auto mb-3 sm:mb-4" />
-                    <p className="text-sm sm:text-base text-gray-600 mb-3 sm:mb-4">No submissions yet</p>
+                    <p className="text-sm sm:text-base text-gray-300 mb-3 sm:mb-4">No submissions yet</p>
                     <Button asChild>
                       <Link to="/challenges">Start Your First Challenge</Link>
                     </Button>
@@ -154,32 +154,32 @@ export function Dashboard() {
           {/* Right Column - Profile & Badges */}
           <div className="space-y-4 sm:space-y-6">
             {/* Profile Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Profile</CardTitle>
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg sm:text-xl text-white">Profile</CardTitle>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col items-center text-center space-y-4">
+                <div className="flex flex-col items-center text-center space-y-3">
                   <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
                     <AvatarImage src={user.avatar} alt={user.username} />
                     <AvatarFallback className="text-lg sm:text-xl">
                       {user.username.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
-                  <div>
-                    <h3 className="font-bold text-base sm:text-lg">{user.username}</h3>
-                    <p className="text-sm sm:text-base text-gray-600">{user.email}</p>
+                  <div className="space-y-1">
+                    <h3 className="font-bold text-base sm:text-lg text-white">{user.username}</h3>
+                    <p className="text-sm sm:text-base text-gray-300">{user.email}</p>
                     {user.bio && (
-                      <p className="text-xs sm:text-sm text-gray-500 mt-2">{user.bio}</p>
+                      <p className="text-xs sm:text-sm text-gray-400 mt-1">{user.bio}</p>
                     )}
                     {user.githubUsername && (
-                      <div className="flex items-center justify-center space-x-1 mt-2 text-xs sm:text-sm text-gray-600">
+                      <div className="flex items-center justify-center space-x-1 mt-1 text-xs sm:text-sm text-gray-300">
                         <Github className="w-4 h-4" />
                         <span>{user.githubUsername}</span>
                       </div>
                     )}
                   </div>
-                  <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-500">
+                  <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-400">
                     <Calendar className="w-4 h-4" />
                     <span>Joined {user.joinedAt.toLocaleDateString()}</span>
                   </div>
@@ -191,10 +191,10 @@ export function Dashboard() {
             </Card>
 
             {/* Badges */}
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl">Badges</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-lg sm:text-xl text-white">Badges</CardTitle>
+                <CardDescription className="text-gray-300">
                   Your achievements and milestones
                 </CardDescription>
               </CardHeader>
@@ -212,8 +212,8 @@ export function Dashboard() {
                 ) : (
                   <div className="text-center py-4 sm:py-6">
                     <Trophy className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-xs sm:text-sm text-gray-600">No badges yet</p>
-                    <p className="text-xs text-gray-500 mt-1">Complete challenges to earn your first badge!</p>
+                    <p className="text-xs sm:text-sm text-gray-300">No badges yet</p>
+                    <p className="text-xs text-gray-400 mt-1">Complete challenges to earn your first badge!</p>
                   </div>
                 )}
               </CardContent>

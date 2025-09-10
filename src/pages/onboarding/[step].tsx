@@ -296,15 +296,15 @@ export default function OnboardingStepPage() {
           totalSteps={totalSteps}
         />
       ) : (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <header className="mb-8">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-white mb-2">
               NoCodeJam Onboarding
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-300">
               Let's get you started with no-code development!
             </p>
           </div>
@@ -321,16 +321,16 @@ export default function OnboardingStepPage() {
 
         {/* Main Content Area */}
         <main className="flex-1 mb-8">
-          <Card className="max-w-4xl mx-auto shadow-lg">
+          <Card className="max-w-4xl mx-auto shadow-lg bg-gray-800 border-gray-700">
             <CardContent className="p-8">
               {loading ? (
                 // Loading State
                 <div className="text-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h2 className="text-xl font-semibold text-white mb-2">
                     Loading Onboarding Steps...
                   </h2>
-                  <p className="text-gray-600">
+                  <p className="text-gray-300">
                     Please wait while we prepare your learning journey.
                   </p>
                 </div>
@@ -338,10 +338,10 @@ export default function OnboardingStepPage() {
                 // Error State
                 <div className="text-center py-12">
                   <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-500" />
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h2 className="text-xl font-semibold text-white mb-2">
                     Unable to Load Content
                   </h2>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-gray-300 mb-4">
                     {error}
                   </p>
                   <Button 
@@ -355,10 +355,10 @@ export default function OnboardingStepPage() {
                 // Step Not Found
                 <div className="text-center py-12">
                   <AlertCircle className="w-8 h-8 mx-auto mb-4 text-amber-500" />
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h2 className="text-xl font-semibold text-white mb-2">
                     Step Not Found
                   </h2>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-gray-300 mb-4">
                     Step {currentStep} doesn't exist. Please check the URL or go back to step 1.
                   </p>
                   <Button 
@@ -386,6 +386,7 @@ export default function OnboardingStepPage() {
               ) : (
                 // Step Content
                 <div>
+
                   <div className="mb-8">
                     <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-center">
                       {currentStepData.title}
@@ -416,8 +417,8 @@ export default function OnboardingStepPage() {
                             />
                           </div>
                         ) : (
-                          <div className="bg-gray-100 rounded-lg p-6 text-center max-w-3xl mx-auto">
-                            <p className="text-gray-600">
+                          <div className="bg-gray-700 rounded-lg p-6 text-center max-w-3xl mx-auto">
+                            <p className="text-gray-300">
                               Video URL format not supported. 
                               <a 
                                 href={currentStepData.video_url} 
@@ -468,7 +469,7 @@ export default function OnboardingStepPage() {
                       {/* Verification Form */}
                       <div className="space-y-4">
                         <div>
-                          <label htmlFor="verification-code" className="block text-sm font-medium text-gray-700 mb-2">
+                          <label htmlFor="verification-code" className="block text-sm font-medium text-gray-300 mb-2">
                             Verification Code
                           </label>
                           <Input
@@ -534,7 +535,7 @@ export default function OnboardingStepPage() {
               </Button>
 
               {/* Step Indicator */}
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-400">
                 Step {currentStep} of {totalSteps}
               </div>
 
@@ -592,7 +593,7 @@ export default function OnboardingStepPage() {
             </div>
 
             {/* Additional Footer Info */}
-            <div className="text-center mt-6 text-sm text-gray-500">
+            <div className="text-center mt-6 text-sm text-gray-400">
               <p>
                 Need help? Check out our{' '}
                 <a href="/learn" className="text-purple-600 hover:underline">

@@ -345,9 +345,10 @@ button:hover, .btn:hover {
   color: #c9d1d9;
 }
 
-html, body, #root, .min-h-screen, .container-responsive, .bg-gray-50 {
-  background: var(--color-bg) !important;
-  color: var(--color-text) !important;
+/* Only apply dark theme to root elements */
+html, body, #root {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 .card, .card-dark, .card-contrast {
@@ -385,6 +386,76 @@ html, body, #root, .min-h-screen, .container-responsive, .bg-gray-50 {
   100% {
     background-position: 100% 50%;
   }
+}
+
+/* Custom Floating Animations for Leaderboard Background */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px) rotate(45deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(45deg);
+  }
+}
+
+@keyframes float-delayed {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(-25px) scale(1.05);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(12deg);
+  }
+  50% {
+    transform: translateY(-15px) rotate(12deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    transform: translateY(20px) scale(0.95);
+  }
+}
+
+@keyframes float-long {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-30px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: float-delayed 8s ease-in-out infinite;
+  animation-delay: 2s;
+}
+
+.animate-float-slow {
+  animation: float-slow 10s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+  animation-delay: 3s;
+}
+
+.animate-float-long {
+  animation: float-long 12s ease-in-out infinite;
+  animation-delay: 4s;
 }
 
 .shadow-navbar {

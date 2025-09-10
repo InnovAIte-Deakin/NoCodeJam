@@ -2,16 +2,13 @@
   min-height: 100vh;
 }
 
-body, .min-h-screen, .bg-gray-50, .container-responsive {
-  background: var(--color-bg) !important;
-  color: var(--color-text) !important;
+/* Only apply dark theme to body and root elements */
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
-.card, .card-dark, .bg-white, .bg-gray-50 {
-  background: var(--color-card) !important;
-  color: var(--color-text) !important;
-  border: 1px solid var(--color-border) !important;
-}
+/* Remove forced backgrounds from other elements to allow Tailwind classes to work */
 
 .text-gray-900, .text-gray-700, .text-gray-600 {
   color: var(--color-text) !important;
@@ -33,9 +30,9 @@ button:hover, .btn:hover {
   background: var(--color-blue) !important;
 }
 
-/* Remove any background from .container-responsive and .min-h-screen */
+/* Allow Tailwind classes to work properly */
 .container-responsive, .min-h-screen {
-  background: none !important;
+  /* Remove forced background overrides */
 }
 
 /* Line clamp utility */

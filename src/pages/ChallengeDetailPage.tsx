@@ -126,7 +126,7 @@ export function ChallengeDetailPage() {
   const requirementsArr = challenge.requirements ? (challenge.requirements as string).split(';').map((r: string) => r.trim()).filter((r: string) => Boolean(r)) : [];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Challenge Header */}
         <Card className="mb-8 overflow-hidden">

@@ -26,6 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { EditChallengeRequestModal } from '@/components/EditChallengeRequestModal';
 
 export function AdminDashboard() {
   const [newChallenge, setNewChallenge] = useState({
@@ -40,21 +49,17 @@ export function AdminDashboard() {
   // Step 1: Fetch real pending submissions and challenges
   const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
+  const [challengeRequests, setChallengeRequests] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
+  const [userProfiles, setUserProfiles] = useState<{[key: string]: any}>({});
 
   useEffect(() => {
     const fetchData = async () => {
       setLoadingSubmissions(true);
-      // Fetch pending submissions with user information
+      // Fetch pending submissions
       const { data: submissions, error: subError } = await supabase
         .from('submissions')
-        .select(`
-          *,
-          users!submissions_user_id_fkey (
-            id,
-            username
-          )
-        `)
+        .select('*')
         .eq('status', 'pending');
       
       // Add debugging
@@ -65,13 +70,34 @@ export function AdminDashboard() {
         .from('challenges')
         .select('*');
       
-      console.log('Admin Dashboard - Challenges query result:', { challengesData, chalError });
+      // Fetch challenge requests
+      const { data: requestsData, error: reqError } = await supabase
+        .from('challenge_requests')
+        .select('*')
+        .order('created_at', { ascending: false });
       
-      if (!subError && !chalError && submissions && challengesData) {
+      // Fetch users for username lookup
+      const { data: usersData, error: usersError } = await supabase
+        .from('users')
+        .select('id, username, email');
+      
+      console.log('Admin Dashboard - Challenges query result:', { challengesData, chalError });
+      console.log('Admin Dashboard - Challenge requests query result:', { requestsData, reqError });
+      console.log('Admin Dashboard - Users query result:', { usersData, usersError });
+      
+      if (!subError && !chalError && !reqError && !usersError && submissions && challengesData && requestsData && usersData) {
         setPendingSubmissions(submissions);
         setChallenges(challengesData);
+        setChallengeRequests(requestsData);
+        
+        // Create users lookup map
+        const usersMap: {[key: string]: any} = {};
+        usersData.forEach((user: any) => {
+          usersMap[user.id] = user;
+        });
+        setUserProfiles(usersMap);
       } else {
-        console.error('Query errors:', { subError, chalError });
+        console.error('Query errors:', { subError, chalError, reqError, usersError });
       }
       setLoadingSubmissions(false);
     };
@@ -267,6 +293,8 @@ export function AdminDashboard() {
 
   // Step 5: Challenge management state
   const [deletingChallengeId, setDeletingChallengeId] = useState<string | null>(null);
+  const [editingChallenge, setEditingChallenge] = useState<any>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -393,44 +421,159 @@ export function AdminDashboard() {
     refreshChallenges();
   };
 
+  // Edit challenge functions
+  const handleEditChallenge = (challenge: any) => {
+    setEditingChallenge({
+      id: challenge.id,
+      title: challenge.title,
+      description: challenge.description,
+      difficulty: challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1),
+      xpReward: challenge.xp_reward,
+      imageUrl: challenge.image || '',
+      requirements: challenge.requirements ? challenge.requirements.split('; ').filter((r: string) => r.trim()) : ['']
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateChallenge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingChallenge.title || !editingChallenge.description) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in all required fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { error } = await supabase
+      .from('challenges')
+      .update({
+        title: editingChallenge.title,
+        description: editingChallenge.description,
+        difficulty: editingChallenge.difficulty.toLowerCase(),
+        xp_reward: editingChallenge.xpReward,
+        image: editingChallenge.imageUrl,
+        requirements: editingChallenge.requirements.join('; ')
+      })
+      .eq('id', editingChallenge.id);
+
+    if (error) {
+      console.error('Update challenge error:', error);
+      toast({
+        title: "Failed to update challenge",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Challenge updated",
+      description: "The challenge has been successfully updated.",
+    });
+
+    setIsEditDialogOpen(false);
+    setEditingChallenge(null);
+    refreshChallenges();
+  };
+
+  const updateEditingRequirement = (index: number, value: string) => {
+    const updated = [...editingChallenge.requirements];
+    updated[index] = value;
+    setEditingChallenge({
+      ...editingChallenge,
+      requirements: updated
+    });
+  };
+
+  const addEditingRequirement = () => {
+    setEditingChallenge({
+      ...editingChallenge,
+      requirements: [...editingChallenge.requirements, '']
+    });
+  };
+
+  const removeEditingRequirement = (index: number) => {
+    if (editingChallenge.requirements.length > 1) {
+      const updated = editingChallenge.requirements.filter((_: string, i: number) => i !== index);
+      setEditingChallenge({
+        ...editingChallenge,
+        requirements: updated
+      });
+    }
+  };
+
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      const { error } = await supabase
+        .from('challenge_requests')
+        .update({ 
+          status: 'rejected',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: (await supabase.auth.getUser()).data.user?.id
+        })
+        .eq('id', requestId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Challenge request rejected",
+      });
+
+      // Refresh data
+      window.location.reload();
+    } catch (error) {
+      console.error('Error rejecting request:', error);
+      toast({
+        title: "Error",
+        description: "Failed to reject request",
+        variant: "destructive",
+      });
+    }
+  };
+
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Dashboard</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-white mb-2">Admin Dashboard</h1>
+          <p className="text-gray-300">
             Manage challenges, submissions, and users
           </p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
               <Clock className="w-8 h-8 text-yellow-500" />
-              <p className="text-gray-600 mt-1 mb-0">Pending Reviews</p>
+              <p className="text-gray-300 mt-1 mb-0">Pending Reviews</p>
               <p className="text-2xl font-bold mt-0 mb-0">{pendingSubmissions.length}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
               <FileText className="w-8 h-8 text-blue-500" />
-              <p className="text-gray-600 mt-1 mb-0">Total Challenges</p>
+              <p className="text-gray-300 mt-1 mb-0">Total Challenges</p>
               <p className="text-2xl font-bold mt-0 mb-0">{challenges.length}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
               <Users className="w-8 h-8 text-green-500" />
-              <p className="text-gray-600 mt-1 mb-0">Active Users</p>
+              <p className="text-gray-300 mt-1 mb-0">Active Users</p>
               <p className="text-2xl font-bold mt-0 mb-0">{users.length}</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
               <CheckCircle className="w-8 h-8 text-purple-500" />
-              <p className="text-gray-600 mt-1 mb-0">Admin Users</p>
+              <p className="text-gray-300 mt-1 mb-0">Admin Users</p>
               <p className="text-2xl font-bold mt-0 mb-0">{users.filter(u => u.role === 'admin').length}</p>
             </CardContent>
           </Card>
@@ -448,6 +591,9 @@ export function AdminDashboard() {
             <TabsTrigger value="manage-challenges" className="admin-tabs-trigger">
               Manage Challenges
             </TabsTrigger>
+            <TabsTrigger value="challenge-requests" className="admin-tabs-trigger">
+              Challenge Requests
+            </TabsTrigger>
             <TabsTrigger value="users" className="admin-tabs-trigger">
               Manage Users
             </TabsTrigger>
@@ -455,7 +601,7 @@ export function AdminDashboard() {
 
           {/* Pending Submissions */}
           <TabsContent value="submissions">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle>Pending Submissions</CardTitle>
                 <CardDescription>
@@ -466,7 +612,7 @@ export function AdminDashboard() {
                 {loadingSubmissions ? (
                   <div className="text-center py-8">
                     <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
-                    <p className="text-gray-600">Loading pending submissions...</p>
+                    <p className="text-gray-300">Loading pending submissions...</p>
                   </div>
                 ) : pendingSubmissions.length > 0 ? (
                   <div className="space-y-4">
@@ -477,8 +623,8 @@ export function AdminDashboard() {
                           <div className="flex justify-between items-start mb-4">
                             <div>
                               <h3 className="font-semibold text-lg">{challenge?.title || 'Unknown Challenge'}</h3>
-                              <p className="text-gray-600">
-                                From {submission.users?.username || 'Unknown User'} - {submission.user_id}
+                              <p className="text-gray-300">
+                                From {userProfiles[submission.user_id]?.username || `User ID: ${submission.user_id}`}
                               </p>
                               <p className="text-sm text-gray-500">
                                 {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
@@ -523,7 +669,7 @@ export function AdminDashboard() {
                 ) : (
                   <div className="text-center py-8">
                     <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No pending submissions</p>
+                    <p className="text-gray-300">No pending submissions</p>
                   </div>
                 )}
               </CardContent>
@@ -532,7 +678,7 @@ export function AdminDashboard() {
 
           {/* Create Challenge */}
           <TabsContent value="create-challenge">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle>Create New Challenge</CardTitle>
                 <CardDescription>
@@ -659,7 +805,7 @@ export function AdminDashboard() {
 
           {/* Manage Challenges */}
           <TabsContent value="manage-challenges">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle>Manage Challenges</CardTitle>
                 <CardDescription>
@@ -674,7 +820,7 @@ export function AdminDashboard() {
                         <div className="flex justify-between items-start mb-4">
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg">{challenge.title}</h3>
-                            <p className="text-gray-600 text-sm mb-2">
+                            <p className="text-gray-300 text-sm mb-2">
                               {challenge.description?.length > 100
                                 ? `${challenge.description.substring(0, 100)}...`
                                 : challenge.description}
@@ -693,13 +839,7 @@ export function AdminDashboard() {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => {
-                                // TODO: Implement edit functionality
-                                toast({
-                                  title: "Edit functionality",
-                                  description: "Edit functionality will be implemented soon.",
-                                });
-                              }}
+                              onClick={() => handleEditChallenge(challenge)}
                             >
                               <Edit className="w-4 h-4 mr-1" />
                               Edit
@@ -730,16 +870,254 @@ export function AdminDashboard() {
                 ) : (
                   <div className="text-center py-8">
                     <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No challenges found</p>
+                    <p className="text-gray-300">No challenges found</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
+          {/* Edit Challenge Dialog */}
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Challenge</DialogTitle>
+                <DialogDescription>
+                  Update the challenge details below
+                </DialogDescription>
+              </DialogHeader>
+              {editingChallenge && (
+                <form onSubmit={handleUpdateChallenge} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-title">Challenge Title</Label>
+                      <Input
+                        id="edit-title"
+                        value={editingChallenge.title}
+                        onChange={(e) => setEditingChallenge({...editingChallenge, title: e.target.value})}
+                        placeholder="Enter challenge title"
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-imageUrl">Image URL</Label>
+                      <Input
+                        id="edit-imageUrl"
+                        type="url"
+                        value={editingChallenge.imageUrl}
+                        onChange={(e) => setEditingChallenge({...editingChallenge, imageUrl: e.target.value})}
+                        placeholder="https://example.com/image.jpg"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-description">Description</Label>
+                    <Textarea
+                      id="edit-description"
+                      value={editingChallenge.description}
+                      onChange={(e) => setEditingChallenge({...editingChallenge, description: e.target.value})}
+                      placeholder="Describe the challenge and what users need to build"
+                      rows={4}
+                      required
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-difficulty">Difficulty</Label>
+                      <Select
+                        value={editingChallenge.difficulty}
+                        onValueChange={(value: 'Beginner' | 'Intermediate' | 'Expert') =>
+                          setEditingChallenge({...editingChallenge, difficulty: value})
+                        }
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Beginner">Beginner</SelectItem>
+                          <SelectItem value="Intermediate">Intermediate</SelectItem>
+                          <SelectItem value="Expert">Expert</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-xpReward">XP Reward</Label>
+                      <Input
+                        id="edit-xpReward"
+                        type="number"
+                        min="50"
+                        max="1000"
+                        step="50"
+                        value={editingChallenge.xpReward}
+                        onChange={(e) => setEditingChallenge({...editingChallenge, xpReward: parseInt(e.target.value)})}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Requirements</Label>
+                    <div className="space-y-2 mt-2">
+                      {editingChallenge.requirements.map((req: string, index: number) => (
+                        <div key={index} className="flex space-x-2">
+                          <Input
+                            value={req}
+                            onChange={(e) => updateEditingRequirement(index, e.target.value)}
+                            placeholder={`Requirement ${index + 1}`}
+                          />
+                          {editingChallenge.requirements.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeEditingRequirement(index)}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addEditingRequirement}
+                        className="mt-2 text-sm border-[#30363d] bg-[#161b22] hover:bg-[#23272e] text-[#c9d1d9]"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Requirement
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditDialogOpen(false);
+                        setEditingChallenge(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-gradient-to-r from-purple-700 to-blue-700 text-white shadow-md hover:from-purple-600 hover:to-blue-600"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Update Challenge
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+
           {/* Manage Users */}
+          {/* Challenge Requests */}
+          <TabsContent value="challenge-requests">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Challenge Requests</CardTitle>
+                <CardDescription className="text-gray-300">
+                  Review and manage challenge requests from users
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {challengeRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-300">No challenge requests found</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {challengeRequests.map((request) => (
+                      <Card key={request.id} className="bg-gray-700 border-gray-600">
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold text-white mb-2">{request.title}</h3>
+                              <p className="text-gray-300 text-sm mb-2">
+                                by {userProfiles[request.user_id]?.username || `User ID: ${request.user_id}`}
+                              </p>
+                              <div className="flex gap-2 mb-3">
+                                <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                                  {request.difficulty}
+                                </Badge>
+                                <Badge variant="outline" className="border-gray-500 text-gray-300">
+                                  {request.category}
+                                </Badge>
+                                <Badge 
+                                  variant={request.status === 'pending' ? 'default' : 
+                                         request.status === 'approved' ? 'secondary' : 'destructive'}
+                                  className={
+                                    request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    request.status === 'approved' ? 'bg-green-100 text-green-800' :
+                                    'bg-red-100 text-red-800'
+                                  }
+                                >
+                                  {request.status}
+                                </Badge>
+                              </div>
+                            </div>
+                            <div className="text-sm text-gray-400">
+                              {new Date(request.created_at).toLocaleDateString()}
+                            </div>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div>
+                              <h4 className="font-medium text-white mb-1">Description</h4>
+                              <p className="text-gray-300 text-sm">{request.description}</p>
+                            </div>
+                            
+                            <div>
+                              <h4 className="font-medium text-white mb-1">Requirements</h4>
+                              <p className="text-gray-300 text-sm">{request.requirements}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-600">
+                            {request.status === 'pending' && (
+                              <>
+                                <EditChallengeRequestModal request={request} onSuccess={() => window.location.reload()}>
+                                  <Button
+                                    size="sm"
+                                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                                  >
+                                    <Plus className="w-4 h-4 mr-1" />
+                                    Create Challenge
+                                  </Button>
+                                </EditChallengeRequestModal>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleRejectRequest(request.id)}
+                                  className="border-red-500 text-red-500 hover:bg-red-50"
+                                >
+                                  <XCircle className="w-4 h-4 mr-1" />
+                                  Reject
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="users">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle>User Management</CardTitle>
                 <CardDescription>
@@ -750,7 +1128,7 @@ export function AdminDashboard() {
                 {loadingUsers ? (
                   <div className="text-center py-8">
                     <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4 animate-spin" />
-                    <p className="text-gray-600">Loading users...</p>
+                    <p className="text-gray-300">Loading users...</p>
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -758,7 +1136,7 @@ export function AdminDashboard() {
                       <div key={user.id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                         <div>
                           <h3 className="font-semibold">{user.username}</h3>
-                          <p className="text-sm text-gray-600">{user.email}</p>
+                          <p className="text-sm text-gray-300">{user.email}</p>
                           <p className="text-sm text-purple-600 font-medium">{user.total_xp} XP</p>
                         </div>
                         <div className="flex items-center space-x-2">
