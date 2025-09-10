@@ -8,7 +8,7 @@ export function LandingPage() {
   return (
     <main className="min-h-screen">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gray-900 responsive-transition">
+      <section className="relative overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black responsive-transition">
         <div className="absolute inset-0 bg-gradient-to-br from-purple-600/10 via-blue-600/10 to-purple-800/10"></div>
         <div className="relative container-responsive py-16 sm:py-20 md:py-24 lg:py-32">
           <div className="text-center">
@@ -35,7 +35,7 @@ export function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gray-900">
+      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
         <div className="container-responsive">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-3 sm:mb-4">
@@ -90,7 +90,7 @@ export function LandingPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gray-900">
+      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
         <div className="container-responsive">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
@@ -114,7 +114,7 @@ export function LandingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-12 sm:py-16 md:py-20 bg-gray-900">
+      <section className="py-12 sm:py-16 md:py-20 bg-gradient-to-br from-gray-900 via-gray-800 to-black">
         <div className="container-responsive max-w-4xl text-center">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6 px-4 sm:px-0">
             Ready to Start Your No-Code Journey?

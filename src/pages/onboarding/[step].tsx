@@ -296,7 +296,7 @@ export default function OnboardingStepPage() {
           totalSteps={totalSteps}
         />
       ) : (
-        <div className="min-h-screen bg-gray-900">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <header className="mb-8">

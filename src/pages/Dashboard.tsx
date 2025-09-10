@@ -46,7 +46,7 @@ export function Dashboard() {
   const progressToNextLevel = (user.xp % 1000) / 10;
 
   return (
-    <main className="min-h-screen bg-gray-900">
+    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="container-responsive py-6 sm:py-8">
         {/* Welcome Header */}
         <header className="mb-6 sm:mb-8">
