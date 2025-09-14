@@ -5,12 +5,12 @@ import { Input } from '@/components/ui/input';
 import { getCroppedImg } from '@/lib/utils';
 
 interface AvatarUploadCropperProps {
-  onUpload: (file: File) => Promise<string>; // returns public URL
-  onComplete: (url: string) => void;
+  onCropComplete: (croppedFile: File) => void; // returns cropped file without uploading
+  initialImage?: string;
 }
 
-export function AvatarUploadCropper({ onUpload, onComplete }: AvatarUploadCropperProps) {
-  const [imageSrc, setImageSrc] = useState<string | null>(null);
+export function AvatarUploadCropper({ onCropComplete: onCropCompleteCallback, initialImage }: AvatarUploadCropperProps) {
+  const [imageSrc, setImageSrc] = useState<string | null>(initialImage || null);
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
@@ -37,16 +37,15 @@ export function AvatarUploadCropper({ onUpload, onComplete }: AvatarUploadCroppe
     setCroppedAreaPixels(croppedPixels);
   }, []);
 
-  const handleCropAndUpload = async () => {
+  const handleCrop = async () => {
     if (!imageSrc || !croppedAreaPixels) return;
     setCropping(true);
     try {
       const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
       const croppedFile = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
-      const url = await onUpload(croppedFile);
-      onComplete(url);
+      onCropCompleteCallback(croppedFile);
     } catch (err) {
-      setError('Failed to crop or upload image.');
+      setError('Failed to crop image.');
     } finally {
       setCropping(false);
     }
@@ -70,8 +69,8 @@ export function AvatarUploadCropper({ onUpload, onComplete }: AvatarUploadCroppe
         </div>
       )}
       {imageSrc && (
-        <Button onClick={handleCropAndUpload} disabled={cropping}>
-          {cropping ? 'Uploading...' : 'Save Avatar'}
+        <Button onClick={handleCrop} disabled={cropping}>
+          {cropping ? 'Cropping...' : 'Crop Image'}
         </Button>
       )}
     </div>

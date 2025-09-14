@@ -24,9 +24,98 @@ export function ProfilePage() {
     githubUsername: currentUser?.githubUsername || '',
     avatar: currentUser?.avatar || ''
   });
+  const [croppedFile, setCroppedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [completedChallenges, setCompletedChallenges] = useState(0);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
+
+  // Helper function to delete old avatar from storage
+  const deleteOldAvatar = async (avatarUrl: string) => {
+    if (!avatarUrl || !avatarUrl.includes('avatars/')) {
+      return;
+    }
+    
+    try {
+      let filePath: string;
+      
+      // Handle different URL formats
+      if (avatarUrl.includes('storage/v1/object/public/avatars/')) {
+        // Supabase public URL format: https://project.supabase.co/storage/v1/object/public/avatars/filename.jpg
+        const url = new URL(avatarUrl);
+        const pathParts = url.pathname.split('/');
+        const fileName = pathParts[pathParts.length - 1];
+        
+        // Check if this is the old format with double avatars
+        if (avatarUrl.includes('/avatars/avatars/')) {
+          filePath = `avatars/${fileName}`;
+        } else {
+          filePath = fileName;
+        }
+      } else if (avatarUrl.includes('avatars/')) {
+        // Direct path format or other formats
+        const url = new URL(avatarUrl);
+        const pathParts = url.pathname.split('/');
+        const fileName = pathParts[pathParts.length - 1];
+        
+        // Check if this is the old format with double avatars
+        if (avatarUrl.includes('/avatars/avatars/')) {
+          filePath = `avatars/${fileName}`;
+        } else {
+          filePath = fileName;
+        }
+      } else {
+        return;
+      }
+      
+      // Try multiple deletion approaches
+      const deletionPaths = [
+        filePath,
+        `/${filePath}`,
+        filePath.replace(/^\/+/, ''), // Remove leading slashes
+        `avatars/${filePath}`,
+        `avatars/${filePath.replace(/^avatars\//, '')}` // Remove duplicate avatars prefix
+      ];
+      
+      for (const path of deletionPaths) {
+        const { error } = await supabase.storage
+          .from('avatars')
+          .remove([path]);
+        
+        if (!error) {
+          break; // Successfully deleted
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error deleting old avatar:', error);
+    }
+  };
+
+  // Helper function to upload new avatar
+  const uploadAvatar = async (file: File): Promise<string> => {
+    const filePath = `${user.id}_${Date.now()}.jpg`;
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, { upsert: true });
+    
+    if (error) throw new Error(error.message);
+    
+    const { data: urlData } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+    
+    return urlData?.publicUrl || '';
+  };
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -81,38 +170,74 @@ export function ProfilePage() {
 
   const handleSave = async () => {
     if (!user) return;
-    const { error } = await supabase
-      .from('users')
-      .update({
+    
+    try {
+      let newAvatarUrl = formData.avatar;
+      
+      // If there's a cropped file, upload it and delete the old avatar
+      if (croppedFile) {
+        // Store the old avatar URL for cleanup
+        const oldAvatarUrl = formData.avatar;
+        
+        // Upload the new avatar
+        newAvatarUrl = await uploadAvatar(croppedFile);
+        
+        // Delete the old avatar if it exists and is different
+        if (oldAvatarUrl && oldAvatarUrl !== newAvatarUrl) {
+          await deleteOldAvatar(oldAvatarUrl);
+        }
+      }
+      
+      const { error } = await supabase
+        .from('users')
+        .update({
+          username: formData.username,
+          bio: formData.bio,
+          github_username: formData.githubUsername,
+          avatar: newAvatarUrl
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        toast({
+          title: "Update failed",
+          description: error.message,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setUser({
+        ...user,
         username: formData.username,
         bio: formData.bio,
-        github_username: formData.githubUsername,
-        avatar: formData.avatar
-      })
-      .eq('id', user.id);
+        githubUsername: formData.githubUsername,
+        avatar: newAvatarUrl
+      });
 
-    if (error) {
+      // Update form data with the new avatar URL
+      setFormData(prev => ({ ...prev, avatar: newAvatarUrl }));
+      
+      // Clear the cropped file and preview
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setCroppedFile(null);
+      setPreviewUrl(null);
+
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+      });
+      setIsEditing(false);
+    } catch (error) {
+      console.error('Error saving profile:', error);
       toast({
         title: "Update failed",
-        description: error.message,
+        description: "Failed to update profile. Please try again.",
         variant: "destructive",
       });
-      return;
     }
-
-    setUser({
-      ...user,
-      username: formData.username,
-      bio: formData.bio,
-      githubUsername: formData.githubUsername,
-      avatar: formData.avatar
-    });
-
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been successfully updated.",
-    });
-    setIsEditing(false);
   };
 
   const handleCancel = () => {
@@ -122,8 +247,27 @@ export function ProfilePage() {
       githubUsername: user?.githubUsername || '',
       avatar: user?.avatar || ''
     });
+    // Clear any cropped file and preview when canceling
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setCroppedFile(null);
+    setPreviewUrl(null);
     setIsEditing(false);
   };
+
+  // Handle cropped file from the cropper
+  const handleCropComplete = (file: File) => {
+    setCroppedFile(file);
+    // Clean up previous preview URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    // Create a preview URL for the cropped image
+    const url = URL.createObjectURL(file);
+    setPreviewUrl(url);
+  };
+
 
   // Only allow editing if viewing own profile
   const isOwnProfile = !id || id === currentUser?.id;
@@ -160,24 +304,21 @@ export function ProfilePage() {
                     <div>
                       <Label className="text-sm font-medium">Avatar Image</Label>
                       <AvatarUploadCropper
-                        onUpload={async (file) => {
-                          // Upload to Supabase Storage
-                          const filePath = `avatars/${user.id}_${Date.now()}.jpg`;
-                          const { data, error } = await supabase.storage
-                            .from('avatars')
-                            .upload(filePath, file, { upsert: true });
-                          if (error) throw new Error(error.message);
-                          // Get public URL
-                          const { data: urlData } = supabase.storage
-                            .from('avatars')
-                            .getPublicUrl(filePath);
-                          return urlData?.publicUrl || '';
-                        }}
-                        onComplete={(url) => setFormData({ ...formData, avatar: url })}
+                        onCropComplete={handleCropComplete}
+                        initialImage={formData.avatar}
                       />
-                      {formData.avatar && (
+                      {(previewUrl || formData.avatar) && (
                         <div className="mt-2">
-                          <img src={formData.avatar} alt="Avatar preview" className="w-20 h-20 rounded-full mx-auto" />
+                          <img 
+                            src={previewUrl || formData.avatar} 
+                            alt="Avatar preview" 
+                            className="w-20 h-20 rounded-full mx-auto" 
+                          />
+                          {previewUrl && (
+                            <p className="text-sm text-gray-400 text-center mt-1">
+                              Preview - Click "Save Changes" to apply
+                            </p>
+                          )}
                         </div>
                       )}
                     </div>
