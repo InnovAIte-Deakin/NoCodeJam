@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import Cropper from 'react-easy-crop';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Slider } from '@/components/ui/slider';
 import { getCroppedImg } from '@/lib/utils';
 
 interface AvatarUploadCropperProps {
@@ -56,16 +57,38 @@ export function AvatarUploadCropper({ onCropComplete: onCropCompleteCallback, in
       <Input type="file" accept="image/*" onChange={onFileChange} />
       {error && <div className="text-red-500 text-sm">{error}</div>}
       {imageSrc && (
-        <div className="relative w-full h-64 bg-gray-900">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            aspect={1}
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onCropComplete={onCropComplete}
-          />
+        <div className="space-y-4">
+          <div className="relative w-full h-64 bg-gray-900">
+            <Cropper
+              image={imageSrc}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={onCropComplete}
+            />
+          </div>
+          
+          {/* Zoom Slider */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between text-sm text-gray-300">
+              <span>Zoom</span>
+              <span>{Math.round(zoom * 100)}%</span>
+            </div>
+            <Slider
+              value={[zoom]}
+              onValueChange={(value) => setZoom(value[0])}
+              min={1}
+              max={3}
+              step={0.1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>1x</span>
+              <span>3x</span>
+            </div>
+          </div>
         </div>
       )}
       {imageSrc && (
