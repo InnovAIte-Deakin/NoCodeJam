@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { AvatarUploadCropper } from '@/components/ui/AvatarUploadCropper';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -157,15 +158,28 @@ export function ProfilePage() {
                       />
                     </div>
                     <div>
-                      <Label htmlFor="avatar" className="text-sm font-medium">Avatar URL</Label>
-                      <Input
-                        id="avatar"
-                        type="url"
-                        value={formData.avatar}
-                        onChange={(e) => setFormData({...formData, avatar: e.target.value})}
-                        placeholder="https://example.com/avatar.jpg"
-                        className="mt-1"
+                      <Label className="text-sm font-medium">Avatar Image</Label>
+                      <AvatarUploadCropper
+                        onUpload={async (file) => {
+                          // Upload to Supabase Storage
+                          const filePath = `avatars/${user.id}_${Date.now()}.jpg`;
+                          const { data, error } = await supabase.storage
+                            .from('avatars')
+                            .upload(filePath, file, { upsert: true });
+                          if (error) throw new Error(error.message);
+                          // Get public URL
+                          const { data: urlData } = supabase.storage
+                            .from('avatars')
+                            .getPublicUrl(filePath);
+                          return urlData?.publicUrl || '';
+                        }}
+                        onComplete={(url) => setFormData({ ...formData, avatar: url })}
                       />
+                      {formData.avatar && (
+                        <div className="mt-2">
+                          <img src={formData.avatar} alt="Avatar preview" className="w-20 h-20 rounded-full mx-auto" />
+                        </div>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="bio" className="text-sm font-medium">Bio</Label>
