@@ -178,6 +178,13 @@ export default function OnboardingStepPage() {
     }
   }, [loading, progressLoading, steps, latestCompletedStep, isReviewMode]);
 
+  // Reset verification state when step changes
+  useEffect(() => {
+    setVerificationCode('');
+    setVerificationError(null);
+    setVerificationSuccess(false);
+  }, [currentStep]);
+
   // Navigation handlers
   const handlePrevious = () => {
     if (currentStep > 1) {
@@ -388,10 +395,10 @@ export default function OnboardingStepPage() {
                 <div>
 
                   <div className="mb-8">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4 text-center">
+                    <h2 className="text-2xl font-semibold text-white mb-4 text-center">
                       {currentStepData.title}
                     </h2>
-                    <div className="text-gray-600 text-lg text-left">
+                    <div className="text-gray-300 text-lg text-left">
                       {currentStepData.description
                         ? currentStepData.description.split(/\r?\n+/).map((para, idx) => (
                             para.trim() && <p key={idx} className="mb-2">{para}</p>
@@ -489,8 +496,8 @@ export default function OnboardingStepPage() {
 
                         {/* Success State */}
                         {isCurrentStepCompleted && (
-                          <div className="flex items-center justify-center p-4 bg-green-50 border border-green-200 rounded-lg">
-                            <div className="flex items-center space-x-2 text-green-700">
+                          <div className="flex items-center justify-center p-4 bg-green-900/20 border border-green-600 rounded-lg">
+                            <div className="flex items-center space-x-2 text-green-400">
                               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                               </svg>
@@ -507,8 +514,8 @@ export default function OnboardingStepPage() {
 
                   {/* Step Indicator */}
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
-                      <span className="text-2xl font-bold text-purple-600">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-900/30 border border-purple-500 rounded-full mb-4">
+                      <span className="text-2xl font-bold text-purple-300">
                         {currentStep}
                       </span>
                     </div>

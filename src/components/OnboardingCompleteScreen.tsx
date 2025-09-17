@@ -15,9 +15,9 @@ export function OnboardingCompleteScreen({
 }: OnboardingCompleteScreenProps) {
   const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur">
+        <Card className="shadow-2xl border-0 bg-gray-800 border-gray-700">
           <CardContent className="p-12">
             {/* Success Icon */}
             <div className="text-center mb-8">
@@ -28,15 +28,15 @@ export function OnboardingCompleteScreen({
                 </div>
               </div>
               
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-4xl font-bold text-white mb-4">
                 🎉 Congratulations!
               </h1>
               
-              <h2 className="text-2xl font-semibold text-purple-700 mb-2">
+              <h2 className="text-2xl font-semibold text-purple-300 mb-2">
                 You've completed the onboarding!
               </h2>
               
-              <p className="text-gray-600 text-lg">
+              <p className="text-gray-300 text-lg">
                 You've successfully finished all {totalSteps} steps of the {challengeTitle}
               </p>
             </div>
@@ -121,8 +121,8 @@ export function OnboardingCompleteScreen({
             </div>
 
             {/* Footer Message */}
-            <div className="text-center mt-4 pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-500">
+            <div className="text-center mt-4 pt-4 border-t border-gray-600">
+              <p className="text-sm text-gray-400">
                 Welcome to the NoCodeJam community! 🚀
               </p>
             </div>
