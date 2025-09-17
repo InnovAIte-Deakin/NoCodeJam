@@ -253,18 +253,22 @@ export function Dashboard() {
                 {badgesLoading && userBadges.length === 0 ? (
                   <div className="text-center py-4 sm:py-6 text-gray-400 text-sm">Loading badges...</div>
                 ) : userBadges.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-2 gap-1 sm:gap-4">
                     {userBadges.slice(0, 6).map((badge) => (
-                      <div key={badge.id} className="text-center p-2 sm:p-3 bg-gradient-to-br from-yellow-600 to-orange-600 rounded-lg border border-yellow-500">
-                        <div className="text-xl sm:text-2xl mb-1 sm:mb-2">{badge.icon}</div>
-                        <div className="font-medium text-xs sm:text-sm text-white">{badge.name}</div>
-                        <div className="text-[10px] text-yellow-100 mt-1 line-clamp-2">{badge.description}</div>
+                      <div
+                        key={badge.id}
+                        className="relative p-3 sm:p-4 rounded-xl bg-gray-900/70 border border-gray-700 hover:border-gray-500 transition-colors shadow-sm flex flex-col"
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <span className="text-2xl sm:text-3xl leading-none select-none">{badge.icon}</span>
+                        </div>
+                        <h4 className="font-semibold text-sm sm:text-base text-white mb-1 line-clamp-1">{badge.name}</h4>
+                        <p className="text-xs text-gray-400 line-clamp-2 flex-1">{badge.description}</p>
+                        <div className="mt-2 text-[10px] text-gray-500">Earned {badge.unlockedAt?.toLocaleDateString?.() || ''}</div>
                       </div>
                     ))}
                     {userBadges.length > 6 && (
-                      <div className="col-span-full text-center text-[10px] text-yellow-200">
-                        +{userBadges.length - 6} more — view all on your profile
-                      </div>
+                      <div className="col-span-full text-center text-xs text-gray-400">+{userBadges.length - 6} more — view all on your profile</div>
                     )}
                   </div>
                 ) : (
