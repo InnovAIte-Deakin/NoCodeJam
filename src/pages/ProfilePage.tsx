@@ -8,15 +8,21 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { User, Github, Mail, Calendar, ExternalLink, Trophy } from 'lucide-react';
+import { Github, Calendar, ExternalLink, Trophy } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Link, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { BadgeService } from '@/services/badgeService';
+import type { Badge as BadgeType } from '@/types';
+
+interface SubmissionRow { id: string; challenge_id: string; status: string; submitted_at?: string; admin_feedback?: string; submission_url: string; }
+interface ChallengeRow { id: string; title: string; }
+// Removed unused BadgesCard import (badge list rendered inline below)
 
 export function ProfilePage() {
   const { user: currentUser, setUser } = useAuth();
   const { id } = useParams();
-  const [user, setProfileUser] = useState<any>(currentUser);
+  const [user, setProfileUser] = useState<typeof currentUser>(currentUser);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: currentUser?.username || '',
@@ -27,8 +33,8 @@ export function ProfilePage() {
   const [croppedFile, setCroppedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [completedChallenges, setCompletedChallenges] = useState(0);
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [challenges, setChallenges] = useState<any[]>([]);
+  const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
 
   // Helper function to delete old avatar from storage
   const deleteOldAvatar = async (avatarUrl: string) => {
@@ -94,8 +100,9 @@ export function ProfilePage() {
 
   // Helper function to upload new avatar
   const uploadAvatar = async (file: File): Promise<string> => {
+    if (!user?.id) throw new Error('No user available for avatar upload');
     const filePath = `${user.id}_${Date.now()}.jpg`;
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('avatars')
       .upload(filePath, file, { upsert: true });
     
@@ -116,6 +123,9 @@ export function ProfilePage() {
       }
     };
   }, [previewUrl]);
+  const [userBadges, setUserBadges] = useState<BadgeType[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(false);
+  const [badgesError, setBadgesError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -155,7 +165,7 @@ export function ProfilePage() {
           .select('*')
           .eq('user_id', user.id);
         setSubmissions(submissionsData || []);
-        setCompletedChallenges(submissionsData ? submissionsData.filter((s: any) => s.status === 'approved').length : 0);
+  setCompletedChallenges(submissionsData ? submissionsData.filter((s: SubmissionRow) => s.status === 'approved').length : 0);
       }
     };
     const fetchChallenges = async () => {
@@ -164,8 +174,23 @@ export function ProfilePage() {
         .select('id, title');
       setChallenges(challengesData || []);
     };
+    const fetchBadges = async () => {
+      if (!user?.id) return;
+      try {
+        setBadgesLoading(true);
+        setBadgesError(null);
+        const badges = await BadgeService.getUserBadges(user.id);
+        setUserBadges(badges);
+      } catch (error) {
+        console.error('Error fetching user badges:', error);
+        setBadgesError('Failed to load badges');
+      } finally {
+        setBadgesLoading(false);
+      }
+    };
     fetchCompleted();
     fetchChallenges();
+    fetchBadges();
   }, [user]);
 
   const handleSave = async () => {
@@ -271,6 +296,22 @@ export function ProfilePage() {
 
   // Only allow editing if viewing own profile
   const isOwnProfile = !id || id === currentUser?.id;
+
+  const refreshBadges = async () => {
+    if (!user?.id) return;
+    await BadgeService.processUserBadges?.(user.id); // optional if method exists; safe optional chaining
+    // Re-fetch after processing
+    try {
+      setBadgesLoading(true);
+      const badges = await BadgeService.getUserBadges(user.id);
+      setUserBadges(badges);
+    } catch (e) {
+      console.error('Error refreshing badges:', e);
+      setBadgesError('Failed to refresh badges');
+    } finally {
+      setBadgesLoading(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -409,7 +450,7 @@ export function ProfilePage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-300">Badges Earned</span>
-                    <span className="font-bold text-yellow-400">{(user?.badges?.length ?? 0)}</span>
+                    <span className="font-bold text-yellow-400">{userBadges.length}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-300">Account Type</span>
@@ -419,6 +460,30 @@ export function ProfilePage() {
                     <span className="text-gray-300">Challenges Completed</span>
                     <span className="font-bold text-green-400">{completedChallenges}</span>
                   </div>
+                  
+                  {/* Badges Preview */}
+                  {userBadges.length > 0 && (
+                    <div className="pt-2">
+                      <span className="text-muted-foreground text-sm">Recent Badges</span>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {userBadges.slice(0, 5).map((badge) => (
+                          <div
+                            key={badge.id}
+                            className="flex items-center gap-1 bg-card border border-border px-2 py-1 rounded-md hover:border-primary/50 transition-colors"
+                            title={badge.description}
+                          >
+                            <span className="text-lg">{badge.icon}</span>
+                            <span className="text-xs font-medium text-foreground">{badge.name}</span>
+                          </div>
+                        ))}
+                        {userBadges.length > 5 && (
+                          <span className="text-xs text-muted-foreground flex items-center">
+                            +{userBadges.length - 5} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -435,8 +500,8 @@ export function ProfilePage() {
               <CardContent>
                 {submissions.length > 0 ? (
                   <div className="space-y-4">
-                    {submissions.map((submission: any) => {
-                      const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
+                    {submissions.map((submission) => {
+                      const challenge = challenges.find((c) => c.id === submission.challenge_id);
                       return (
                         <div key={submission.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-700 rounded-lg space-y-2 sm:space-y-0">
                           <div className="flex-1">
@@ -479,18 +544,36 @@ export function ProfilePage() {
             </Card>
             {/* Badges Section */}
             <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Badges</CardTitle>
-                <CardDescription className="text-gray-300">Your achievements and milestones</CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 space-x-4">
+                <div>
+                  <CardTitle className="text-white">Badges</CardTitle>
+                  <CardDescription className="text-gray-300">Your achievements and milestones</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={refreshBadges} disabled={badgesLoading}>
+                  {badgesLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                {(user?.badges?.length ?? 0) > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {(user.badges || []).map((badge: any) => (
-                      <div key={badge.id} className="text-center p-2 sm:p-3 bg-gradient-to-br from-yellow-600 to-orange-600 rounded-lg border border-yellow-500">
-                        <div className="text-xl sm:text-2xl mb-1 sm:mb-2">{badge.icon}</div>
-                        <div className="font-medium text-xs sm:text-sm text-white">{badge.name}</div>
-                        <div className="text-xs text-yellow-100 mt-1">{badge.description}</div>
+                {badgesError && (
+                  <div className="mb-4 text-xs text-red-400">{badgesError}</div>
+                )}
+                {badgesLoading && userBadges.length === 0 ? (
+                  <div className="text-center py-4 sm:py-6 text-gray-400 text-sm">Loading badges...</div>
+                ) : userBadges.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {userBadges.map((badge) => (
+                      <div
+                        key={badge.id}
+                        className="relative rounded-lg p-4 bg-gray-900/70 border border-gray-700 hover:border-gray-500 hover:bg-gray-900 shadow-sm transition-colors group"
+                      >
+                        <div className="text-center flex flex-col h-full">
+                          <div className="text-3xl mb-2 group-hover:scale-110 transition-transform duration-200 drop-shadow-sm">{badge.icon}</div>
+                          <h4 className="font-medium text-gray-100 text-sm mb-1 line-clamp-1">{badge.name}</h4>
+                          <p className="text-[11px] text-gray-400 mb-3 line-clamp-2 flex-1">{badge.description}</p>
+                          <p className="text-[10px] uppercase tracking-wide font-medium text-indigo-300/80 mt-auto">
+                            Earned {badge.unlockedAt.toLocaleDateString?.() || ''}
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>

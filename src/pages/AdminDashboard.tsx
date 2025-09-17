@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
+import BadgeManagement from '@/components/BadgeManagement';
 import {
   CheckCircle,
   XCircle,
@@ -152,6 +153,22 @@ export function AdminDashboard() {
       });
       return;
     }
+
+    // Badge awarding logic
+    try {
+      const { BadgeService } = await import('@/services/badgeService');
+      const newBadges = await BadgeService.processUserAction(submission.user_id);
+      if (newBadges && newBadges.length > 0) {
+        toast({
+          title: `User earned ${newBadges.length} badge${newBadges.length > 1 ? 's' : ''}!`,
+          description: newBadges.map(b => b.name).join(', '),
+        });
+      }
+    } catch (err) {
+      // Ignore badge errors for admin
+      console.error('Badge awarding error:', err);
+    }
+
     toast({
       title: "Submission approved",
       description: "The submission has been approved and the user has been awarded XP.",
@@ -593,6 +610,9 @@ export function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="challenge-requests" className="admin-tabs-trigger">
               Challenge Requests
+            </TabsTrigger>
+            <TabsTrigger value="badges" className="admin-tabs-trigger">
+              Badge Management
             </TabsTrigger>
             <TabsTrigger value="users" className="admin-tabs-trigger">
               Manage Users
@@ -1168,6 +1188,11 @@ export function AdminDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Badge Management */}
+          <TabsContent value="badges">
+            <BadgeManagement />
           </TabsContent>
         </Tabs>
       </div>
