@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { OnboardingProgressBar } from '@/components/OnboardingProgressBar';
-import { OnboardingSubmissionForm } from '@/components/OnboardingSubmissionForm';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
-import { ChevronLeft, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Loader2, AlertCircle, Download } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
+import { getOnboardingProgress, updateOnboardingProgress, verifyOnboardingStep, getChallengeId } from '@/services/onboardingService';
 
 interface OnboardingStep {
   id: number;
@@ -17,6 +18,7 @@ interface OnboardingStep {
   video_url: string | null;
   submission_type: 'url' | 'text' | null;
   submission_label: string | null;
+  download_url: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -24,15 +26,15 @@ interface OnboardingStep {
 export default function OnboardingStepPage() {
   const { step } = useParams<{ step: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Check if we're in review mode - now reactive to URL changes
+  const isReviewMode = searchParams.get('review') === 'true';
   
   // State for data fetching
   const [steps, setSteps] = useState<OnboardingStep[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // State for submission handling
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submissionError, setSubmissionError] = useState<string | null>(null);
   
   // State for completion
   const [isCompleting, setIsCompleting] = useState(false);
@@ -40,31 +42,33 @@ export default function OnboardingStepPage() {
   const [completionError, setCompletionError] = useState<string | null>(null);
   
   // State for progress tracking
-  const [userProgress, setUserProgress] = useState<{
-    completedStepIds: number[];
-    allSubmittedStepIds: number[];
-    highestCompletedStep: number;
-    currentStepNumber: number;
-    challengeId: number;
-  } | null>(null);
+  const [latestCompletedStep, setLatestCompletedStep] = useState<number>(0);
   const [progressLoading, setProgressLoading] = useState(true);
   
-  // Parse the step number from the URL
-  const currentStep = parseInt(step || '1', 10);
+  // State for verification
+  const [verificationCode, setVerificationCode] = useState<string>('');
+  const [verificationLoading, setVerificationLoading] = useState<boolean>(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verificationSuccess, setVerificationSuccess] = useState<boolean>(false);
+  
+  // Parse the step number from the URL or handle special cases
+  const urlStep = step || '1';
+  const isCompleteRoute = urlStep === 'complete';
+  const currentStep = isCompleteRoute ? 1 : parseInt(urlStep, 10);
   const totalSteps = steps.length;
   
   // Find the current step data
   const currentStepData = steps.find(s => s.step_number === currentStep);
   
-  // Check if current step is already completed
-  const isCurrentStepCompleted = userProgress?.completedStepIds.includes(currentStepData?.id || 0) || false;
+  // Calculate current step number based on latest completed step
+  const currentStepNumber = latestCompletedStep + 1;
   
-  // Check if current step has been submitted (but may not be completed yet)
-  const isCurrentStepSubmitted = userProgress?.allSubmittedStepIds.includes(currentStepData?.id || 0) || false;
+  // Check if current step is already completed
+  const isCurrentStepCompleted = currentStep <= latestCompletedStep;
   
   // Check if we're on the last step and all steps are completed
   const isLastStep = currentStep === totalSteps;
-  const allStepsCompleted = userProgress?.completedStepIds.length === totalSteps;
+  const allStepsCompleted = latestCompletedStep >= totalSteps;
 
   // Fetch onboarding steps data
   useEffect(() => {
@@ -92,12 +96,8 @@ export default function OnboardingStepPage() {
               Authorization: `Bearer ${session.access_token}`,
             },
           }),
-          // Fetch user progress
-          supabase.functions.invoke('get-onboarding-progress', {
-            headers: {
-              Authorization: `Bearer ${session.access_token}`,
-            },
-          })
+          // Fetch user progress using new service
+          getOnboardingProgress()
         ]);
 
         // Handle steps response
@@ -113,36 +113,32 @@ export default function OnboardingStepPage() {
         setSteps(stepsData);
 
         // Handle progress response
-        if (progressResponse.error) {
-          console.warn('Failed to fetch progress:', progressResponse.error);
-          // Don't throw here - progress is optional
-        } else if (progressResponse.data?.error) {
-          console.warn('Progress error:', progressResponse.data.error);
-        } else {
-          const progressData = progressResponse.data;
-          setUserProgress({
-            completedStepIds: progressData.completedStepIds || [],
-            allSubmittedStepIds: progressData.allSubmittedStepIds || [],
-            highestCompletedStep: progressData.highestCompletedStep || 0,
-            currentStepNumber: progressData.currentStepNumber || 1,
-            challengeId: progressData.challengeId
-          });
+        if (progressResponse) {
+          setLatestCompletedStep(progressResponse.latest_completed_step);
 
-          // Auto-redirect logic: if user is on a step they should skip
-          const urlStep = parseInt(step || '1', 10);
-          const recommendedStep = progressData.currentStepNumber || 1;
-          
-          if (urlStep < recommendedStep && stepsData.length > 0) {
-            // User is trying to access a step they've already completed
-            // Redirect them to their current step
-            navigate(`/onboarding/${recommendedStep}`, { replace: true });
-            return; // Exit early since we're redirecting
+          // Check if user has completed all steps (skip in review mode)
+          const totalStepsFromData = stepsData.length;
+          if (progressResponse.latest_completed_step >= totalStepsFromData && !isReviewMode) {
+            // User has completed all steps, show completion screen
+            setIsCompleted(true);
+            setProgressLoading(false);
+            return;
           }
 
-          // Check if current step is already completed for form state
-          const currentStepInData = stepsData.find((s: any) => s.step_number === urlStep);
-          if (currentStepInData && progressData.completedStepIds?.includes(currentStepInData.id)) {
-            // Step is already completed - form should show as submitted
+          // Auto-redirect logic: if user is on a step they should skip (skip in review mode)
+          const urlStep = parseInt(step || '1', 10);
+          const recommendedStep = progressResponse.latest_completed_step + 1;
+
+          if (
+            urlStep <= progressResponse.latest_completed_step &&
+            stepsData.length > 0 &&
+            progressResponse.latest_completed_step >= totalStepsFromData &&
+            !isReviewMode
+          ) {
+            // User has completed all steps and is trying to access a previous step
+            // Redirect to review mode
+            navigate(`/onboarding/${recommendedStep}?review=true`, { replace: true });
+            return;
           }
         }
 
@@ -156,119 +152,132 @@ export default function OnboardingStepPage() {
     };
 
     fetchOnboardingData();
-  }, [step, navigate]);
+  }, [step, navigate, isReviewMode]);
+
+  // Refetch function for progress synchronization
+  const refetchProgress = async () => {
+    try {
+      console.log('🔄 Refetching progress data...');
+      const progressResponse = await getOnboardingProgress();
+      if (progressResponse) {
+        setLatestCompletedStep(progressResponse.latest_completed_step);
+        console.log('✅ Progress updated:', progressResponse.latest_completed_step);
+      }
+    } catch (err) {
+      console.error('❌ Error refetching progress:', err);
+    }
+  };
+
+  // Check for completion after data is loaded (skip in review mode)
+  useEffect(() => {
+    if (!loading && !progressLoading && steps.length > 0 && latestCompletedStep >= steps.length && !isReviewMode) {
+      setIsCompleted(true);
+    } else if (isReviewMode) {
+      // Reset completion state when entering review mode
+      setIsCompleted(false);
+    }
+  }, [loading, progressLoading, steps, latestCompletedStep, isReviewMode]);
+
+  // Reset verification state when step changes
+  useEffect(() => {
+    setVerificationCode('');
+    setVerificationError(null);
+    setVerificationSuccess(false);
+  }, [currentStep]);
 
   // Navigation handlers
   const handlePrevious = () => {
     if (currentStep > 1) {
-      navigate(`/onboarding/${currentStep - 1}`);
+      const url = isReviewMode ? `/onboarding/${currentStep - 1}?review=true` : `/onboarding/${currentStep - 1}`;
+      navigate(url);
     }
   };
 
-  const handleNext = () => {
-    if (currentStep < totalSteps) {
-      navigate(`/onboarding/${currentStep + 1}`);
+  const handleNextOrVerify = async () => {
+    // If step requires verification and isn't completed yet
+    if (currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationSuccess) {
+      await handleVerify();
+      return;
     }
-  };
-
-  // Submission handler
-  const handleStepSubmission = async (submissionData: { url?: string; text?: string }) => {
-    if (!currentStepData || !userProgress) return;
     
+    // If step doesn't require verification and we haven't completed it yet,
+    // mark it as completed before navigating
+    if (currentStepData?.submission_type !== 'text' && currentStep > latestCompletedStep) {
+      try {
+        console.log(`📝 Marking step ${currentStep} as completed (no verification required)`);
+        await updateOnboardingProgress(currentStep);
+        await refetchProgress();
+      } catch (err) {
+        console.error('❌ Error marking step as completed:', err);
+        // Continue with navigation even if marking fails
+      }
+    }
+    
+    // Handle final step completion
+    if (currentStep === totalSteps) {
+      console.log('🎉 Final step completed, showing completion screen');
+      setIsCompleted(true);
+      return;
+    }
+    
+    // Navigate to next step
+    if (currentStep < totalSteps) {
+      const url = isReviewMode ? `/onboarding/${currentStep + 1}?review=true` : `/onboarding/${currentStep + 1}`;
+      navigate(url);
+    }
+  };
+
+  // Verification handler
+  const handleVerify = async () => {
+    if (!verificationCode.trim()) return;
+    if (!currentStepData?.id) {
+      setVerificationError('Step data missing.');
+      return;
+    }
     try {
-      setIsSubmitting(true);
-      setSubmissionError(null);
+      setVerificationLoading(true);
+      setVerificationError(null);
 
-      // Get the current user's session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        throw new Error('Authentication required');
+      console.log('[handleVerify] Step ID:', currentStepData.id);
+      // Fetch challengeId for this step
+      const challengeId = await getChallengeId(currentStepData.id);
+      console.log('[handleVerify] challengeId:', challengeId);
+      // Call the actual verification API with code and challengeId
+      const verificationResult = await verifyOnboardingStep(verificationCode, challengeId);
+      console.log('[handleVerify] verificationResult:', verificationResult);
+
+      if (verificationResult.success) {
+        setVerificationSuccess(true);
+
+        // Update progress to mark this step as completed
+        await updateOnboardingProgress(currentStep);
+
+        // Refetch progress to synchronize UI state with server
+        await refetchProgress();
+
+        console.log('✅ Step verification and progress update completed');
+      } else {
+        throw new Error(verificationResult.message || 'Verification failed');
       }
 
-      // Call the Edge Function to submit the step
-      const { data, error: functionError } = await supabase.functions.invoke('submit-onboarding-step', {
-        body: {
-          challengeId: userProgress.challengeId,
-          stepId: currentStepData.id,
-          submissionData,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (functionError) {
-        throw new Error(functionError.message || 'Failed to submit step');
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      // Update local progress state - add to submitted steps immediately
-      setUserProgress(prev => prev ? {
-        ...prev,
-        // Add current step to submitted steps (if not already there)
-        allSubmittedStepIds: prev.allSubmittedStepIds.includes(currentStepData.id) 
-          ? prev.allSubmittedStepIds 
-          : [...prev.allSubmittedStepIds, currentStepData.id],
-        // Only update if this step moves us forward
-        currentStepNumber: Math.max(prev.currentStepNumber, currentStep)
-      } : null);
-      
-      console.log('Step submitted successfully:', data);
-      
-      // Check if this was the last step - trigger completion
-      if (currentStep === totalSteps) {
-        await handleOnboardingCompletion();
-      }
-      
     } catch (err) {
-      console.error('Error submitting step:', err);
-      setSubmissionError(err instanceof Error ? err.message : 'An unexpected error occurred');
+      console.error('[handleVerify] Verification error:', err);
+      setVerificationError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
-      setIsSubmitting(false);
+      setVerificationLoading(false);
     }
   };
 
   // Completion handler for when all steps are done
   const handleOnboardingCompletion = async () => {
-    if (!userProgress) return;
-    
     try {
       setIsCompleting(true);
       setCompletionError(null);
 
-      // Get the current user's session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session) {
-        throw new Error('Authentication required');
-      }
-
-      // Call the completion Edge Function
-      const { data, error: functionError } = await supabase.functions.invoke('complete-onboarding', {
-        body: {
-          challengeId: userProgress.challengeId,
-        },
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (functionError) {
-        throw new Error(functionError.message || 'Failed to complete onboarding');
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
       // Mark as completed
       setIsCompleted(true);
       
-      console.log('Onboarding completed successfully:', data);
+      console.log('Onboarding completed successfully');
       
     } catch (err) {
       console.error('Error completing onboarding:', err);
@@ -287,22 +296,22 @@ export default function OnboardingStepPage() {
 
   return (
     <>
-      {/* Show completion screen if onboarding is completed */}
-      {isCompleted ? (
+      {/* Show completion screen if onboarding is completed or accessing complete route */}
+      {(isCompleted || isCompleteRoute) ? (
         <OnboardingCompleteScreen 
           challengeTitle="NoCodeJam Onboarding"
           totalSteps={totalSteps}
         />
       ) : (
-        <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50">
+        <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <header className="mb-8">
           <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-white mb-2">
               NoCodeJam Onboarding
             </h1>
-            <p className="text-gray-600">
+            <p className="text-gray-300">
               Let's get you started with no-code development!
             </p>
           </div>
@@ -310,24 +319,25 @@ export default function OnboardingStepPage() {
           {/* Progress Bar - only show when data is loaded */}
           {!loading && totalSteps > 0 && (
             <OnboardingProgressBar 
-              currentStep={currentStep} 
-              totalSteps={totalSteps} 
+              latestCompletedStep={latestCompletedStep} 
+              totalSteps={totalSteps}
+              viewedStep={currentStep}
             />
           )}
         </header>
 
         {/* Main Content Area */}
         <main className="flex-1 mb-8">
-          <Card className="max-w-4xl mx-auto shadow-lg">
+          <Card className="max-w-4xl mx-auto shadow-lg bg-gray-800 border-gray-700">
             <CardContent className="p-8">
               {loading ? (
                 // Loading State
                 <div className="text-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4 text-purple-600" />
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h2 className="text-xl font-semibold text-white mb-2">
                     Loading Onboarding Steps...
                   </h2>
-                  <p className="text-gray-600">
+                  <p className="text-gray-300">
                     Please wait while we prepare your learning journey.
                   </p>
                 </div>
@@ -335,10 +345,10 @@ export default function OnboardingStepPage() {
                 // Error State
                 <div className="text-center py-12">
                   <AlertCircle className="w-8 h-8 mx-auto mb-4 text-red-500" />
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h2 className="text-xl font-semibold text-white mb-2">
                     Unable to Load Content
                   </h2>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-gray-300 mb-4">
                     {error}
                   </p>
                   <Button 
@@ -352,29 +362,49 @@ export default function OnboardingStepPage() {
                 // Step Not Found
                 <div className="text-center py-12">
                   <AlertCircle className="w-8 h-8 mx-auto mb-4 text-amber-500" />
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h2 className="text-xl font-semibold text-white mb-2">
                     Step Not Found
                   </h2>
-                  <p className="text-gray-600 mb-4">
+                  <p className="text-gray-300 mb-4">
                     Step {currentStep} doesn't exist. Please check the URL or go back to step 1.
                   </p>
                   <Button 
-                    onClick={() => navigate('/onboarding/1')} 
+                    onClick={async () => {
+                      try {
+                        const progress = await getOnboardingProgress();
+                        const nextStep = progress.latest_completed_step + 1;
+                        const maxStep = steps.length > 0 ? Math.max(...steps.map(s => s.step_number)) : 1;
+                        if (nextStep > maxStep) {
+                          // Show completion screen
+                          navigate('/onboarding/complete');
+                        } else {
+                          navigate(`/onboarding/${nextStep}`);
+                        }
+                      } catch (err) {
+                        console.error('Error fetching progress for navigation:', err);
+                        navigate('/onboarding/1');
+                      }
+                    }}
                     variant="outline"
                   >
-                    Go to Step 1
+                    Go to Next StepOk
                   </Button>
                 </div>
               ) : (
                 // Step Content
                 <div>
-                  <div className="text-center mb-8">
-                    <h2 className="text-2xl font-semibold text-gray-900 mb-4">
+
+                  <div className="mb-8">
+                    <h2 className="text-2xl font-semibold text-white mb-4 text-center">
                       {currentStepData.title}
                     </h2>
-                    <p className="text-gray-600 text-lg">
-                      {currentStepData.description}
-                    </p>
+                    <div className="text-gray-300 text-lg text-left">
+                      {currentStepData.description
+                        ? currentStepData.description.split(/\r?\n+/).map((para, idx) => (
+                            para.trim() && <p key={idx} className="mb-2">{para}</p>
+                          ))
+                        : null}
+                    </div>
                   </div>
 
                   {/* Video Content */}
@@ -394,8 +424,8 @@ export default function OnboardingStepPage() {
                             />
                           </div>
                         ) : (
-                          <div className="bg-gray-100 rounded-lg p-6 text-center max-w-3xl mx-auto">
-                            <p className="text-gray-600">
+                          <div className="bg-gray-700 rounded-lg p-6 text-center max-w-3xl mx-auto">
+                            <p className="text-gray-300">
                               Video URL format not supported. 
                               <a 
                                 href={currentStepData.video_url} 
@@ -426,58 +456,66 @@ export default function OnboardingStepPage() {
                     </div>
                   )}
 
-                  {/* Submission Form */}
-                  {currentStepData.submission_type && currentStepData.submission_label && (
+                  {/* New structure for submission/verification */}
+                  {currentStepData.submission_type === 'text' && (
                     <div className="mb-6">
-                      <OnboardingSubmissionForm
-                        submissionType={currentStepData.submission_type}
-                        submissionLabel={currentStepData.submission_label}
-                        onSubmit={handleStepSubmission}
-                        isSubmitting={isSubmitting || isCompleting}
-                        isSubmitted={isCurrentStepSubmitted || isCurrentStepCompleted}
-                      />
-                      
-                      {/* Submission Error Display */}
-                      {submissionError && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                          <div className="flex items-center space-x-2 text-red-600">
-                            <AlertCircle className="w-5 h-5" />
-                            <span className="font-medium">Submission Error</span>
-                          </div>
-                          <p className="text-red-700 text-sm mt-1">{submissionError}</p>
+                      {/* Download Button */}
+                      {currentStepData.download_url && (
+                        <div className="mb-4">
+                          <a
+                            href={currentStepData.download_url}
+                            download
+                            className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200"
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download Challenge Files
+                          </a>
                         </div>
                       )}
-                      
-                      {/* Completion Error Display */}
-                      {completionError && (
-                        <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-                          <div className="flex items-center space-x-2 text-red-600">
-                            <AlertCircle className="w-5 h-5" />
-                            <span className="font-medium">Completion Error</span>
-                          </div>
-                          <p className="text-red-700 text-sm mt-1">{completionError}</p>
+
+                      {/* Verification Form */}
+                      <div className="space-y-4">
+                        <div>
+                          <label htmlFor="verification-code" className="block text-sm font-medium text-gray-300 mb-2">
+                            Verification Code
+                          </label>
+                          <Input
+                            id="verification-code"
+                            type="text"
+                            placeholder="Enter your verification code"
+                            value={verificationCode}
+                            onChange={(e) => setVerificationCode(e.target.value)}
+                            onFocus={() => setVerificationError(null)}
+                            className={`w-full ${verificationError ? 'border-red-500 focus:border-red-500' : ''}`}
+                            disabled={verificationLoading}
+                          />
+                          {verificationError && (
+                            <p className="mt-1 text-sm text-red-600">{verificationError}</p>
+                          )}
                         </div>
-                      )}
-                      
-                      {/* Completion Loading Display */}
-                      {isCompleting && (
-                        <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="flex items-center space-x-2 text-blue-600">
-                            <Loader2 className="w-5 h-5 animate-spin" />
-                            <span className="font-medium">Completing Onboarding...</span>
+
+                        {/* Success State */}
+                        {isCurrentStepCompleted && (
+                          <div className="flex items-center justify-center p-4 bg-green-900/20 border border-green-600 rounded-lg">
+                            <div className="flex items-center space-x-2 text-green-400">
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              </svg>
+                              <span className="font-medium">Verification Successful!</span>
+                            </div>
                           </div>
-                          <p className="text-blue-700 text-sm mt-1">
-                            Please wait while we finalize your onboarding submission.
-                          </p>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   )}
 
+                  {/* Note: We don't need a special case for submission_type === null, 
+                      because the main "Next" button in the footer already handles navigation for view-only steps. */}
+
                   {/* Step Indicator */}
                   <div className="text-center">
-                    <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-100 rounded-full mb-4">
-                      <span className="text-2xl font-bold text-purple-600">
+                    <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-900/30 border border-purple-500 rounded-full mb-4">
+                      <span className="text-2xl font-bold text-purple-300">
                         {currentStep}
                       </span>
                     </div>
@@ -504,26 +542,65 @@ export default function OnboardingStepPage() {
               </Button>
 
               {/* Step Indicator */}
-              <div className="text-sm text-gray-500">
+              <div className="text-sm text-gray-400">
                 Step {currentStep} of {totalSteps}
               </div>
 
-              {/* Next Button */}
-              <Button
-                onClick={handleNext}
-                disabled={
-                  currentStep === totalSteps || 
-                  (currentStepData?.submission_type && !(isCurrentStepSubmitted || isCurrentStepCompleted))
-                }
-                className="flex items-center space-x-2"
-              >
-                <span>Next</span>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+              {/* Exit Review Mode Button (only in review mode on last step) */}
+              {isReviewMode && currentStep === totalSteps ? (
+                <Button
+                  onClick={() => navigate('/onboarding/complete')}
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700"
+                >
+                  <span>Exit Review</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : isReviewMode ? (
+                /* Next Button in Review Mode */
+                <Button
+                  onClick={() => navigate(`/onboarding/${currentStep + 1}?review=true`)}
+                  className="flex items-center space-x-2"
+                >
+                  <span>Next</span>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              ) : (
+                /* Next/Verify Button */
+                <Button
+                  onClick={handleNextOrVerify}
+                  disabled={
+                    (currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationCode.trim() && !verificationSuccess) ||
+                    verificationLoading
+                  }
+                  className="flex items-center space-x-2"
+                >
+                  {verificationLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Verifying...</span>
+                    </>
+                  ) : currentStep === totalSteps ? (
+                    <>
+                      <span>Complete Onboarding</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  ) : currentStepData?.submission_type === 'text' && !isCurrentStepCompleted && !verificationSuccess ? (
+                    <>
+                      <span>Verify</span>
+                      <ChevronRight className="w-4 h-4" />
+                  </>
+                  ) : (
+                    <>
+                      <span>Next</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
 
             {/* Additional Footer Info */}
-            <div className="text-center mt-6 text-sm text-gray-500">
+            <div className="text-center mt-6 text-sm text-gray-400">
               <p>
                 Need help? Check out our{' '}
                 <a href="/learn" className="text-purple-600 hover:underline">

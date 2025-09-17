@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { CheckCircle, Trophy, Rocket, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -13,10 +13,11 @@ export function OnboardingCompleteScreen({
   challengeTitle = 'NoCodeJam Onboarding',
   totalSteps = 3 
 }: OnboardingCompleteScreenProps) {
+  const navigate = useNavigate();
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 to-blue-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
-        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur">
+        <Card className="shadow-2xl border-0 bg-gray-800 border-gray-700">
           <CardContent className="p-12">
             {/* Success Icon */}
             <div className="text-center mb-8">
@@ -27,15 +28,15 @@ export function OnboardingCompleteScreen({
                 </div>
               </div>
               
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-4xl font-bold text-white mb-4">
                 🎉 Congratulations!
               </h1>
               
-              <h2 className="text-2xl font-semibold text-purple-700 mb-2">
+              <h2 className="text-2xl font-semibold text-purple-300 mb-2">
                 You've completed the onboarding!
               </h2>
               
-              <p className="text-gray-600 text-lg">
+              <p className="text-gray-300 text-lg">
                 You've successfully finished all {totalSteps} steps of the {challengeTitle}
               </p>
             </div>
@@ -91,31 +92,37 @@ export function OnboardingCompleteScreen({
 
             {/* Action Buttons */}
             <div className="flex flex-col sm:flex-row gap-3 mb-6">
-              <Button asChild className="w-full sm:w-44 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" size="lg">
-                <Link to="/onboarding/1" className="flex items-center justify-center space-x-2">
-                  <ArrowLeft className="w-5 h-5" />
-                  <span>Review Steps</span>
-                </Link>
+              <Button 
+                onClick={() => navigate('/onboarding/1?review=true')}
+                className="w-full sm:w-44 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white flex items-center justify-center space-x-2"
+                size="lg"
+              >
+                <ArrowLeft className="w-5 h-5" />
+                <span>Review Steps</span>
               </Button>
               
-              <Button asChild className="w-full sm:w-48 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" size="lg">
-                <Link to="/challenges" className="flex items-center justify-center space-x-2">
-                  <Rocket className="w-5 h-5" />
-                  <span>Browse More Challenges</span>
-                </Link>
+              <Button 
+                onClick={() => navigate('/challenges')}
+                className="w-full sm:w-48 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white flex items-center justify-center space-x-2"
+                size="lg"
+              >
+                <Rocket className="w-5 h-5" />
+                <span>Browse More Challenges</span>
               </Button>
               
-              <Button asChild className="w-full sm:w-44 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white" size="lg">
-                <Link to="/dashboard" className="flex items-center justify-center space-x-2">
-                  <span>Go to Dashboard</span>
-                  <ArrowRight className="w-5 h-5" />
-                </Link>
+              <Button 
+                onClick={() => navigate('/dashboard')}
+                className="w-full sm:w-44 h-12 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white flex items-center justify-center space-x-2"
+                size="lg"
+              >
+                <span>Go to Dashboard</span>
+                <ArrowRight className="w-5 h-5" />
               </Button>
             </div>
 
             {/* Footer Message */}
-            <div className="text-center mt-4 pt-4 border-t border-gray-200">
-              <p className="text-sm text-gray-500">
+            <div className="text-center mt-4 pt-4 border-t border-gray-600">
+              <p className="text-sm text-gray-400">
                 Welcome to the NoCodeJam community! 🚀
               </p>
             </div>

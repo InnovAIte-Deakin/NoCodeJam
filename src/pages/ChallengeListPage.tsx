@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { OnboardingChallengeCard } from '@/components/OnboardingChallengeCard';
-import { Search, Filter, Star, Clock, CheckCircle, Circle, Eye } from 'lucide-react';
+import { ChallengeRequestModal } from '@/components/ChallengeRequestModal';
+import { Search, Filter, Star, Clock, CheckCircle, Circle, Eye, Plus } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -134,14 +135,24 @@ export function ChallengeListPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Challenges</h1>
-          <p className="text-gray-600">
-            Explore and complete no-code development challenges to earn XP and badges
-          </p>
+          <div className="flex justify-between items-start mb-4">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Challenges</h1>
+              <p className="text-gray-300">
+                Explore and complete no-code development challenges to earn XP and badges
+              </p>
+            </div>
+            <ChallengeRequestModal>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Request Challenge
+              </Button>
+            </ChallengeRequestModal>
+          </div>
         </div>
 
         {/* Filters */}
