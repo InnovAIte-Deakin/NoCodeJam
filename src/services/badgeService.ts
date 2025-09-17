@@ -217,23 +217,34 @@ export class BadgeService {
    */
   static async checkEligibleBadges(userId: string): Promise<BadgeDefinition[]> {
     console.log(`Checking eligible badges for user: ${userId}`);
-    
+
     const progress = await this.getUserProgress(userId);
     console.log(`User progress:`, progress);
-    
-    const eligibleBadges: BadgeDefinition[] = [];
 
-    for (const badge of BADGE_DEFINITIONS) {
+    // Fetch dynamic badges from DB; fall back to static seed list if empty
+    let dynamicBadges: BadgeDefinition[] = [];
+    try {
+      dynamicBadges = await this.getAllBadges();
+    } catch (e) {
+      console.warn('Failed to fetch badges from DB, falling back to static definitions.', e);
+    }
+
+    // Merge: DB overrides static by id; include any static not yet in DB (useful during initial seeding)
+    const byId = new Map<string, BadgeDefinition>();
+    for (const b of BADGE_DEFINITIONS) byId.set(b.id, b);
+    for (const b of dynamicBadges) byId.set(b.id, b); // DB wins
+    const effectiveBadges = Array.from(byId.values());
+
+    console.log(`Using ${effectiveBadges.length} badge definitions (DB: ${dynamicBadges.length}, static fallback: ${BADGE_DEFINITIONS.length})`);
+
+    const eligibleBadges: BadgeDefinition[] = [];
+    for (const badge of effectiveBadges) {
       console.log(`Checking badge: ${badge.name} (${badge.id})`);
-      
       const meetsCriteria = await this.checkBadgeCriteria(badge, progress);
       console.log(`Meets criteria for ${badge.name}: ${meetsCriteria}`);
-      
       if (meetsCriteria) {
-        // Check if user already has this badge
         const hasBadge = await this.userHasBadge(userId, badge.id);
         console.log(`User already has ${badge.name}: ${hasBadge}`);
-        
         if (!hasBadge) {
           console.log(`Adding ${badge.name} to eligible badges`);
           eligibleBadges.push(badge);
@@ -391,6 +402,9 @@ export class BadgeService {
         .select('*')
         .eq('user_id', user.id);
       
+      if (verifyError) {
+        console.error('Error verifying badge insertion:', verifyError);
+      }
       console.log('All user badges for this user:', verification);
       
     } catch (error) {
@@ -480,7 +494,9 @@ export class BadgeService {
         .from('user_badges')
         .select('*')
         .eq('user_id', userId);
-        
+      if (badgesError) {
+        console.error('Error fetching current user badges:', badgesError);
+      }
       console.log(`Current user badges:`, currentBadges);
       
       // Try to award badge

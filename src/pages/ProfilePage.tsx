@@ -14,7 +14,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { BadgeService } from '@/services/badgeService';
 import type { Badge as BadgeType } from '@/types';
-import { BadgesCard } from '@/components/BadgesCard';
+// Removed unused BadgesCard import (badge list rendered inline below)
 
 export function ProfilePage() {
   const { user: currentUser, setUser } = useAuth();
@@ -120,6 +120,8 @@ export function ProfilePage() {
     };
   }, [previewUrl]);
   const [userBadges, setUserBadges] = useState<BadgeType[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(false);
+  const [badgesError, setBadgesError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -169,13 +171,17 @@ export function ProfilePage() {
       setChallenges(challengesData || []);
     };
     const fetchBadges = async () => {
-      if (user?.id) {
-        try {
-          const badges = await BadgeService.getUserBadges(user.id);
-          setUserBadges(badges);
-        } catch (error) {
-          console.error('Error fetching user badges:', error);
-        }
+      if (!user?.id) return;
+      try {
+        setBadgesLoading(true);
+        setBadgesError(null);
+        const badges = await BadgeService.getUserBadges(user.id);
+        setUserBadges(badges);
+      } catch (error) {
+        console.error('Error fetching user badges:', error);
+        setBadgesError('Failed to load badges');
+      } finally {
+        setBadgesLoading(false);
       }
     };
     fetchCompleted();
@@ -286,6 +292,22 @@ export function ProfilePage() {
 
   // Only allow editing if viewing own profile
   const isOwnProfile = !id || id === currentUser?.id;
+
+  const refreshBadges = async () => {
+    if (!user?.id) return;
+    await BadgeService.processUserBadges?.(user.id); // optional if method exists; safe optional chaining
+    // Re-fetch after processing
+    try {
+      setBadgesLoading(true);
+      const badges = await BadgeService.getUserBadges(user.id);
+      setUserBadges(badges);
+    } catch (e) {
+      console.error('Error refreshing badges:', e);
+      setBadgesError('Failed to refresh badges');
+    } finally {
+      setBadgesLoading(false);
+    }
+  };
 
   if (!user) return null;
 
@@ -518,18 +540,29 @@ export function ProfilePage() {
             </Card>
             {/* Badges Section */}
             <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-white">Badges</CardTitle>
-                <CardDescription className="text-gray-300">Your achievements and milestones</CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 space-x-4">
+                <div>
+                  <CardTitle className="text-white">Badges</CardTitle>
+                  <CardDescription className="text-gray-300">Your achievements and milestones</CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={refreshBadges} disabled={badgesLoading}>
+                  {badgesLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                {(user?.badges?.length ?? 0) > 0 ? (
+                {badgesError && (
+                  <div className="mb-4 text-xs text-red-400">{badgesError}</div>
+                )}
+                {badgesLoading && userBadges.length === 0 ? (
+                  <div className="text-center py-4 sm:py-6 text-gray-400 text-sm">Loading badges...</div>
+                ) : userBadges.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {(user.badges || []).map((badge: any) => (
+                    {userBadges.map((badge) => (
                       <div key={badge.id} className="text-center p-2 sm:p-3 bg-gradient-to-br from-yellow-600 to-orange-600 rounded-lg border border-yellow-500">
                         <div className="text-xl sm:text-2xl mb-1 sm:mb-2">{badge.icon}</div>
                         <div className="font-medium text-xs sm:text-sm text-white">{badge.name}</div>
                         <div className="text-xs text-yellow-100 mt-1">{badge.description}</div>
+                        <div className="text-[10px] text-yellow-200 mt-1">Earned {badge.unlockedAt.toLocaleDateString?.() || ''}</div>
                       </div>
                     ))}
                   </div>

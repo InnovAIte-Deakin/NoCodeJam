@@ -8,12 +8,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import { Trophy, Star, Calendar, ExternalLink, Github } from 'lucide-react';
+import { BadgeService } from '@/services/badgeService';
+import type { Badge as BadgeType } from '@/types';
 
 export function Dashboard() {
   const { user } = useAuth();
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [challenges, setChallenges] = useState<any[]>([]);
+  interface SubmissionRow { id: string; challenge_id: string; status: string; submitted_at?: string; admin_feedback?: string; submission_url: string; }
+  interface ChallengeRow { id: string; title: string; }
+  const [submissions, setSubmissions] = useState<SubmissionRow[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userBadges, setUserBadges] = useState<BadgeType[]>([]);
+  const [badgesLoading, setBadgesLoading] = useState(false);
+  const [badgesError, setBadgesError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -35,6 +42,42 @@ export function Dashboard() {
     };
     fetchData();
   }, [user]);
+
+  // Fetch badges separately so they can be refreshed individually
+  useEffect(() => {
+    const fetchBadges = async () => {
+      if (!user?.id) return;
+      try {
+        setBadgesLoading(true);
+        setBadgesError(null);
+        const badges = await BadgeService.getUserBadges(user.id);
+        setUserBadges(badges);
+      } catch (e) {
+        console.error('Error loading badges:', e);
+        setBadgesError('Failed to load badges');
+      } finally {
+        setBadgesLoading(false);
+      }
+    };
+    fetchBadges();
+  }, [user?.id]);
+
+  const refreshBadges = async () => {
+    if (!user?.id) return;
+    try {
+      setBadgesLoading(true);
+      setBadgesError(null);
+      // Re-evaluate user badges (awards any missed ones)
+      await BadgeService.processUserBadges(user.id);
+      const badges = await BadgeService.getUserBadges(user.id);
+      setUserBadges(badges);
+    } catch (e) {
+      console.error('Error refreshing badges:', e);
+      setBadgesError('Failed to refresh badges');
+    } finally {
+      setBadgesLoading(false);
+    }
+  };
 
   if (!user) return null;
   if (loading) {
@@ -88,7 +131,7 @@ export function Dashboard() {
                       <div className="text-xs sm:text-sm text-gray-300">Challenges Completed</div>
                     </div>
                     <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{user.badges.length}</div>
+                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{userBadges.length}</div>
                       <div className="text-xs sm:text-sm text-gray-300">Badges Earned</div>
                     </div>
                   </div>
@@ -108,7 +151,7 @@ export function Dashboard() {
                 {submissions.length > 0 ? (
                   <div className="space-y-4">
                     {submissions.slice(0, 3).map((submission) => {
-                      const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
+                      const challenge = challenges.find((c) => c.id === submission.challenge_id);
                       return (
                         <div key={submission.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-700 rounded-lg space-y-2 sm:space-y-0">
                           <div className="flex-1">
@@ -192,22 +235,37 @@ export function Dashboard() {
 
             {/* Badges */}
             <Card className="bg-gray-800 border-gray-700">
-              <CardHeader>
-                <CardTitle className="text-lg sm:text-xl text-white">Badges</CardTitle>
-                <CardDescription className="text-gray-300">
-                  Your achievements and milestones
-                </CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between space-y-0 space-x-4">
+                <div>
+                  <CardTitle className="text-lg sm:text-xl text-white">Badges</CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Your achievements and milestones
+                  </CardDescription>
+                </div>
+                <Button variant="outline" size="sm" onClick={refreshBadges} disabled={badgesLoading}>
+                  {badgesLoading ? 'Refreshing...' : 'Refresh'}
+                </Button>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                {user.badges.length > 0 ? (
+                {badgesError && (
+                  <div className="mb-3 text-xs text-red-400">{badgesError}</div>
+                )}
+                {badgesLoading && userBadges.length === 0 ? (
+                  <div className="text-center py-4 sm:py-6 text-gray-400 text-sm">Loading badges...</div>
+                ) : userBadges.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    {user.badges.map((badge) => (
-                      <div key={badge.id} className="text-center p-2 sm:p-3 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg border border-yellow-200">
+                    {userBadges.slice(0, 6).map((badge) => (
+                      <div key={badge.id} className="text-center p-2 sm:p-3 bg-gradient-to-br from-yellow-600 to-orange-600 rounded-lg border border-yellow-500">
                         <div className="text-xl sm:text-2xl mb-1 sm:mb-2">{badge.icon}</div>
-                        <div className="font-medium text-xs sm:text-sm text-gray-900">{badge.name}</div>
-                        <div className="text-xs text-gray-600 mt-1">{badge.description}</div>
+                        <div className="font-medium text-xs sm:text-sm text-white">{badge.name}</div>
+                        <div className="text-[10px] text-yellow-100 mt-1 line-clamp-2">{badge.description}</div>
                       </div>
                     ))}
+                    {userBadges.length > 6 && (
+                      <div className="col-span-full text-center text-[10px] text-yellow-200">
+                        +{userBadges.length - 6} more — view all on your profile
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-4 sm:py-6">
