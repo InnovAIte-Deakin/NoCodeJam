@@ -13,6 +13,7 @@ import githubCopilotLogo from '@/images/Github Copilot Logo.webp';
 import claudeCodeLogo from '@/images/Claude Code Logo.webp';
 import geminiLogo from '@/images/Gemini Logo.png';
 import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
+import figmaLogo from '@/images/figma-logo.svg';
 
 interface Platform {
   id: string;
@@ -299,6 +300,50 @@ const platforms: Platform[] = [
         url: 'https://www.youtube.com/watch?v=KUCZe1xBKFM'
       }
     ]
+  },
+  {
+    id: 'figma',
+    name: 'Figma',
+    description: 'A collaborative interface design tool — learn UI fundamentals, prototyping, design systems, and handoff workflows.',
+    logo: figmaLogo,
+    website: 'https://www.figma.com',
+    features: ['Design Systems', 'Prototyping', 'Collaboration', 'Plugins'],
+    difficulty: 'Beginner',
+    category: 'Visual Builder',
+    tutorials: [
+      {
+        id: 'figma-basics-2025',
+        title: 'Figma: Interface & Frames',
+        description: 'Understand the workspace, frames, constraints, and basic layout principles.',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=FigmaBasicsExample'
+      },
+      {
+        id: 'figma-components-variants',
+        title: 'Components, Variants & Tokens',
+        description: 'Create reusable components, use variants and design tokens for consistent systems.',
+        duration: '25 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=FigmaComponentsExample'
+      },
+      {
+        id: 'figma-proto-handoff',
+        title: 'Prototyping & Handoff',
+        description: 'Build interactive prototypes and prepare files for developer handoff.',
+        duration: '20 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=FigmaProtoHandoffExample'
+      },
+      {
+        id: 'figma-plugins-automation',
+        title: 'Plugins & Automation for Designers',
+        description: 'Use key plugins and automations that speed up design-to-no-code workflows.',
+        duration: '18 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=FigmaPluginsExample'
+      }
+    ]
   }
 ];
 
@@ -450,6 +495,7 @@ export function LearnPage() {
                         platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
                         platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
                         platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
+                        platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
