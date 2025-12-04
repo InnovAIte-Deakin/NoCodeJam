@@ -386,8 +386,8 @@ export function LearnPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
-          🎓 No-Code Platform Learning – Updated by Rama
-          </h1>
+            🎓 Explore No-Code Platforms for Fast Prototyping
+            </h1>
 
           <p className="text-gray-300 max-w-2xl mx-auto">
             Discover the best no-code platforms and learn how to build amazing applications without writing a single line of code.
