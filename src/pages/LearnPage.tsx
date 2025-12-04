@@ -385,7 +385,10 @@ export function LearnPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">🎓 No-Code Platform Learning</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+          🎓 No-Code Platform Learning – Updated by Rama
+          </h1>
+
           <p className="text-gray-300 max-w-2xl mx-auto">
             Discover the best no-code platforms and learn how to build amazing applications without writing a single line of code.
           </p>
