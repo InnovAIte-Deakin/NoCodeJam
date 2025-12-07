@@ -344,6 +344,34 @@ const platforms: Platform[] = [
         url: 'https://www.youtube.com/watch?v=FigmaPluginsExample'
       }
     ]
+  },
+  {
+    id: 'gemini-3',
+    name: 'Gemini 3',
+    description: 'Gemini 3 is Google’s advanced multimodal AI model designed to understand and generate text, images, and code with improved speed, accuracy, and reasoning capabilities.',
+    logo: geminiLogo,
+    website: 'https://deepmind.google/models/gemini/',
+    features: ['Multimodal Understanding', 'Advanced Reasoning', 'Large Context Window', 'Generative UI'],
+    difficulty: 'Intermediate',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'gemini-3-1',
+        title: 'Introduction',
+        description: 'Introduction of Gemini 3 along with some use cases',
+        duration: '18 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=sXXbySqIguA'
+      },
+      {
+        id: 'gemini-3-2',
+        title: 'Crash Course',
+        description: 'Video Tutorial by Riley Brown on how to use Gemini 3',
+        duration: '25 min',
+        difficulty: 'Advanced',
+        url: 'https://www.youtube.com/watch?v=dzFUOQUSiEI'
+      }
+    ]
   }
 ];
 
@@ -499,6 +527,7 @@ export function LearnPage() {
                         platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
                         platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
                         platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
+                        platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
