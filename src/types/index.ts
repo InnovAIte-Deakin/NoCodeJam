@@ -19,6 +19,23 @@ export interface Badge {
   unlockedAt: Date;
 }
 
+export interface BadgeCriteria {
+  type: 'challenges_completed' | 'xp_earned' | 'first_challenge' | 'difficulty_master' | 'leaderboard_position' | 'streak' | 'expert_challenges';
+  value: number;
+  additional?: {
+    difficulty?: string[];
+    consecutiveDays?: number;
+  };
+}
+
+export interface BadgeDefinition {
+  id: string;
+  name: string;
+  description: string;
+  icon_url: string;
+  criteria: BadgeCriteria;
+}
+
 export interface Challenge {
   id: string;
   title: string;
