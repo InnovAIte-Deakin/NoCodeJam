@@ -2,6 +2,8 @@ import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import PricingPill from '@/components/PricingPill';
+import { platformPricing } from '@/data/platformPricing';
 
 import { ExternalLink, Play, BookOpen, Code, Zap, Palette, Database, Globe } from 'lucide-react';
 import lovableLogo from '@/images/logoblack.svg';
@@ -14,6 +16,7 @@ import claudeCodeLogo from '@/images/Claude Code Logo.webp';
 import geminiLogo from '@/images/Gemini Logo.png';
 import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
 
+
 interface Platform {
   id: string;
   name: string;
@@ -24,6 +27,7 @@ interface Platform {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   category: 'Visual Builder' | 'AI-Powered' | 'Database' | 'Web Development';
   tutorials: Tutorial[];
+  pricing?: PricingTier[];
 }
 
 interface Tutorial {
@@ -33,6 +37,16 @@ interface Tutorial {
   duration: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   url: string;
+}
+
+interface PricingTier {
+  id: string;
+  key: 'free' | 'freemium' | 'paid' | 'enterprise';
+  name: string;            // e.g. "Free", "Professional"
+  price?: string;          // e.g. "$0", "$12/mo", "Contact Sales"
+  billing?: string;        // e.g. "per editor/month"
+  features?: string[];     // short bullets shown in details
+  ctaUrl?: string;         // link to provider pricing page
 }
 
 const platforms: Platform[] = [
@@ -301,6 +315,16 @@ const platforms: Platform[] = [
     ]
   }
 ];
+// Attach pricing arrays from platformPricing to the platforms by id.
+// Using @ts-ignore to avoid duplicate type-name issues if any.
+ // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+platforms.forEach((p) => {
+  // use the platform id to lookup pricing; default to [] if missing
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  p.pricing = platformPricing[p.id] ?? [];
+});
 
 export function LearnPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('lovable');
@@ -371,6 +395,9 @@ export function LearnPage() {
                     {platform.difficulty}
                   </Badge>
                 </div>
+                <div className="mt-3">
+                  <PricingPill pricing={platform.pricing} />
+`               </div>
                 <p className="text-sm text-gray-300 line-clamp-3">
                   {platform.description}
                 </p>
@@ -456,6 +483,9 @@ export function LearnPage() {
                         Documentation
                       </a>
                     </Button>
+                  </div>
+                  <div className="sm:mr-4 mb-3 sm:mb-0">
+                    <PricingPill pricing={platform.pricing} />
                   </div>
                 </CardContent>
               </Card>
