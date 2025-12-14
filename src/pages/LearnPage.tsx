@@ -8,14 +8,15 @@ import { platformPricing } from '@/data/platformPricing';
 import { ExternalLink, Play, BookOpen, Code, Zap, Palette, Database, Globe } from 'lucide-react';
 import lovableLogo from '@/images/logoblack.svg';
 import boltLogo from '@/images/Bolt Logo.svg';
-import windsurfLogo from '@/images/windsurf Logo.png';
-import cursorLogo from '@/images/Cursor.jfif';
-import replitLogo from '@/images/Replit Logo.png';
-import githubCopilotLogo from '@/images/Github Copilot Logo.webp';
-import claudeCodeLogo from '@/images/Claude Code Logo.webp';
-import geminiLogo from '@/images/Gemini Logo.png';
-import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
+import windsurfLogo from '@/images/logoblack.svg';
+import cursorLogo from '@/images/logoblack.svg';
+import replitLogo from '@/images/logoblack.svg';
+import githubCopilotLogo from '@/images/logoblack.svg';
+import claudeCodeLogo from '@/images/logoblack.svg';
+import geminiLogo from '@/images/logoblack.svg';
+import innovAIteLogo from '@/images/logoblack.svg';
 import figmaLogo from '@/images/figma-logo.svg';
+import base44Logo from '@/images/logoblack.svg';
 
 
 interface Platform {
@@ -84,6 +85,34 @@ const platforms: Platform[] = [
         duration: '15 min',
         difficulty: 'Intermediate',
         url: 'https://www.youtube.com/watch?v=N8JWiuVLi9E&t'
+      }
+    ]
+  },
+  {
+    id: 'base44',
+    name: 'Base44',
+    description: 'Base44 is an AI-powered platform that lets you turn any idea into a fully-functional custom app, without the need for any coding experience.',
+    logo: base44Logo,
+    website: 'https://base44.com/',
+    features: ['Prompt-to-App', 'Fullstack Generation', 'All-in-One Infrastructure', 'Instant Deployment'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'base44-1',
+        title: 'Getting Started with Base44',
+        description: 'Getting Started with Base44 with Meltics Media',
+        duration: '39 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=FN9fyZ9IPWs'
+      },
+      {
+        id: 'base44-2',
+        title: 'Building with Base44',
+        description: 'Step by Step to building with Base44 by Design with May',
+        duration: '26 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=cbFudIg_zWA'
       }
     ]
   },
@@ -555,6 +584,7 @@ export function LearnPage() {
                         platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
                         platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
                         platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
+                        platform.id === 'base44' ? 'https://docs.base44.com/' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
