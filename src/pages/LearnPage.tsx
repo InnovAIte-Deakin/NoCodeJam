@@ -8,15 +8,15 @@ import { platformPricing } from '@/data/platformPricing';
 import { ExternalLink, Play, BookOpen, Code, Zap, Palette, Database, Globe } from 'lucide-react';
 import lovableLogo from '@/images/logoblack.svg';
 import boltLogo from '@/images/Bolt Logo.svg';
-import windsurfLogo from '@/images/logoblack.svg';
-import cursorLogo from '@/images/logoblack.svg';
-import replitLogo from '@/images/logoblack.svg';
-import githubCopilotLogo from '@/images/logoblack.svg';
-import claudeCodeLogo from '@/images/logoblack.svg';
-import geminiLogo from '@/images/logoblack.svg';
-import innovAIteLogo from '@/images/logoblack.svg';
+import windsurfLogo from '@/images/windsurf Logo.png';
+import cursorLogo from '@/images/Cursor.jfif';
+import replitLogo from '@/images/Replit Logo.png';
+import githubCopilotLogo from '@/images/Github Copilot Logo.webp';
+import claudeCodeLogo from '@/images/Claude Code Logo.webp';
+import geminiLogo from '@/images/Gemini Logo.png';
+import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
 import figmaLogo from '@/images/figma-logo.svg';
-import base44Logo from '@/images/logoblack.svg';
+import base44Logo from '@/images/Base44.jfif';
 
 
 interface Platform {
