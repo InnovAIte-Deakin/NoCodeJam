@@ -529,7 +529,7 @@ export function LearnPage() {
                       />
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-white">{platform.name}</CardTitle>
+                      <CardTitle className="text-2xl text-white">{platform.name}</CardTitle>
                       <CardDescription className="text-base text-gray-300">
                         {platform.description}
                       </CardDescription>
