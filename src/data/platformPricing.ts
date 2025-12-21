@@ -250,5 +250,52 @@ export const platformPricing: Record<string, any[]> = {
       features: ['SSO', 'Admin controls', 'Org policies'],
       ctaUrl: 'https://www.figma.com/pricing'
     }
+  ],
+  base44: [
+    {
+      id: 'base44-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: ['25 Message Credits, 100 Integration Credits','Core Base44 features'],
+      ctaUrl: 'https://base44.com/pricing'
+    },
+    {
+      id: 'base44-start',
+      key: 'paid',
+      name: 'Starter',
+      price: '$9',
+      billing: 'per month',
+      features: ['100 Message Credits, 2000 Integration Credits','Unlimited number of apps', 'In-app code edits'],
+      ctaUrl: 'https://base44.com/pricing'
+    },
+    {
+      id: 'base44-Builder',
+      key: 'paid',
+      name: 'Builder',
+      price: '$40',
+      billing: 'per month',
+      features: ['250 Message Credits, 10,000 Integration Credits','Backend functions', 'Connect a domain', 'Free domain for 1 year', 'Github integration'],
+      ctaUrl: 'https://base44.com/contact'
+    },
+    {
+      id: 'base44-Pro',
+      key: 'paid',
+      name: 'Pro',
+      price: '$80',
+      billing: 'per month',
+      features: ['500 Message Credits, 20,000 Integration Credits','Prior Features', 'Early access to beta features'],
+      ctaUrl: 'https://base44.com/contact'
+    },
+    {
+      id: 'base44-Elite',
+      key: 'paid',
+      name: 'Elite',
+      price: '$160',
+      billing: 'per month',
+      features: ['1,200 Message Credits, 50,000 Integration Credits','Prior Features', 'Premium support'],
+      ctaUrl: 'https://base44.com/contact'
+    }
   ]
 };

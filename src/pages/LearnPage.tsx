@@ -502,8 +502,8 @@ export function LearnPage() {
                 </div>
                 <div className="mt-3">
                   <PricingPill pricing={platform.pricing} />
-`               </div>
-                <p className="text-sm text-gray-300 line-clamp-3">
+                </div>
+                <p className="text-sm text-gray-300 line-clamp-3 pt-3">
                   {platform.description}
                 </p>
               </CardContent>
@@ -529,7 +529,7 @@ export function LearnPage() {
                       />
                     </div>
                     <div>
-                      <CardTitle className="text-2xl text-white">{platform.name}</CardTitle>
+                      <CardTitle className="text-xl text-white">{platform.name}</CardTitle>
                       <CardDescription className="text-base text-gray-300">
                         {platform.description}
                       </CardDescription>
