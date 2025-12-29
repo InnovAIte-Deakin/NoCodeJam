@@ -16,7 +16,8 @@ import claudeCodeLogo from '@/images/Claude Code Logo.webp';
 import geminiLogo from '@/images/Gemini Logo.png';
 import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
 import figmaLogo from '@/images/figma-logo.svg';
-import base44Logo from '@/images/Base44.jfif';
+import base44Logo from '@/images/base44-logo.png';
+import emergentLogo from '@/images/Emergent Logo.jpg';
 
 
 interface Platform {
@@ -415,7 +416,45 @@ const platforms: Platform[] = [
         url: 'https://www.youtube.com/watch?v=dzFUOQUSiEI'
       }
     ]
+  },
+  {
+    id: 'emergent',
+    name: 'Emergent',
+    description:
+      'Emergent is an AI-assisted builder that helps you spin up working app prototypes quickly. This tutorial track links straight to concise YouTube videos so you can learn the workflow fast.',
+    logo: emergentLogo,
+    website: '#',
+    features: ['AI-Assisted', 'Rapid Prototyping', 'Web App Scaffolding', 'Iteration Friendly'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'emergent-1',
+        title: 'Emergent AI Walkthrough',
+        description: 'A quick tour of Emergent and what you can build with it.',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=ZplFP8Mo7_M'
+      },
+      {
+        id: 'emergent-2',
+        title: 'Build a full app with Emergent AI',
+        description: 'Create a simple app from scratch and deploy it.',
+        duration: '13 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=atnYF5wll74'
+      },
+      {
+        id: 'emergent-3',
+        title: 'Building a SaaS with No Coding Knowledge',
+        description: 'Build an AI Sitcom Generator.',
+        duration: '32 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=ZZZZZZZZZZZ'
+      }
+    ]
   }
+  
 ];
 // Attach pricing arrays from platformPricing to the platforms by id.
 // Using @ts-ignore to avoid duplicate type-name issues if any.
