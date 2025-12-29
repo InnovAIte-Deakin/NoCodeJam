@@ -737,6 +737,7 @@ export function LearnPage() {
                         platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
                         platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
                         platform.id === 'base44' ? 'https://docs.base44.com/' :
+                        platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
