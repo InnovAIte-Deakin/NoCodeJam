@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, supabaseUrl } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { OnboardingChallengeCard } from '@/components/OnboardingChallengeCard';
 import { ChallengeRequestModal } from '@/components/ChallengeRequestModal';
@@ -92,7 +92,7 @@ export function ChallengeListPage() {
         return;
       }
 
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/set-onboarding-visibility`, {
+      const response = await fetch(`${supabaseUrl}/functions/v1/set-onboarding-visibility`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
