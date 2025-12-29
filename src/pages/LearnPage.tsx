@@ -1,7 +1,9 @@
-import { useState, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import PricingPill from '@/components/PricingPill';
+import { platformPricing } from '@/data/platformPricing';
 
 import { ExternalLink, Play, BookOpen, Code, Zap, Palette, Database, Globe } from 'lucide-react';
 import lovableLogo from '@/images/logoblack.svg';
@@ -14,6 +16,9 @@ import claudeCodeLogo from '@/images/Claude Code Logo.webp';
 import geminiLogo from '@/images/Gemini Logo.png';
 import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
 import figmaLogo from '@/images/figma-logo.svg';
+import base44Logo from '@/images/base44-logo.png';
+import emergentLogo from '@/images/Emergent Logo.jpg';
+
 
 interface Platform {
   id: string;
@@ -25,6 +30,7 @@ interface Platform {
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   category: 'Visual Builder' | 'AI-Powered' | 'Database' | 'Web Development';
   tutorials: Tutorial[];
+  pricing?: PricingTier[];
 }
 
 interface Tutorial {
@@ -34,6 +40,16 @@ interface Tutorial {
   duration: string;
   difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
   url: string;
+}
+
+interface PricingTier {
+  id: string;
+  key: 'free' | 'freemium' | 'paid' | 'enterprise';
+  name: string;            // e.g. "Free", "Professional"
+  price?: string;          // e.g. "$0", "$12/mo", "Contact Sales"
+  billing?: string;        // e.g. "per editor/month"
+  features?: string[];     // short bullets shown in details
+  ctaUrl?: string;         // link to provider pricing page
 }
 
 const platforms: Platform[] = [
@@ -70,6 +86,34 @@ const platforms: Platform[] = [
         duration: '15 min',
         difficulty: 'Intermediate',
         url: 'https://www.youtube.com/watch?v=N8JWiuVLi9E&t'
+      }
+    ]
+  },
+  {
+    id: 'base44',
+    name: 'Base44',
+    description: 'Base44 is an AI-powered platform that lets you turn any idea into a fully-functional custom app, without the need for any coding experience.',
+    logo: base44Logo,
+    website: 'https://base44.com/',
+    features: ['Prompt-to-App', 'Fullstack Generation', 'All-in-One Infrastructure', 'Instant Deployment'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'base44-1',
+        title: 'Getting Started with Base44',
+        description: 'Getting Started with Base44 with Meltics Media',
+        duration: '39 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=FN9fyZ9IPWs'
+      },
+      {
+        id: 'base44-2',
+        title: 'Building with Base44',
+        description: 'Step by Step to building with Base44 by Design with May',
+        duration: '26 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=cbFudIg_zWA'
       }
     ]
   },
@@ -371,12 +415,105 @@ const platforms: Platform[] = [
         url: 'https://www.youtube.com/watch?v=FigmaPluginsExample'
       }
     ]
+  },
+  {
+    id: 'gemini-3',
+    name: 'Gemini 3',
+    description: 'Gemini 3 is Google’s advanced multimodal AI model designed to understand and generate text, images, and code with improved speed, accuracy, and reasoning capabilities.',
+    logo: geminiLogo,
+    website: 'https://deepmind.google/models/gemini/',
+    features: ['Multimodal Understanding', 'Advanced Reasoning', 'Large Context Window', 'Generative UI'],
+    difficulty: 'Intermediate',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'gemini-3-1',
+        title: 'Introduction',
+        description: 'Introduction of Gemini 3 along with some use cases',
+        duration: '18 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=sXXbySqIguA'
+      },
+      {
+        id: 'gemini-3-2',
+        title: 'Crash Course',
+        description: 'Video Tutorial by Riley Brown on how to use Gemini 3',
+        duration: '25 min',
+        difficulty: 'Advanced',
+        url: 'https://www.youtube.com/watch?v=dzFUOQUSiEI'
+      }
+    ]
+  },
+  {
+    id: 'emergent',
+    name: 'Emergent',
+    description:
+      'Emergent is an AI-assisted builder that helps you spin up working app prototypes quickly. This tutorial track links straight to concise YouTube videos so you can learn the workflow fast.',
+    logo: emergentLogo,
+    website: '#',
+    features: ['AI-Assisted', 'Rapid Prototyping', 'Web App Scaffolding', 'Iteration Friendly'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'emergent-1',
+        title: 'Emergent AI Walkthrough',
+        description: 'A quick tour of Emergent and what you can build with it.',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=ZplFP8Mo7_M'
+      },
+      {
+        id: 'emergent-2',
+        title: 'Build a full app with Emergent AI',
+        description: 'Create a simple app from scratch and deploy it.',
+        duration: '13 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=atnYF5wll74'
+      },
+      {
+        id: 'emergent-3',
+        title: 'Building a SaaS with No Coding Knowledge',
+        description: 'Build an AI Sitcom Generator.',
+        duration: '32 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=ZZZZZZZZZZZ'
+      }
+    ]
   }
+  
 ];
+// Attach pricing arrays from platformPricing to the platforms by id.
+// Using @ts-ignore to avoid duplicate type-name issues if any.
+ // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+platforms.forEach((p) => {
+  // use the platform id to lookup pricing; default to [] if missing
+  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+  // @ts-ignore
+  p.pricing = platformPricing[p.id] ?? [];
+});
 
 export function LearnPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('lovable');
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
   const platformRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  const filteredPlatforms = useMemo(() => {
+    return platforms.filter((platform) => {
+      const matchesDifficulty = difficultyFilter === 'all' || platform.difficulty === difficultyFilter;
+      const matchesCategory = categoryFilter === 'all' || platform.category === categoryFilter;
+      return matchesDifficulty && matchesCategory;
+    });
+  }, [difficultyFilter, categoryFilter]);
+
+  useEffect(() => {
+    if (!filteredPlatforms.some((platform) => platform.id === selectedPlatform)) {
+      setSelectedPlatform(filteredPlatforms[0]?.id ?? '');
+    }
+  }, [filteredPlatforms, selectedPlatform]);
 
   const scrollToPlatform = (platformId: string) => {
     setSelectedPlatform(platformId);
@@ -412,15 +549,82 @@ export function LearnPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">🎓 No-Code Platform Learning</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">
+            🎓 Explore No-Code Platforms for Fast Prototyping
+            </h1>
+
           <p className="text-gray-300 max-w-2xl mx-auto">
             Discover the best no-code platforms and learn how to build amazing applications without writing a single line of code.
           </p>
         </div>
 
+        {/* Filters */}
+        <div className="mb-6 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="border-gray-600 text-gray-200" onClick={() => setShowFilters((prev) => !prev)}>
+                {showFilters ? 'Hide Filters' : 'Filter'}
+              </Button>
+              {(difficultyFilter !== 'all' || categoryFilter !== 'all') && (
+                <Button variant="ghost" className="text-gray-300" onClick={() => { setDifficultyFilter('all'); setCategoryFilter('all'); }}>
+                  Clear
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
+              <span className="px-3 py-1 rounded-full bg-gray-800 border border-gray-700">
+                Difficulty: {difficultyFilter === 'all' ? 'All' : difficultyFilter}
+              </span>
+              <span className="px-3 py-1 rounded-full bg-gray-800 border border-gray-700">
+                Category: {categoryFilter === 'all' ? 'All' : categoryFilter}
+              </span>
+            </div>
+          </div>
+
+          {showFilters && (
+            <div className="grid sm:grid-cols-2 gap-4 bg-gray-800 border border-gray-700 p-4 rounded-lg">
+              <div className="space-y-2">
+                <label htmlFor="difficulty-select" className="block text-sm text-gray-300">Difficulty</label>
+                <select
+                  id="difficulty-select"
+                  name="difficulty"
+                  title="Difficulty"
+                  aria-label="Difficulty"
+                  value={difficultyFilter}
+                  onChange={(e) => setDifficultyFilter(e.target.value)}
+                  className="w-full rounded-md bg-gray-900 border border-gray-700 text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="category-select" className="block text-sm text-gray-300">Category</label>
+                <select
+                  id="category-select"
+                  name="category"
+                  title="Category"
+                  aria-label="Category"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full rounded-md bg-gray-900 border border-gray-700 text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All</option>
+                  <option value="Visual Builder">Visual Builder</option>
+                  <option value="AI-Powered">AI-Powered</option>
+                  <option value="Database">Database</option>
+                  <option value="Web Development">Web Development</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Platform Overview Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6 mb-8">
-          {platforms.map((platform) => (
+          {filteredPlatforms.map((platform) => (
             <Card 
               key={platform.id} 
               className={`cursor-pointer transition-all duration-200 hover:shadow-lg bg-gray-800 border-gray-700 ${
@@ -443,17 +647,25 @@ export function LearnPage() {
                     {platform.difficulty}
                   </Badge>
                 </div>
-                <p className="text-sm text-gray-300 line-clamp-3">
+                <div className="mt-3">
+                  <PricingPill pricing={platform.pricing} />
+                </div>
+                <p className="text-sm text-gray-300 line-clamp-3 pt-3">
                   {platform.description}
                 </p>
               </CardContent>
             </Card>
           ))}
+          {filteredPlatforms.length === 0 && (
+            <div className="col-span-full text-center text-gray-300 border border-dashed border-gray-600 rounded-lg p-6">
+              No platforms match the selected filters.
+            </div>
+          )}
         </div>
 
         {/* Detailed Platform Information */}
         <div className="space-y-6">
-          {platforms.map((platform) => (
+          {filteredPlatforms.map((platform) => (
             <div 
               key={platform.id} 
               className={`space-y-6 ${selectedPlatform === platform.id ? 'block' : 'hidden'}`}
@@ -523,12 +735,17 @@ export function LearnPage() {
                         platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
                         platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
                         platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
+                        platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
+                        platform.id === 'base44' ? 'https://docs.base44.com/' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
                         Documentation
                       </a>
                     </Button>
+                  </div>
+                  <div className="sm:mr-4 mb-3 sm:mb-0">
+                    <PricingPill pricing={platform.pricing} />
                   </div>
                 </CardContent>
               </Card>
