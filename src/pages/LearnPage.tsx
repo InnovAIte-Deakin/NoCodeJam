@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -469,7 +469,24 @@ platforms.forEach((p) => {
 
 export function LearnPage() {
   const [selectedPlatform, setSelectedPlatform] = useState<string>('lovable');
+  const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
   const platformRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+
+  const filteredPlatforms = useMemo(() => {
+    return platforms.filter((platform) => {
+      const matchesDifficulty = difficultyFilter === 'all' || platform.difficulty === difficultyFilter;
+      const matchesCategory = categoryFilter === 'all' || platform.category === categoryFilter;
+      return matchesDifficulty && matchesCategory;
+    });
+  }, [difficultyFilter, categoryFilter]);
+
+  useEffect(() => {
+    if (!filteredPlatforms.some((platform) => platform.id === selectedPlatform)) {
+      setSelectedPlatform(filteredPlatforms[0]?.id ?? '');
+    }
+  }, [filteredPlatforms, selectedPlatform]);
 
   const scrollToPlatform = (platformId: string) => {
     setSelectedPlatform(platformId);
@@ -514,9 +531,65 @@ export function LearnPage() {
           </p>
         </div>
 
+        {/* Filters */}
+        <div className="mb-6 space-y-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="border-gray-600 text-gray-200" onClick={() => setShowFilters((prev) => !prev)}>
+                {showFilters ? 'Hide Filters' : 'Filter'}
+              </Button>
+              {(difficultyFilter !== 'all' || categoryFilter !== 'all') && (
+                <Button variant="ghost" className="text-gray-300" onClick={() => { setDifficultyFilter('all'); setCategoryFilter('all'); }}>
+                  Clear
+                </Button>
+              )}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
+              <span className="px-3 py-1 rounded-full bg-gray-800 border border-gray-700">
+                Difficulty: {difficultyFilter === 'all' ? 'All' : difficultyFilter}
+              </span>
+              <span className="px-3 py-1 rounded-full bg-gray-800 border border-gray-700">
+                Category: {categoryFilter === 'all' ? 'All' : categoryFilter}
+              </span>
+            </div>
+          </div>
+
+          {showFilters && (
+            <div className="grid sm:grid-cols-2 gap-4 bg-gray-800 border border-gray-700 p-4 rounded-lg">
+              <div className="space-y-2">
+                <label className="block text-sm text-gray-300">Difficulty</label>
+                <select
+                  value={difficultyFilter}
+                  onChange={(e) => setDifficultyFilter(e.target.value)}
+                  className="w-full rounded-md bg-gray-900 border border-gray-700 text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <label className="block text-sm text-gray-300">Category</label>
+                <select
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  className="w-full rounded-md bg-gray-900 border border-gray-700 text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="all">All</option>
+                  <option value="Visual Builder">Visual Builder</option>
+                  <option value="AI-Powered">AI-Powered</option>
+                  <option value="Database">Database</option>
+                  <option value="Web Development">Web Development</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Platform Overview Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6 mb-8">
-          {platforms.map((platform) => (
+          {filteredPlatforms.map((platform) => (
             <Card 
               key={platform.id} 
               className={`cursor-pointer transition-all duration-200 hover:shadow-lg bg-gray-800 border-gray-700 ${
@@ -541,18 +614,23 @@ export function LearnPage() {
                 </div>
                 <div className="mt-3">
                   <PricingPill pricing={platform.pricing} />
-`               </div>
-                <p className="text-sm text-gray-300 line-clamp-3">
+                </div>
+                <p className="text-sm text-gray-300 line-clamp-3 pt-3">
                   {platform.description}
                 </p>
               </CardContent>
             </Card>
           ))}
+          {filteredPlatforms.length === 0 && (
+            <div className="col-span-full text-center text-gray-300 border border-dashed border-gray-600 rounded-lg p-6">
+              No platforms match the selected filters.
+            </div>
+          )}
         </div>
 
         {/* Detailed Platform Information */}
         <div className="space-y-6">
-          {platforms.map((platform) => (
+          {filteredPlatforms.map((platform) => (
             <div 
               key={platform.id} 
               className={`space-y-6 ${selectedPlatform === platform.id ? 'block' : 'hidden'}`}
