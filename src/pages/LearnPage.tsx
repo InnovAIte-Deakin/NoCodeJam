@@ -557,8 +557,12 @@ export function LearnPage() {
           {showFilters && (
             <div className="grid sm:grid-cols-2 gap-4 bg-gray-800 border border-gray-700 p-4 rounded-lg">
               <div className="space-y-2">
-                <label className="block text-sm text-gray-300">Difficulty</label>
+                <label htmlFor="difficulty-select" className="block text-sm text-gray-300">Difficulty</label>
                 <select
+                  id="difficulty-select"
+                  name="difficulty"
+                  title="Difficulty"
+                  aria-label="Difficulty"
                   value={difficultyFilter}
                   onChange={(e) => setDifficultyFilter(e.target.value)}
                   className="w-full rounded-md bg-gray-900 border border-gray-700 text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
@@ -570,8 +574,12 @@ export function LearnPage() {
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="block text-sm text-gray-300">Category</label>
+                <label htmlFor="category-select" className="block text-sm text-gray-300">Category</label>
                 <select
+                  id="category-select"
+                  name="category"
+                  title="Category"
+                  aria-label="Category"
                   value={categoryFilter}
                   onChange={(e) => setCategoryFilter(e.target.value)}
                   className="w-full rounded-md bg-gray-900 border border-gray-700 text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
