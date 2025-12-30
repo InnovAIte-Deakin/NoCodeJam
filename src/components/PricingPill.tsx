@@ -27,15 +27,25 @@ const tierColor = (key?: string) => {
 
 export default function PricingPill({ pricing }: Props) {
   const [open, setOpen] = useState(false);
+// Prevent click event from bubbling to parent Card's onClick
+  const handlePillClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(s => !s);
+  };
+
+  const handleDetailsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpen(s => !s);
+  };
   if (!pricing || pricing.length === 0) return null;
 
   const preferred = pricing.find(p => p.key === 'paid') ?? pricing.find(p => p.key === 'freemium') ?? pricing[0];
 
   return (
-    <div className="w-full">
+    <div className="w-full" onClick={(e) => e.stopPropagation()}>
       <div className="flex items-center gap-2">
         <button
-          onClick={() => setOpen(s => !s)}
+          onClick={handlePillClick}
           className={`inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full ${tierColor(preferred.key)}`}
           title={`${preferred.name} — ${preferred.price ?? ''}`}
           aria-expanded={open}
@@ -45,7 +55,7 @@ export default function PricingPill({ pricing }: Props) {
         </button>
 
         <button
-          onClick={() => setOpen(s => !s)}
+          onClick={handlePillClick}
           className="text-xs text-slate-300 hover:text-white"
           aria-label="Toggle pricing details"
         >
@@ -54,7 +64,7 @@ export default function PricingPill({ pricing }: Props) {
       </div>
 
       {open && (
-        <div className="mt-2 bg-gray-800 border border-gray-700 rounded-md p-3 text-sm">
+        <div className="mt-2 bg-gray-800 border border-gray-700 rounded-md p-3 text-sm"onClick={(e) => e.stopPropagation()}>
           {pricing.map(p => (
             <div key={p.id} className="mb-3 last:mb-0">
               <div className="flex items-baseline justify-between">
