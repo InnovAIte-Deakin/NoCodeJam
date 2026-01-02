@@ -29,7 +29,7 @@ export function Navigation() {
 
   // ✅ Shared hover-grow effect (no layout shift because it uses transform)
   const desktopHoverGrow =
-    'transition-all duration-200 ease-out will-change-transform hover:scale-110 hover:-translate-y-[1px] hover:shadow-lg active:scale-105';
+    'transition-all duration-200 ease-out will-change-transform hover:scale-110 hover:-translate-y-[1px] hover:shadow-lg active:scale-105 active:translate-y-0';
 
   const NavigationLinks = ({ mobile = false, onLinkClick = () => {} }) => (
     <>
