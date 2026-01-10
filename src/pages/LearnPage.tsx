@@ -348,6 +348,33 @@ const platforms: Platform[] = [
     ]
   },
   {
+    id: 'abacus-ai',
+    name: 'Abacus.AI',
+    description:
+      'Abacus.AI is a full-stack AI platform for teams and enterprises that makes it easy to ingest data, train and fine-tune models, evaluate them, and deploy AI into real-world applications without managing complex infrastructure.',
+    logo: 'https://abacus.ai/help/img/abacus_logo.jpg',
+    website: 'https://abacus.ai',
+    features: [
+      'Full-Stack AI Platform',
+      'Data Ingestion & Management',
+      'Model Training & Fine-Tuning',
+      'Evaluation & Monitoring',
+      'Production Deployment'
+    ],
+    difficulty: 'Intermediate',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'abacus-ai-1',
+        title: 'Abacus.AI Platform Overview',
+        description: 'Introductory video on using Abacus.AI as a full-stack AI platform for real-world applications.',
+        duration: '15 min',
+        difficulty: 'Intermediate',
+        url: 'https://youtu.be/RSksIo_tDVo?si=uKcMd0bT-j24ambe'
+      }
+    ]
+  },
+  {
     id: 'figma',
     name: 'Figma',
     description: 'A collaborative interface design tool — learn UI fundamentals, prototyping, design systems, and handoff workflows.',
@@ -487,7 +514,7 @@ const platforms: Platform[] = [
   {
     id: 'v0',
     name: 'v0',
-    description: 'v0 is Vercel\’s AI-powered development platform that turns natural-language prompts into production-ready web apps and UI, generating React code styled with Tailwind',
+    description: 'v0 is Vercel’s AI-powered development platform that turns natural-language prompts into production-ready web apps and UI, generating React code styled with Tailwind',
     logo: v0Logo,
     website: 'https://v0.app',
     features: ['AI UI Generation', 'React Components', 'Tailwind CSS', 'Instant Prototyping'],
@@ -576,7 +603,7 @@ export function LearnPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -771,6 +798,7 @@ export function LearnPage() {
                         platform.id === 'emergent' ? 'https://emergent.dev/docs' :
                         platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
                         platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
+                        platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />

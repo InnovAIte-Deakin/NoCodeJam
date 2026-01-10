@@ -1,5 +1,17 @@
 // src/data/platformPricing.ts
-export const platformPricing: Record<string, any[]> = {
+export type PricingTierKey = 'free' | 'freemium' | 'paid' | 'enterprise';
+
+export interface PricingTier {
+  id: string;
+  key: PricingTierKey;
+  name: string;
+  price?: string;
+  billing?: string;
+  features?: string[];
+  ctaUrl?: string;
+}
+
+export const platformPricing: Record<string, PricingTier[]> = {
   lovable: [
     {
       id: 'lovable-free',
@@ -413,7 +425,7 @@ export const platformPricing: Record<string, any[]> = {
     },
     {
       id: 'v0-enterprise',
-      key: 'paid',
+      key: 'enterprise',
       name: 'Enterprise',
       price: 'Custom',
       billing: 'custom',
@@ -425,6 +437,51 @@ export const platformPricing: Record<string, any[]> = {
         'Guaranteed customer support SLAs'
       ],
       ctaUrl: 'https://v0.app/pricing'
+    }
+  ],
+
+  'abacus-ai': [
+    {
+      id: 'abacus-ai-basic',
+      key: 'paid',
+      name: 'Basic',
+      price: '$10',
+      billing: 'per user/month',
+      features: [
+        'Access to all ChatLLM features',
+        '20K credits per month included',
+        'Limited access to Abacus AI Deep Agent (3 basic tasks/month)',
+        'Access to multiple top LLMs (GPT, Claude, Gemini, etc.)'
+      ],
+      ctaUrl: 'https://abacus.ai/help/chatllm-ai-super-assistant/faqs/billing'
+    },
+    {
+      id: 'abacus-ai-pro',
+      key: 'paid',
+      name: 'Pro',
+      price: '$20',
+      billing: 'per user/month',
+      features: [
+        'Everything in Basic, plus a more powerful Deep Agent',
+        'Unrestricted use of Abacus AI Deep Agent (while you have credits)',
+        'Extra 5K credits per month (total 25K+ if you include rollover purchases)',
+        'Best for heavy Deep Agent usage and app creation'
+      ],
+      ctaUrl: 'https://abacus.ai/help/chatllm-ai-super-assistant/faqs/billing'
+    },
+    {
+      id: 'abacus-ai-enterprise',
+      key: 'enterprise',
+      name: 'Enterprise',
+      price: 'Contact Sales',
+      billing: 'custom billing',
+      features: [
+        'Abacus.AI Enterprise platform with advanced security and compliance',
+        'Custom contracts and SLAs',
+        'Dedicated support and onboarding',
+        'Advanced enterprise features and integrations'
+      ],
+      ctaUrl: 'https://abacus.ai/contact'
     }
   ]
 };
