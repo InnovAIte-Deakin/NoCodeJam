@@ -1,13 +1,171 @@
-<!DOCTYPE html>
-<html lang="en" class="dark">
+<!doctype html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Nice-to-have meta -->
+    <meta name="theme-color" content="#0b0f1a" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="description" content="NoCodeJam" />
+
+    <!-- Fonts (optional): swap with your preferred font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root { color-scheme: dark; }
+      html { scroll-behavior: smooth; }
+      body {
+        margin: 0;
+        font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        background: radial-gradient(1200px 600px at 20% 10%, rgba(124,58,237,.35), transparent 60%),
+                    radial-gradient(900px 500px at 85% 20%, rgba(34,197,94,.25), transparent 55%),
+                    radial-gradient(900px 700px at 50% 95%, rgba(59,130,246,.22), transparent 55%),
+                    #070a12;
+        color: rgba(255,255,255,.9);
+        overflow-x: hidden;
+      }
+
+      /* Subtle animated blobs */
+      .bg-blobs::before, .bg-blobs::after {
+        content: "";
+        position: fixed;
+        inset: -20%;
+        background:
+          radial-gradient(circle at 30% 30%, rgba(124,58,237,.22), transparent 35%),
+          radial-gradient(circle at 70% 40%, rgba(59,130,246,.18), transparent 38%),
+          radial-gradient(circle at 55% 75%, rgba(34,197,94,.16), transparent 40%);
+        filter: blur(22px);
+        animation: drift 14s ease-in-out infinite alternate;
+        pointer-events: none;
+        z-index: -1;
+      }
+      .bg-blobs::after { animation-duration: 18s; opacity: .7; }
+
+      @keyframes drift {
+        from { transform: translate3d(-1.5%, -1%, 0) scale(1); }
+        to   { transform: translate3d(1.5%, 1%, 0) scale(1.05); }
+      }
+
+      /* Loader overlay */
+      #app-loader {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(7,10,18,.72);
+        backdrop-filter: blur(10px);
+        z-index: 9999;
+        transition: opacity .35s ease, transform .35s ease;
+      }
+      #app-loader[data-hide="true"] {
+        opacity: 0;
+        transform: translateY(-6px);
+        pointer-events: none;
+      }
+
+      .loader-card {
+        width: min(520px, 92vw);
+        border-radius: 18px;
+        padding: 22px 22px 18px;
+        background: rgba(255,255,255,.06);
+        border: 1px solid rgba(255,255,255,.10);
+        box-shadow: 0 20px 60px rgba(0,0,0,.35);
+      }
+      .loader-top {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .spinner {
+        width: 18px;
+        height: 18px;
+        border-radius: 999px;
+        border: 2px solid rgba(255,255,255,.25);
+        border-top-color: rgba(255,255,255,.85);
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      .loader-title { font-weight: 700; letter-spacing: .2px; }
+      .loader-sub { opacity: .72; font-size: 14px; line-height: 1.4; }
+
+      .loader-bar {
+        margin-top: 14px;
+        height: 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.08);
+        overflow: hidden;
+      }
+      .loader-bar > i {
+        display: block;
+        height: 100%;
+        width: 45%;
+        border-radius: 999px;
+        background: linear-gradient(90deg, rgba(124,58,237,.9), rgba(59,130,246,.9), rgba(34,197,94,.9));
+        animation: sweep 1.2s ease-in-out infinite alternate;
+      }
+      @keyframes sweep {
+        from { transform: translateX(-20%); }
+        to   { transform: translateX(140%); }
+      }
+
+      /* Respect reduced-motion */
+      @media (prefers-reduced-motion: reduce) {
+        .bg-blobs::before, .bg-blobs::after,
+        .spinner, .loader-bar > i {
+          animation: none !important;
+        }
+        html { scroll-behavior: auto; }
+      }
+    </style>
+
     <title>NoCodeJam</title>
   </head>
-  <body>
+
+  <body class="bg-blobs">
+    <div id="app-loader" role="status" aria-live="polite">
+      <div class="loader-card">
+        <div class="loader-top">
+          <div class="spinner" aria-hidden="true"></div>
+          <div class="loader-title">Loading NoCodeJam</div>
+        </div>
+        <div class="loader-sub">
+          Getting things ready…
+        </div>
+        <div class="loader-bar" aria-hidden="true"><i></i></div>
+      </div>
+    </div>
+
     <div id="root"></div>
+    <noscript style="display:block;padding:16px;color:white;">
+      This app needs JavaScript enabled to run.
+    </noscript>
+
     <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      // Hide loader when the app signals it's ready.
+      window.addEventListener("app:ready", () => {
+        const el = document.getElementById("app-loader");
+        if (!el) return;
+        el.dataset.hide = "true";
+        setTimeout(() => el.remove(), 450);
+      });
+
+      // Safety fallback (in case JS errors out)
+      setTimeout(() => {
+        const el = document.getElementById("app-loader");
+        if (!el) return;
+        el.dataset.hide = "true";
+        setTimeout(() => el.remove(), 450);
+      }, 8000);
+    </script>
   </body>
 </html>

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, Trophy, Home, List, Shield, Menu, GraduationCap, Search } from 'lucide-react';
+import { LogOut, User, Trophy, Home, List, Shield, Menu, GraduationCap } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,12 +27,20 @@ export function Navigation() {
 
   const isActive = (path: string) => location.pathname === path;
 
+  // ✅ Shared hover-grow effect (no layout shift because it uses transform)
+  const desktopHoverGrow =
+    'transition-all duration-200 ease-out will-change-transform hover:scale-110 hover:-translate-y-[1px] hover:shadow-lg active:scale-105 active:translate-y-0';
+
   const NavigationLinks = ({ mobile = false, onLinkClick = () => {} }) => (
     <>
       <Link
         to="/dashboard"
         onClick={onLinkClick}
-        className={`flex items-center space-x-2 ${mobile ? 'px-4 py-3 rounded-md text-base font-medium' : 'px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium'} responsive-transition ${
+        className={`flex items-center space-x-2 ${
+          mobile
+            ? 'px-4 py-3 rounded-md text-base font-medium'
+            : `px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium ${desktopHoverGrow}`
+        } responsive-transition ${
           isActive('/dashboard')
             ? 'bg-gradient-to-r from-purple-700 to-blue-700 text-white'
             : 'text-gray-200 hover:text-white hover:bg-[#23272e]'
@@ -41,10 +49,15 @@ export function Navigation() {
         <Home className="w-4 h-4" />
         <span>Dashboard</span>
       </Link>
+
       <Link
         to="/learn"
         onClick={onLinkClick}
-        className={`flex items-center space-x-2 ${mobile ? 'px-4 py-3 rounded-md text-base font-medium' : 'px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium'} responsive-transition ${
+        className={`flex items-center space-x-2 ${
+          mobile
+            ? 'px-4 py-3 rounded-md text-base font-medium'
+            : `px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium ${desktopHoverGrow}`
+        } responsive-transition ${
           isActive('/learn')
             ? 'bg-gradient-to-r from-purple-700 to-blue-700 text-white'
             : 'text-gray-200 hover:text-white hover:bg-[#23272e]'
@@ -53,10 +66,15 @@ export function Navigation() {
         <GraduationCap className="w-4 h-4" />
         <span>Learn</span>
       </Link>
+
       <Link
         to="/challenges"
         onClick={onLinkClick}
-        className={`flex items-center space-x-2 ${mobile ? 'px-4 py-3 rounded-md text-base font-medium' : 'px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium'} responsive-transition ${
+        className={`flex items-center space-x-2 ${
+          mobile
+            ? 'px-4 py-3 rounded-md text-base font-medium'
+            : `px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium ${desktopHoverGrow}`
+        } responsive-transition ${
           isActive('/challenges')
             ? 'bg-gradient-to-r from-purple-700 to-blue-700 text-white'
             : 'text-gray-200 hover:text-white hover:bg-[#23272e]'
@@ -65,10 +83,15 @@ export function Navigation() {
         <List className="w-4 h-4" />
         <span>Challenges</span>
       </Link>
+
       <Link
         to="/leaderboard"
         onClick={onLinkClick}
-        className={`flex items-center space-x-2 ${mobile ? 'px-4 py-3 rounded-md text-base font-medium' : 'px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium'} responsive-transition ${
+        className={`flex items-center space-x-2 ${
+          mobile
+            ? 'px-4 py-3 rounded-md text-base font-medium'
+            : `px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium ${desktopHoverGrow}`
+        } responsive-transition ${
           isActive('/leaderboard')
             ? 'bg-gradient-to-r from-purple-700 to-blue-700 text-white'
             : 'text-gray-200 hover:text-white hover:bg-[#23272e]'
@@ -82,7 +105,11 @@ export function Navigation() {
         <Link
           to="/admin"
           onClick={onLinkClick}
-          className={`flex items-center space-x-2 ${mobile ? 'px-4 py-3 rounded-md text-base font-medium' : 'px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium'} responsive-transition ${
+          className={`flex items-center space-x-2 ${
+            mobile
+              ? 'px-4 py-3 rounded-md text-base font-medium'
+              : `px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium ${desktopHoverGrow}`
+          } responsive-transition ${
             isActive('/admin')
               ? 'bg-gradient-to-r from-purple-700 to-blue-700 text-white'
               : 'text-gray-200 hover:text-white hover:bg-[#23272e]'
@@ -117,7 +144,10 @@ export function Navigation() {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Button
+                      variant="ghost"
+                      className={`relative h-8 w-8 rounded-full ${desktopHoverGrow}`}
+                    >
                       <Avatar className="h-7 w-7 sm:h-8 sm:w-8">
                         <AvatarImage src={user.avatar || undefined} alt={user.username || ''} />
                         <AvatarFallback className="text-xs sm:text-sm">
@@ -126,12 +156,15 @@ export function Navigation() {
                       </Avatar>
                     </Button>
                   </DropdownMenuTrigger>
+
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <div className="flex items-center justify-start gap-2 p-2">
                       <div className="flex flex-col space-y-1 leading-none">
                         <p className="font-medium">{user.username || ''}</p>
                         <p className="w-[200px] truncate text-sm text-muted-foreground">
-                          <span className="text-xs sm:text-sm font-medium leading-none">{user.username || ''}</span>
+                          <span className="text-xs sm:text-sm font-medium leading-none">
+                            {user.username || ''}
+                          </span>
                         </p>
                         <p className="text-sm text-purple-600 font-medium">{user.xp ?? 0} XP</p>
                       </div>
@@ -177,6 +210,7 @@ export function Navigation() {
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
+
                 <DropdownMenuContent className="w-56" align="end" forceMount>
                   <div className="flex items-center justify-start gap-2 p-2">
                     <div className="flex flex-col space-y-1 leading-none">
@@ -207,6 +241,7 @@ export function Navigation() {
                   <span className="sr-only">Open menu</span>
                 </Button>
               </SheetTrigger>
+
               <SheetContent side="right" className="w-[300px] sm:w-[400px]">
                 <SheetHeader>
                   <SheetTitle className="flex items-center space-x-2">
@@ -215,10 +250,9 @@ export function Navigation() {
                     </div>
                     <span>NoCodeJam</span>
                   </SheetTitle>
-                  <SheetDescription>
-                    Navigate through the platform
-                  </SheetDescription>
+                  <SheetDescription>Navigate through the platform</SheetDescription>
                 </SheetHeader>
+
                 <div className="mt-6 flex flex-col space-y-3">
                   {user ? (
                     <NavigationLinks mobile onLinkClick={() => setMobileMenuOpen(false)} />
