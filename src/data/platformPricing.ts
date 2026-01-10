@@ -1,5 +1,17 @@
 // src/data/platformPricing.ts
-export const platformPricing: Record<string, any[]> = {
+export type PricingTierKey = 'free' | 'freemium' | 'paid' | 'enterprise';
+
+export interface PricingTier {
+  id: string;
+  key: PricingTierKey;
+  name: string;
+  price?: string;
+  billing?: string;
+  features?: string[];
+  ctaUrl?: string;
+}
+
+export const platformPricing: Record<string, PricingTier[]> = {
   lovable: [
     {
       id: 'lovable-free',
@@ -298,6 +310,136 @@ export const platformPricing: Record<string, any[]> = {
       ctaUrl: 'https://base44.com/contact'
     }
   ],
+  grok: [
+    {
+      id: 'grok-basic',
+      key: 'free',
+      name: 'Basic',
+      price: '$0',
+      billing: 'per month',
+      features: [
+        'Limited access to chat models',
+        'Limited context memory',
+        'Aurora image model',
+        'Voice access',
+        'Projects',
+        'Tasks'
+      ],
+      ctaUrl: 'https://grok.com/plans'
+    },
+    {
+      id: 'grok-supergrok',
+      key: 'paid',
+      name: 'SuperGrok',
+      price: '$30',
+      billing: 'per month',
+      features: [
+        'Increased access to Grok 4.1',
+        'Improved reasoning and search capabilities',
+        'Extended memory (128,000 tokens)',
+        'Priority voice access',
+        'Imagine image model',
+        'Companions: Ani and Valentine',
+        'Everything in Basic'
+      ],
+      ctaUrl: 'https://grok.com/plans'
+    },
+    {
+      id: 'grok-supergrok-heavy',
+      key: 'paid',
+      name: 'SuperGrok Heavy',
+      price: '$300',
+      billing: 'per month',
+      features: [
+        'Exclusive preview of Grok 4 Heavy',
+        'Extended access to Grok 4.1',
+        'Longest memory (256,000 tokens)',
+        'Early access to new features',
+        'Everything in SuperGrok'
+      ],
+      ctaUrl: 'https://grok.com/plans'
+    }
+  ],
+
+  v0: [
+    {
+      id: 'v0-individual-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'per month',
+      features: [
+        '$5 of included monthly credits',
+        'Deploy apps to Vercel',
+        'Edit visually with Design Mode',
+        'Sync with GitHub',
+        '7 messages/day limit'
+      ],
+      ctaUrl: 'https://v0.app/pricing'
+    },
+    {
+      id: 'v0-individual-premium',
+      key: 'paid',
+      name: 'Premium',
+      price: '$20',
+      billing: 'per month',
+      features: [
+        '$20 of included monthly credits',
+        '$2 of free daily credits on login',
+        'Purchase additional credits outside of your monthly usage',
+        '5x higher attachment size limits',
+        'Import from Figma'
+      ],
+      ctaUrl: 'https://v0.app/pricing'
+    },
+    {
+      id: 'v0-team',
+      key: 'paid',
+      name: 'Team',
+      price: '$30',
+      billing: 'per user / month',
+      features: [
+        '$30 of included monthly credits per user',
+        '$2 of free daily credits on login per user',
+        'Purchase additional credits outside of your monthly usage (shared across team)',
+        'Centralized billing on vercel.com',
+        'Share chats and collaborate with your team'
+      ],
+      ctaUrl: 'https://v0.app/pricing'
+    },
+    {
+      id: 'v0-business',
+      key: 'paid',
+      name: 'Business',
+      price: '$100',
+      billing: 'per user / month',
+      features: [
+        '$30 of included monthly credits per user',
+        '$2 of free daily credits on login per user',
+        'Training opt-out by default',
+        'Purchase additional credits outside of your monthly usage (shared across team)',
+        'Centralized billing on vercel.com',
+        'Share chats and collaborate with your team'
+      ],
+      ctaUrl: 'https://v0.app/pricing'
+    },
+    {
+      id: 'v0-enterprise',
+      key: 'enterprise',
+      name: 'Enterprise',
+      price: 'Custom',
+      billing: 'custom',
+      features: [
+        'Training opt-out by default',
+        'SAML SSO',
+        'Role-based access control',
+        'Priority access (better performance, no queues)',
+        'Guaranteed customer support SLAs'
+      ],
+      ctaUrl: 'https://v0.app/pricing'
+    }
+  ],
+
   'abacus-ai': [
     {
       id: 'abacus-ai-basic',

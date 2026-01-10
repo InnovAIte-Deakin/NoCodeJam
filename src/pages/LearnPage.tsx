@@ -18,6 +18,8 @@ import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
 import figmaLogo from '@/images/figma-logo.svg';
 import base44Logo from '@/images/base44-logo.png';
 import emergentLogo from '@/images/Emergent Logo.jpg';
+import grokLogo from '@/images/grok-icon.png';
+import v0Logo from '@/images/v0-icon.png';
 
 
 interface Platform {
@@ -480,6 +482,62 @@ const platforms: Platform[] = [
         url: 'https://www.youtube.com/watch?v=ZZZZZZZZZZZ'
       }
     ]
+  },
+  {
+    id: 'grok',
+    name: 'Grok',
+    description: 'Grok is an AI-powered chatbot developed by xAI that provides real-time, context-aware responses with access to current information. It offers advanced reasoning capabilities and can assist with coding, problem-solving, and creative tasks.',
+    logo: grokLogo,
+    website: 'https://grok.com',
+    features: ['AI Chatbot', 'Real-time Data', 'Code Generation', 'Advanced Reasoning'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'grok-1',
+        title: 'Getting Started with Grok',
+        description: 'Learn the basics of using Grok AI chatbot and its key features',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://docs.x.ai/docs/overview'
+      },
+      {
+        id: 'grok-2',
+        title: 'Building App With Grok',
+        description: 'How to use Grok for building apps by Alex Finn',
+        duration: '13 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=vipfb9FnKtg'
+      }
+    ]
+  },
+  {
+    id: 'v0',
+    name: 'v0',
+    description: 'v0 is Vercel’s AI-powered development platform that turns natural-language prompts into production-ready web apps and UI, generating React code styled with Tailwind',
+    logo: v0Logo,
+    website: 'https://v0.app',
+    features: ['AI UI Generation', 'React Components', 'Tailwind CSS', 'Instant Prototyping'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'v0-1',
+        title: 'Introduction to v0',
+        description: 'Introduction to v0 through the documents and guides',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://v0.dev/docs'
+      },
+      {
+        id: 'v0-2',
+        title: 'Building Fullstack with v0',
+        description: 'Create complex React components and interfaces using v0',
+        duration: '7 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=cyFVtaLy-bA'
+      }
+    ]
   }
   
 ];
@@ -737,6 +795,9 @@ export function LearnPage() {
                         platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
                         platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
                         platform.id === 'base44' ? 'https://docs.base44.com/' :
+                        platform.id === 'emergent' ? 'https://emergent.dev/docs' :
+                        platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
+                        platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
                         platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
