@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, supabaseUrl } from '@/lib/supabaseClient';
 import { toast } from '@/hooks/use-toast';
 import { EyeOff } from 'lucide-react';
 
@@ -26,7 +26,7 @@ export function OnboardingVisibilityToggle({ onHide }: OnboardingVisibilityToggl
         return;
       }
 
-      const response = await fetch(`${supabase.supabaseUrl}/functions/v1/set-onboarding-visibility`, {
+      const response = await fetch(`${supabaseUrl}/functions/v1/set-onboarding-visibility`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
