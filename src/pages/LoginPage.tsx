@@ -59,20 +59,20 @@ export function LoginPage() {
 
           <div className="space-y-2">
             <Label className="text-white" htmlFor="password">Password</Label>
-            <div className="flex items-center">
+            <div className="relative">
               <Input
                 id="password"
                 type={showPw ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="bg-gray-700 border-gray-600 text-white rounded-r-none focus-visible:ring-offset-0 placeholder:text-gray-400"
+                className="bg-gray-700 border-gray-600 text-white pr-10 focus-visible:ring-offset-0 placeholder:text-gray-400"
                 required
                 autoComplete="current-password"
               />
               <button
                 type="button"
                 onClick={() => setShowPw((v) => !v)}
-                className="h-10 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-r-md flex items-center justify-center transition-colors shadow-sm"
+                className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white transition-colors"
                 aria-label={showPw ? "Hide password" : "Show password"}
               >
                 {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}

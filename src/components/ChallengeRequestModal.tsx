@@ -9,30 +9,16 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, XCircle, Sparkles } from 'lucide-react';
+import { AIChallengeChat } from './AIChallengeChat';
 
 interface ChallengeRequestModalProps {
   children: React.ReactNode;
 }
 
-type DraftResponse =
-  | { ok: true; draft: Draft }
-  | { ok?: false; error: string };
-
-type Draft = {
-  title: string;
-  difficulty: string;
-  estimatedMinutes?: number;
-  context?: string;
-  objective?: string;
-  acceptanceCriteria?: string[];
-  deliverables?: string[];
-  reflectionPrompt?: string;
-};
-
 export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false); // submit loading
-  const [aiLoading, setAiLoading] = useState(false); // AI assist loading
+  const [loading, setLoading] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   const { toast } = useToast();
   const { user } = useAuth();
@@ -42,7 +28,15 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     description: '',
     difficulty: '',
     requirements: [''],
+    estimatedTime: '', // User wants mandatory time box
+    challengeType: '', // Build / Modify / Analyse / Deploy / Reflect
+    recommendedTools: '', // Comma separated string for input
+    coverImageDescription: '',
+    versionNumber: '1.0',
+    xpReward: '', // System calculated
   });
+
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,18 +60,17 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
           title: formData.title,
           description: formData.description,
           difficulty: formData.difficulty.toLowerCase(),
-          category: 'general', // Default category
+          category: 'general',
           requirements: formData.requirements.filter(Boolean).join('; '),
           expected_outcome: '',
-          estimated_time: '',
-          additional_notes: '',
+          estimated_time: formData.estimatedTime,
+          additional_notes: `Type: ${formData.challengeType} | Tools: ${formData.recommendedTools} | Version: ${formData.versionNumber} | Cover: ${formData.coverImageDescription} | XP: ${formData.xpReward}`,
           status: 'pending',
           created_at: new Date().toISOString(),
         })
         .select();
 
       if (error) {
-        // Check if it's a table not found error
         if (
           error.message?.includes('relation "challenge_requests" does not exist') ||
           error.message?.includes('404') ||
@@ -94,22 +87,23 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
         throw error;
       }
 
-      // Optional: you can keep these logs if you want
       console.log('Insert result:', { data, error });
 
-      toast({
-        title: "Success",
-        description: "Your challenge request has been submitted for review!",
-      });
+      setLoading(false);
+      setShowSuccess(true);
+      // Don't close open yet, show success screen instead
 
-      setOpen(false);
-
-      // FIX: requirements must reset to array, not string
       setFormData({
         title: '',
         description: '',
         difficulty: '',
         requirements: [''],
+        estimatedTime: '',
+        challengeType: '',
+        recommendedTools: '',
+        coverImageDescription: '',
+        versionNumber: '1.0',
+        xpReward: '',
       });
     } catch (error) {
       console.error('Error submitting challenge request:', error);
@@ -123,11 +117,23 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     }
   };
 
-  const handleInputChange = (field: 'title' | 'description' | 'difficulty', value: string) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleReturnToChallenges = () => {
+    setOpen(false);
+    setShowSuccess(false);
+    // Navigate logic or just close modal as "Challenges" is likely the dashboard
+  };
+
+  const handleGoHome = () => {
+    setOpen(false);
+    setShowSuccess(false);
+    window.location.href = '/'; // Simple redirection to home
   };
 
   const addRequirement = () => {
@@ -156,194 +162,272 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     }
   };
 
-  const handleAiAssist = async () => {
-    setAiLoading(true);
+  const handleAiAssist = () => {
+    setAiChatOpen(true);
+  };
 
-    try {
-      // Send minimal context to the function (extend later if needed)
-      const payload = {
-        title: formData.title || undefined,
-        description: formData.description || undefined,
-        difficulty: formData.difficulty || undefined,
-      };
+  const handleChallengeGenerated = (challengeData: any) => {
+    setFormData({
+      title: challengeData.title || '',
+      description: challengeData.fullDescription || '',
+      difficulty: challengeData.difficulty || '',
+      requirements: challengeData.requirements || [''],
+      estimatedTime: challengeData.estimatedTime ? String(challengeData.estimatedTime) : '',
+      challengeType: challengeData.challengeType || '',
+      recommendedTools: challengeData.recommendedTools ? challengeData.recommendedTools.join(', ') : '',
+      coverImageDescription: challengeData.coverImageDescription || '',
+      versionNumber: challengeData.versionNumber || '1.0',
+      xpReward: challengeData.xp || '(calculated by system)',
+    });
 
-      const { data, error } = await supabase.functions.invoke<DraftResponse>('generate-challenge', {
-        body: payload,
-      });
-
-      if (error) {
-        throw new Error(error.message || 'Failed to invoke AI function');
-      }
-      if (!data || ('error' in data && data.error)) {
-        throw new Error((data as { error: string }).error || 'Invalid AI response');
-      }
-
-      const draft = (data as { ok: true; draft: Draft }).draft;
-
-      const mappedDescription = [
-        draft.context?.trim() ?? '',
-        '',
-        draft.objective ? `Objective: ${draft.objective.trim()}` : '',
-      ]
-        .filter(Boolean)
-        .join('\n');
-
-      const mappedRequirements: string[] = [
-        ...(draft.acceptanceCriteria ?? []),
-        ...(draft.deliverables ?? []),
-        ...(draft.reflectionPrompt ? [draft.reflectionPrompt] : []),
-      ].filter(Boolean);
-
-      setFormData(prev => ({
-        ...prev,
-        title: draft.title ?? prev.title,
-        difficulty: draft.difficulty ?? prev.difficulty,
-        description: mappedDescription || prev.description,
-        requirements: mappedRequirements.length ? mappedRequirements : prev.requirements,
-      }));
-
-      toast({
-        title: "AI Draft Generated",
-        description: "Fields have been populated with a draft. Review and edit before submitting.",
-      });
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'AI Assist failed unexpectedly';
-      toast({
-        title: "AI Assist Error",
-        description: message,
-        variant: "destructive",
-      });
-    } finally {
-      setAiLoading(false);
-    }
+    toast({
+      title: "Challenge Generated!",
+      description: "Form populated with AI-generated challenge. Review and submit when ready.",
+    });
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
-        <DialogHeader>
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <DialogTitle className="text-white">Request a New Challenge</DialogTitle>
-              <DialogDescription className="text-gray-300">
-                Suggest a new challenge idea for the NoCodeJam community. Our admins will review and potentially add it to the platform.
-              </DialogDescription>
+    <>
+      <AIChallengeChat
+        open={aiChatOpen}
+        onOpenChange={setAiChatOpen}
+        onChallengeGenerated={handleChallengeGenerated}
+      />
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          {children}
+        </DialogTrigger>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <DialogTitle className="text-white">Request a New Challenge</DialogTitle>
+                <DialogDescription className="text-gray-300">
+                  Suggest a new challenge idea for the NoCodeJam community. Our admins will review and potentially add it to the platform.
+                </DialogDescription>
+              </div>
+
             </div>
+          </DialogHeader>
 
-          </div>
-        </DialogHeader>
+          {!showSuccess && (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="title" className="text-white">Challenge Title *</Label>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleAiAssist}
+                    className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20 h-6 px-2 text-xs"
+                    title="Chat with AI to generate a challenge"
+                  >
+                    <Sparkles className="w-3 h-3 mr-1.5" />
+                    AI Assist
+                  </Button>
+                </div>
+                <Input
+                  id="title"
+                  value={formData.title}
+                  onChange={(e) => handleInputChange('title', e.target.value)}
+                  placeholder="e.g., Build a Todo App with Airtable"
+                  className="bg-gray-700 border-gray-600 text-white"
+                  required
+                />
+              </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="title" className="text-white">Challenge Title *</Label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleAiAssist}
-                disabled={aiLoading}
-                className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20 h-6 px-2 text-xs"
-                title="Generate a draft using AI"
-              >
-                <Sparkles className="w-3 h-3 mr-1.5" />
-                {aiLoading ? 'Generating...' : 'AI Assist'}
-              </Button>
-            </div>
-            <Input
-              id="title"
-              value={formData.title}
-              onChange={(e) => handleInputChange('title', e.target.value)}
-              placeholder="e.g., Build a Todo App with Airtable"
-              className="bg-gray-700 border-gray-600 text-white"
-              required
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="description" className="text-white">Description *</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleInputChange('description', e.target.value)}
+                  placeholder="Describe what the challenge should involve..."
+                  className="bg-gray-700 border-gray-600 text-white min-h-[100px]"
+                  required
+                />
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="description" className="text-white">Description *</Label>
-            <Textarea
-              id="description"
-              value={formData.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-              placeholder="Describe what the challenge should involve..."
-              className="bg-gray-700 border-gray-600 text-white min-h-[100px]"
-              required
-            />
-          </div>
+              <div className="space-y-2">
+                <Label htmlFor="difficulty" className="text-white">Difficulty Level *</Label>
+                <Select value={formData.difficulty} onValueChange={(value) => handleInputChange('difficulty', value)}>
+                  <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                    <SelectValue placeholder="Select difficulty" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-700 border-gray-600">
+                    <SelectItem value="Beginner" className="text-white">Beginner</SelectItem>
+                    <SelectItem value="Intermediate" className="text-white">Intermediate</SelectItem>
+                    <SelectItem value="Expert" className="text-white">Expert</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="difficulty" className="text-white">Difficulty Level *</Label>
-            <Select value={formData.difficulty} onValueChange={(value) => handleInputChange('difficulty', value)}>
-              <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                <SelectValue placeholder="Select difficulty" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-700 border-gray-600">
-                <SelectItem value="Beginner" className="text-white">Beginner</SelectItem>
-                <SelectItem value="Intermediate" className="text-white">Intermediate</SelectItem>
-                <SelectItem value="Expert" className="text-white">Expert</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-white">Requirements *</Label>
-            <div className="space-y-2">
-              {formData.requirements.map((req, index) => (
-                <div key={index} className="flex space-x-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedTime" className="text-white">Estimated Time (mins) *</Label>
                   <Input
-                    value={req}
-                    onChange={(e) => updateRequirement(index, e.target.value)}
-                    placeholder={`Requirement ${index + 1}`}
+                    id="estimatedTime"
+                    type="number"
+                    value={formData.estimatedTime}
+                    onChange={(e) => handleInputChange('estimatedTime', e.target.value)}
+                    placeholder="e.g. 60"
+                    className="bg-gray-700 border-gray-600 text-white"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="challengeType" className="text-white">Challenge Type</Label>
+                  <Select value={formData.challengeType} onValueChange={(value) => handleInputChange('challengeType', value)}>
+                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                      <SelectValue placeholder="Select Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-700 border-gray-600">
+                      <SelectItem value="Build" className="text-white">Build</SelectItem>
+                      <SelectItem value="Modify" className="text-white">Modify</SelectItem>
+                      <SelectItem value="Analyse" className="text-white">Analyse</SelectItem>
+                      <SelectItem value="Deploy" className="text-white">Deploy</SelectItem>
+                      <SelectItem value="Reflect" className="text-white">Reflect</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="recommendedTools" className="text-white">Recommended Tools</Label>
+                <Input
+                  id="recommendedTools"
+                  value={formData.recommendedTools}
+                  onChange={(e) => handleInputChange('recommendedTools', e.target.value)}
+                  placeholder="e.g. React, Supabase, Tailwind (comma separated)"
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="versionNumber" className="text-white">Version</Label>
+                  <Input
+                    id="versionNumber"
+                    value={formData.versionNumber}
+                    onChange={(e) => handleInputChange('versionNumber', e.target.value)}
+                    placeholder="1.0"
                     className="bg-gray-700 border-gray-600 text-white"
                   />
-                  {formData.requirements.length > 1 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeRequirement(index)}
-                      className="border-gray-600 text-gray-300 hover:bg-gray-700"
-                    >
-                      <XCircle className="w-4 h-4" />
-                    </Button>
-                  )}
                 </div>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={addRequirement}
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Requirement
-              </Button>
-            </div>
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="xpReward" className="text-white">XP Reward</Label>
+                  <Input
+                    id="xpReward"
+                    value={formData.xpReward}
+                    readOnly
+                    placeholder="(System Calculated)"
+                    className="bg-gray-800 border-gray-600 text-gray-400 cursor-not-allowed"
+                  />
+                </div>
+              </div>
 
-          <div className="flex justify-end space-x-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
-              className="border-gray-600 text-gray-300 hover:bg-gray-700"
-            >
-              Cancel
-            </Button>
-            <Button
-              type="submit"
-              disabled={loading}
-              className="bg-purple-600 hover:bg-purple-700 text-white"
-            >
-              {loading ? 'Submitting...' : 'Submit Request'}
-            </Button>
-          </div>
-        </form>
-      </DialogContent>
-    </Dialog>
+              <div className="space-y-2">
+                <Label htmlFor="coverImage" className="text-white">Cover Image Description</Label>
+                <Input
+                  id="coverImage"
+                  value={formData.coverImageDescription}
+                  onChange={(e) => handleInputChange('coverImageDescription', e.target.value)}
+                  placeholder="AI suggestion for cover image..."
+                  className="bg-gray-700 border-gray-600 text-white"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-white">Requirements *</Label>
+                <div className="space-y-2">
+                  {formData.requirements.map((req, index) => (
+                    <div key={index} className="flex space-x-2">
+                      <Input
+                        value={req}
+                        onChange={(e) => updateRequirement(index, e.target.value)}
+                        placeholder={`Requirement ${index + 1}`}
+                        className="bg-gray-700 border-gray-600 text-white"
+                      />
+                      {formData.requirements.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeRequirement(index)}
+                          className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                        >
+                          <XCircle className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addRequirement}
+                    className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Requirement
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setOpen(false)}
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  {loading ? 'Submitting...' : 'Submit Request'}
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {/* Success View */}
+          {showSuccess && (
+            <div className="flex flex-col items-center justify-center space-y-6 py-10 text-center">
+              <div className="bg-green-500/20 p-4 rounded-full">
+                <Sparkles className="w-12 h-12 text-green-400" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-2xl font-bold text-white">Challenge Submitted!</h3>
+                <p className="text-gray-300 max-w-md">
+                  Your challenge request has been successfully created. Our team will review it shortly.
+                </p>
+              </div>
+
+              <div className="flex gap-4 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={handleGoHome}
+                  className="border-gray-600 text-gray-200 hover:bg-gray-700 min-w-[120px]"
+                >
+                  Home
+                </Button>
+                <Button
+                  onClick={handleReturnToChallenges}
+                  className="bg-purple-600 hover:bg-purple-700 text-white min-w-[160px]"
+                >
+                  Return to Challenges
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

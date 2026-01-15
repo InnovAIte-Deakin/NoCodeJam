@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { AILearnChat } from '@/components/AILearnChat';
 import PricingPill from '@/components/PricingPill';
 import { platformPricing } from '@/data/platformPricing';
 
@@ -557,6 +558,7 @@ export function LearnPage() {
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
   const platformRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
 
   const filteredPlatforms = useMemo(() => {
@@ -604,6 +606,7 @@ export function LearnPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black relative">
+      <AILearnChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="text-center mb-8">
@@ -626,10 +629,7 @@ export function LearnPage() {
               <Button
                 variant="outline"
                 className="border-gray-600 text-gray-200"
-                onClick={() => {
-                  // TODO: Wire up to Chatbot
-                  alert("AI Recommendations coming soon!");
-                }}
+                onClick={() => setAiChatOpen(true)}
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 AI Assist
