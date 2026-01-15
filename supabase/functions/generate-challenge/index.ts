@@ -83,18 +83,30 @@ Deno.serve(async (req: Request) => {
     if (useMock) {
       console.log("ANTHROPIC_API_KEY not found. Using Mock Mode.");
 
-      if (action === 'chat' || action === 'chat-learn') {
-        // Mock Chat Response
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Fake latency
+      if (action === 'chat') {
+        // Mock Challenge Chat Response
+        await new Promise(resolve => setTimeout(resolve, 1000));
         return new Response(
           JSON.stringify({
-            message: "This is a mock response (API Key missing). I can help you refine your idea! What are the requirements?"
+            message: "This is a mock response (API Key missing). I'm your Challenge Assistant. Tell me about your challenge idea!"
+          }),
+          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (action === 'chat-learn') {
+        // Mock Learning Chat Response
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        return new Response(
+          JSON.stringify({
+            message: "This is a mock response (API Key missing). I'm your Learning Architect. I can help design a learning pathway for you. What do you want to learn?"
           }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
       if (action === 'generate') {
+        // ... existing generate mock code ...
         // Mock Generate Response
         await new Promise(resolve => setTimeout(resolve, 2000));
         const mockChallenge = {
@@ -131,7 +143,7 @@ Deno.serve(async (req: Request) => {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20240620", // Updated to valid model name
+          model: "claude-sonnet-4-5-20250929", // Updated to Claude Sonnet 4.5
           max_tokens: 1024,
           system: CHAT_SYSTEM_PROMPT,
           messages: messages
@@ -181,7 +193,7 @@ Deno.serve(async (req: Request) => {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20240620",
+          model: "claude-sonnet-4-5-20250929", // Updated to Claude Sonnet 4.5
           max_tokens: 1024,
           system: LEARN_SYSTEM_PROMPT,
           messages: messages
@@ -226,7 +238,7 @@ Deno.serve(async (req: Request) => {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-3-5-sonnet-20240620",
+          model: "claude-sonnet-4-5-20250929", // Updated to Claude Sonnet 4.5
           max_tokens: 4096,
           system: GENERATE_SYSTEM_PROMPT,
           messages: generationMessages
