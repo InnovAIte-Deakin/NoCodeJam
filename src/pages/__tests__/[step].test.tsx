@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
-import OnboardingStepPage from '../[step]';
+import OnboardingStepPage from '../onboarding/[step]';
 
 // Mock the router
 const mockNavigate = vi.fn();
