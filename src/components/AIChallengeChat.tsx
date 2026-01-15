@@ -112,6 +112,22 @@ export function AIChallengeChat({ open, onOpenChange, onChallengeGenerated }: AI
       if (data?.error) throw new Error(data.error);
 
       if (data?.challenge) {
+        // Validation Warnings
+        if (data.validationWarnings && data.validationWarnings.length > 0) {
+          toast({
+            title: "Governance Warnings",
+            description: (
+              <ul className="list-disc pl-4">
+                {data.validationWarnings.map((w: string, i: number) => (
+                  <li key={i}>{w}</li>
+                ))}
+              </ul>
+            ),
+            variant: "default",
+            className: "border-yellow-500 border-l-4 bg-gray-800 text-white"
+          });
+        }
+
         // Pass the structured challenge data back to parent
         onChallengeGenerated(data.challenge);
 
@@ -182,11 +198,10 @@ export function AIChallengeChat({ open, onOpenChange, onChallengeGenerated }: AI
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] rounded-lg px-4 py-3 ${
-                    message.role === 'user'
+                  className={`max-w-[80%] rounded-lg px-4 py-3 ${message.role === 'user'
                       ? 'bg-purple-600 text-white'
                       : 'bg-gray-700 text-gray-100'
-                  }`}
+                    }`}
                 >
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>

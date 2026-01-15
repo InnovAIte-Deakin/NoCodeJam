@@ -363,9 +363,31 @@ Deno.serve(async (req: Request) => {
       // Parse the JSON
       const challenge = JSON.parse(generatedText);
 
-      // Enforce critical governance rules
-      if (!challenge.xp || challenge.xp !== "(calculated by system)") {
-        challenge.xp = "(calculated by system)";
+      // --- Validation Logic ---
+      const validationWarnings: string[] = [];
+
+      // 1. XP Hygiene
+      if (challenge.xp !== "(calculated by system)") {
+        challenge.xp = "(calculated by system)"; // Auto-fix
+        validationWarnings.push("AI generated specific XP. Reset to system-calculated.");
+      }
+
+      // 2. Tool Language Check
+      const restrictedTerms = ["must use", "required", "mandatory", "have to use"];
+      const textToCheck = ((challenge.recommendedTools || []).join(" ") + " " + (challenge.fullDescription || "")).toLowerCase();
+
+      for (const term of restrictedTerms) {
+        if (textToCheck.includes(term)) {
+          validationWarnings.push(`Content contains restrictive language ('${term}'). Tools should be 'recommended'.`);
+        }
+      }
+
+      // 3. Template Structure
+      const requiredFields = ['title', 'difficulty', 'estimatedTime', 'challengeType'];
+      for (const field of requiredFields) {
+        if (!challenge[field]) {
+          validationWarnings.push(`Missing required field: ${field}`);
+        }
       }
 
       // Ensure estimatedTime is a number
@@ -374,7 +396,7 @@ Deno.serve(async (req: Request) => {
       }
 
       return new Response(
-        JSON.stringify({ challenge }),
+        JSON.stringify({ challenge, validationWarnings }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
