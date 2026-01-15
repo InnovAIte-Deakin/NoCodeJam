@@ -1,5 +1,5 @@
-// supabase/functions/generate-challenge/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 // CORS headers
 const corsHeaders = {
@@ -8,6 +8,13 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+// ... (System Prompts remain unchanged, omitting for brevity in this replace block, but need to be careful not to delete them if I replace the whole file. 
+// Ah, the tool requires me to replace chunks. I will replace the BEGINNING and the END separately to avoid massive payload, or replace the main logic block.)
+
+// Let's redefine the prompts here just to be safe if I target a large block, 
+// OR simpler: Insert the imports at the top, then wrap the logic.
+// I will assume the previous prompts are fine and focus on the handler.
 
 // System prompt for conversational assistant
 const CHAT_SYSTEM_PROMPT = `You are a friendly NoCodeJam Challenge Assistant. Help users refine their challenge ideas through conversation.
@@ -72,19 +79,98 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // 1. Authenticate User
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), { status: 401, headers: corsHeaders });
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized: Invalid Token' }), { status: 401, headers: corsHeaders });
+    }
+
+    // 2. Initialize Admin Client for Logs & Rate Limits
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+
     // Parse request body
     const body = await req.json();
     const { action, messages } = body;
+
+    // 3. Rate Limiting Check (20 requests / hour)
+    const ONE_HOUR_AGO = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
+    // Only check rate limit if the table exists (it might not if migration didn't run). 
+    // We wrap in try specific to DB to avoid crashing if table is missing, though we should encourage migration.
+    // For safety, if error is "relation does not exist", we skip rate limiting.
+    let rateLimitExceeded = false;
+
+    try {
+      const { count, error: countError } = await supabaseAdmin
+        .from('ai_generation_log')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .gt('created_at', ONE_HOUR_AGO);
+
+      if (!countError && count !== null && count >= 20) {
+        rateLimitExceeded = true;
+      }
+    } catch (dbErr) {
+      console.warn("Rate limit check failed (ignoring):", dbErr);
+    }
+
+    if (rateLimitExceeded) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. You can make 20 requests per hour." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get API key from environment
     const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
     const useMock = !apiKey;
 
+    // 4. Input Validation (Anti-abuse for token waste)
+    const totalMessageLength = JSON.stringify(messages).length;
+    if (totalMessageLength > 10000) {
+      return new Response(
+        JSON.stringify({ error: "Input too long. Please shorten your message." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Helper to log result
+    const logUsage = async (status: string, model: string, responseLen: number, errorMsg?: string) => {
+      try {
+        await supabaseAdmin.from('ai_generation_log').insert({
+          user_id: user.id,
+          action: action,
+          model: model,
+          prompt_length: totalMessageLength,
+          response_length: responseLen,
+          status: status,
+          error_message: errorMsg
+        });
+      } catch (logErr) {
+        console.error("Failed to log usage:", logErr);
+      }
+    };
+
     if (useMock) {
       console.log("ANTHROPIC_API_KEY not found. Using Mock Mode.");
 
+      await logUsage('success', 'mock', 100); // Log mock usage too
+
       if (action === 'chat') {
-        // Mock Challenge Chat Response
         await new Promise(resolve => setTimeout(resolve, 1000));
         return new Response(
           JSON.stringify({
@@ -95,7 +181,6 @@ Deno.serve(async (req: Request) => {
       }
 
       if (action === 'chat-learn') {
-        // Mock Learning Chat Response
         await new Promise(resolve => setTimeout(resolve, 1000));
         return new Response(
           JSON.stringify({
@@ -106,8 +191,6 @@ Deno.serve(async (req: Request) => {
       }
 
       if (action === 'generate') {
-        // ... existing generate mock code ...
-        // Mock Generate Response
         await new Promise(resolve => setTimeout(resolve, 2000));
         const mockChallenge = {
           title: "Mock AI Challenge",
@@ -132,6 +215,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // --- Real API Logic (only if apiKey exists) ---
+    const MODEL = "claude-sonnet-4-5-20250929";
 
     // Handle chat action - conversational refinement
     if (action === 'chat') {
@@ -143,7 +227,7 @@ Deno.serve(async (req: Request) => {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-5-20250929", // Updated to Claude Sonnet 4.5
+          model: MODEL,
           max_tokens: 1024,
           system: CHAT_SYSTEM_PROMPT,
           messages: messages
@@ -153,7 +237,8 @@ Deno.serve(async (req: Request) => {
       if (!anthropicResponse.ok) {
         const errorText = await anthropicResponse.text();
         console.error("Anthropic API error:", errorText);
-        // Return error as a chat message so the UI shows something
+        await logUsage('error', MODEL, 0, errorText);
+
         return new Response(
           JSON.stringify({ message: `I'm having trouble connecting to my brain right now. (Error: ${anthropicResponse.status})` }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -162,6 +247,8 @@ Deno.serve(async (req: Request) => {
 
       const anthropicData = await anthropicResponse.json();
       const message = anthropicData.content[0].text;
+
+      await logUsage('success', MODEL, message.length);
 
       return new Response(
         JSON.stringify({ message }),
@@ -193,7 +280,7 @@ Deno.serve(async (req: Request) => {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-5-20250929", // Updated to Claude Sonnet 4.5
+          model: MODEL,
           max_tokens: 1024,
           system: LEARN_SYSTEM_PROMPT,
           messages: messages
@@ -203,7 +290,8 @@ Deno.serve(async (req: Request) => {
       if (!anthropicResponse.ok) {
         const errorText = await anthropicResponse.text();
         console.error("Anthropic API error (Learn):", errorText);
-        // Return error as a chat message so the UI shows something
+        await logUsage('error', MODEL, 0, errorText);
+
         return new Response(
           JSON.stringify({ message: `I'm having trouble providing recommendations right now. (Error: ${anthropicResponse.status})` }),
           { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -213,6 +301,8 @@ Deno.serve(async (req: Request) => {
       const anthropicData = await anthropicResponse.json();
       const message = anthropicData.content[0].text;
 
+      await logUsage('success', MODEL, message.length);
+
       return new Response(
         JSON.stringify({ message }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -221,7 +311,6 @@ Deno.serve(async (req: Request) => {
 
     // Handle generate action - create structured challenge from conversation
     if (action === 'generate') {
-      // Add generation instruction to conversation
       const generationMessages = [
         ...messages,
         {
@@ -238,7 +327,7 @@ Deno.serve(async (req: Request) => {
           "anthropic-version": "2023-06-01",
         },
         body: JSON.stringify({
-          model: "claude-sonnet-4-5-20250929", // Updated to Claude Sonnet 4.5
+          model: MODEL,
           max_tokens: 4096,
           system: GENERATE_SYSTEM_PROMPT,
           messages: generationMessages
@@ -247,11 +336,14 @@ Deno.serve(async (req: Request) => {
 
       if (!anthropicResponse.ok) {
         const errorText = await anthropicResponse.text();
+        await logUsage('error', MODEL, 0, errorText);
         throw new Error(`Anthropic API Error: ${errorText}`);
       }
 
       const anthropicData = await anthropicResponse.json();
       let generatedText = anthropicData.content[0].text;
+
+      await logUsage('success', MODEL, generatedText.length);
 
       // Extract JSON from potential markdown code blocks
       const jsonMatch = generatedText.match(/```json\n([\s\S]*?)\n```/) || generatedText.match(/```\n([\s\S]*?)\n```/);
