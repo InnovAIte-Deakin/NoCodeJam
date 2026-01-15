@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import PricingPill from '@/components/PricingPill';
 import { platformPricing } from '@/data/platformPricing';
 
-import { ExternalLink, Play, BookOpen, Code, Zap, Palette, Database, Globe } from 'lucide-react';
+import { ExternalLink, Play, BookOpen, Code, Zap, Palette, Database, Globe, Sparkles } from 'lucide-react';
 import lovableLogo from '@/images/logoblack.svg';
 import boltLogo from '@/images/Bolt Logo.svg';
 import windsurfLogo from '@/images/windsurf Logo.png';
@@ -539,11 +539,11 @@ const platforms: Platform[] = [
       }
     ]
   }
-  
+
 ];
 // Attach pricing arrays from platformPricing to the platforms by id.
 // Using @ts-ignore to avoid duplicate type-name issues if any.
- // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 platforms.forEach((p) => {
   // use the platform id to lookup pricing; default to [] if missing
@@ -609,7 +609,7 @@ export function LearnPage() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">
             🎓 Explore No-Code Platforms for Fast Prototyping
-            </h1>
+          </h1>
 
           <p className="text-gray-300 max-w-2xl mx-auto">
             Discover the best no-code platforms and learn how to build amazing applications without writing a single line of code.
@@ -622,6 +622,17 @@ export function LearnPage() {
             <div className="flex items-center gap-2">
               <Button variant="outline" className="border-gray-600 text-gray-200" onClick={() => setShowFilters((prev) => !prev)}>
                 {showFilters ? 'Hide Filters' : 'Filter'}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-gray-600 text-gray-200"
+                onClick={() => {
+                  // TODO: Wire up to Chatbot
+                  alert("AI Recommendations coming soon!");
+                }}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                AI Assist
               </Button>
               {(difficultyFilter !== 'all' || categoryFilter !== 'all') && (
                 <Button variant="ghost" className="text-gray-300" onClick={() => { setDifficultyFilter('all'); setCategoryFilter('all'); }}>
@@ -683,18 +694,17 @@ export function LearnPage() {
         {/* Platform Overview Cards */}
         <div className="grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6 mb-8">
           {filteredPlatforms.map((platform) => (
-            <Card 
-              key={platform.id} 
-              className={`cursor-pointer transition-all duration-200 hover:shadow-lg bg-gray-800 border-gray-700 ${
-                selectedPlatform === platform.id ? 'ring-2 ring-purple-500' : ''
-              }`}
+            <Card
+              key={platform.id}
+              className={`cursor-pointer transition-all duration-200 hover:shadow-lg bg-gray-800 border-gray-700 ${selectedPlatform === platform.id ? 'ring-2 ring-purple-500' : ''
+                }`}
               onClick={() => scrollToPlatform(platform.id)}
             >
               <CardContent className="p-6 text-center">
                 <div className="w-full h-16 mb-4 flex items-center justify-center p-2">
-                  <img 
-                    src={platform.logo} 
-                    alt={platform.name} 
+                  <img
+                    src={platform.logo}
+                    alt={platform.name}
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -724,17 +734,17 @@ export function LearnPage() {
         {/* Detailed Platform Information */}
         <div className="space-y-6">
           {filteredPlatforms.map((platform) => (
-            <div 
-              key={platform.id} 
+            <div
+              key={platform.id}
               className={`space-y-6 ${selectedPlatform === platform.id ? 'block' : 'hidden'}`}
             >
-                            <Card className="bg-gray-800 border-gray-700">
+              <Card className="bg-gray-800 border-gray-700">
                 <CardHeader ref={(el) => (platformRefs.current[platform.id] = el)}>
                   <div className="flex items-center space-x-4">
                     <div className="w-16 h-12 p-1">
-                      <img 
-                        src={platform.logo} 
-                        alt={platform.name} 
+                      <img
+                        src={platform.logo}
+                        alt={platform.name}
                         className="w-full h-full object-contain"
                       />
                     </div>
@@ -786,20 +796,20 @@ export function LearnPage() {
                     <Button variant="outline" asChild className="flex-1">
                       <a href={
                         platform.id === 'windsurf' ? 'https://docs.windsurf.com/windsurf/getting-started' :
-                        platform.id === 'bolt' ? 'https://support.bolt.new/' :
-                        platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
-                        platform.id === 'replit' ? 'https://docs.replit.com/' :
-                        platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
-                        platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
-                        platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
-                        platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
-                        platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
-                        platform.id === 'base44' ? 'https://docs.base44.com/' :
-                        platform.id === 'emergent' ? 'https://emergent.dev/docs' :
-                        platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
-                        platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
-                        platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
-                        `${platform.website}/docs`
+                          platform.id === 'bolt' ? 'https://support.bolt.new/' :
+                            platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
+                              platform.id === 'replit' ? 'https://docs.replit.com/' :
+                                platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
+                                  platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
+                                    platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
+                                      platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
+                                        platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
+                                          platform.id === 'base44' ? 'https://docs.base44.com/' :
+                                            platform.id === 'emergent' ? 'https://emergent.dev/docs' :
+                                              platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
+                                                platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
+                                                  platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
+                                                    `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
                         Documentation
@@ -912,7 +922,7 @@ export function LearnPage() {
               <p className="text-gray-300 mb-4">
                 <strong>InnovAIte</strong> is focused on testing and validating two key programs that will make up SPARK when it launches in 2026 - the AI Generalist Program and the AI Prototyping Lab.
               </p>
-              
+
               <p className="text-gray-300 mb-4">
                 Our mission is to understand how AI tools and platforms can dramatically compress startup development cycles from months to days, making entrepreneurship more accessible to everyone regardless of technical background.
               </p>
@@ -961,8 +971,8 @@ export function LearnPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     className="bg-white text-purple-600 hover:bg-gray-100"
                     onClick={() => window.open('https://www.youtube.com/watch?v=WPt6f4-sM4s', '_blank')}
                   >
@@ -984,8 +994,8 @@ export function LearnPage() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <Button 
-                    variant="secondary" 
+                  <Button
+                    variant="secondary"
                     className="bg-white text-blue-600 hover:bg-gray-100"
                     onClick={() => window.open('https://www.youtube.com/@innovAIteDeakin', '_blank')}
                   >
@@ -1002,8 +1012,8 @@ export function LearnPage() {
               <p className="text-gray-300 mb-3">
                 Deakin students can access our GitLab repository and contribute to our validation projects. Look for the SSO sign-in button.
               </p>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="border-green-400 text-green-400 hover:bg-green-400 hover:text-white"
                 onClick={() => window.open('https://gitlab.deakin.edu.au/innovaite-lab', '_blank')}
               >

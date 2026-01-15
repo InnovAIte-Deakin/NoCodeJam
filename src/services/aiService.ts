@@ -1,32 +1,52 @@
 // src/services/aiService.ts
-import { supabase } from "../lib/supabaseClient";
+import { supabase } from "@/lib/supabaseClient";
 
 export type GenerateChallengeInput = {
-  topic?: string;
-  difficulty?: "beginner" | "intermediate" | "advanced" | string;
+  // keep flexible; you can extend later
   title?: string;
   description?: string;
-  category?: string;
+  difficulty?: string;
   requirements?: string[];
 };
 
-export type GenerateChallengeResponse = {
-  ok: boolean;
-  input?: unknown;
-  draft?: unknown;
-  error?: string;
+export type ChallengeDraft = {
+  title: string;
+  difficulty: string;
+  estimatedMinutes: number;
+  context: string;
+  objective: string;
+  prerequisites: string[];
+  tools: string[];
+  steps: Array<{ title: string; description: string }>;
+  deliverables: string[];
+  acceptanceCriteria: string[];
+  reflectionPrompt: string;
+  resources: Array<{ label: string; url: string }>;
+  xp?: {
+    base: number;
+    bonuses: Array<{ label: string; xp: number }>;
+  };
 };
+
+type EdgeOk = { ok: true; draft: ChallengeDraft };
+type EdgeErr = { ok?: false; error: string };
 
 export async function generateChallengeDraft(
   input: GenerateChallengeInput
-): Promise<GenerateChallengeResponse> {
-  const { data, error } = await supabase.functions.invoke("generate-challenge", {
-    body: input,
-  });
+): Promise<ChallengeDraft> {
+  const { data, error } = await supabase.functions.invoke<EdgeOk | EdgeErr>(
+    "generate-challenge",
+    { body: input }
+  );
 
   if (error) {
-    throw new Error(error.message ?? "AI generation failed");
+    throw new Error(error.message || "Edge function invocation failed");
   }
 
-  return data as GenerateChallengeResponse;
+  if (!data || (data as EdgeErr).error) {
+    const msg = (data as EdgeErr | null)?.error ?? "Invalid response from server";
+    throw new Error(msg);
+  }
+
+  return (data as EdgeOk).draft;
 }

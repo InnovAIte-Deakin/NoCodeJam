@@ -8,15 +8,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
-import { Plus, XCircle } from 'lucide-react';
+import { Plus, XCircle, Sparkles } from 'lucide-react';
 
 interface ChallengeRequestModalProps {
   children: React.ReactNode;
 }
 
+type DraftResponse =
+  | { ok: true; draft: Draft }
+  | { ok?: false; error: string };
+
+type Draft = {
+  title: string;
+  difficulty: string;
+  estimatedMinutes?: number;
+  context?: string;
+  objective?: string;
+  acceptanceCriteria?: string[];
+  deliverables?: string[];
+  reflectionPrompt?: string;
+};
+
 export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // submit loading
+  const [aiLoading, setAiLoading] = useState(false); // AI assist loading
+
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -24,12 +41,12 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     title: '',
     description: '',
     difficulty: '',
-    requirements: ['']
+    requirements: [''],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!user) {
       toast({
         title: "Error",
@@ -42,9 +59,6 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     setLoading(true);
 
     try {
-      console.log('Submitting challenge request:', formData);
-      console.log('User ID:', user.id);
-      
       const { data, error } = await supabase
         .from('challenge_requests')
         .insert({
@@ -53,24 +67,22 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
           description: formData.description,
           difficulty: formData.difficulty.toLowerCase(),
           category: 'general', // Default category
-          requirements: formData.requirements.join('; '),
-          expected_outcome: '', // Empty string for removed field
-          estimated_time: '', // Empty string for removed field
-          additional_notes: '', // Empty string for removed field
+          requirements: formData.requirements.filter(Boolean).join('; '),
+          expected_outcome: '',
+          estimated_time: '',
+          additional_notes: '',
           status: 'pending',
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         })
         .select();
 
-      console.log('Insert result:', { data, error });
-
       if (error) {
-        console.error('Database error:', error);
-        
         // Check if it's a table not found error
-        if (error.message?.includes('relation "challenge_requests" does not exist') || 
-            error.message?.includes('404') ||
-            error.code === 'PGRST116') {
+        if (
+          error.message?.includes('relation "challenge_requests" does not exist') ||
+          error.message?.includes('404') ||
+          error.code === 'PGRST116'
+        ) {
           toast({
             title: "Table Not Found",
             description: "The challenge_requests table doesn't exist yet. Please run the database migration first.",
@@ -78,9 +90,12 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
           });
           return;
         }
-        
+
         throw error;
       }
+
+      // Optional: you can keep these logs if you want
+      console.log('Insert result:', { data, error });
 
       toast({
         title: "Success",
@@ -88,11 +103,13 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
       });
 
       setOpen(false);
+
+      // FIX: requirements must reset to array, not string
       setFormData({
         title: '',
         description: '',
         difficulty: '',
-        requirements: ''
+        requirements: [''],
       });
     } catch (error) {
       console.error('Error submitting challenge request:', error);
@@ -106,17 +123,17 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: 'title' | 'description' | 'difficulty', value: string) => {
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
   const addRequirement = () => {
     setFormData(prev => ({
       ...prev,
-      requirements: [...prev.requirements, '']
+      requirements: [...prev.requirements, ''],
     }));
   };
 
@@ -125,7 +142,7 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     updated[index] = value;
     setFormData(prev => ({
       ...prev,
-      requirements: updated
+      requirements: updated,
     }));
   };
 
@@ -134,8 +151,70 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
       const updated = formData.requirements.filter((_, i) => i !== index);
       setFormData(prev => ({
         ...prev,
-        requirements: updated
+        requirements: updated,
       }));
+    }
+  };
+
+  const handleAiAssist = async () => {
+    setAiLoading(true);
+
+    try {
+      // Send minimal context to the function (extend later if needed)
+      const payload = {
+        title: formData.title || undefined,
+        description: formData.description || undefined,
+        difficulty: formData.difficulty || undefined,
+      };
+
+      const { data, error } = await supabase.functions.invoke<DraftResponse>('generate-challenge', {
+        body: payload,
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to invoke AI function');
+      }
+      if (!data || ('error' in data && data.error)) {
+        throw new Error((data as { error: string }).error || 'Invalid AI response');
+      }
+
+      const draft = (data as { ok: true; draft: Draft }).draft;
+
+      const mappedDescription = [
+        draft.context?.trim() ?? '',
+        '',
+        draft.objective ? `Objective: ${draft.objective.trim()}` : '',
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      const mappedRequirements: string[] = [
+        ...(draft.acceptanceCriteria ?? []),
+        ...(draft.deliverables ?? []),
+        ...(draft.reflectionPrompt ? [draft.reflectionPrompt] : []),
+      ].filter(Boolean);
+
+      setFormData(prev => ({
+        ...prev,
+        title: draft.title ?? prev.title,
+        difficulty: draft.difficulty ?? prev.difficulty,
+        description: mappedDescription || prev.description,
+        requirements: mappedRequirements.length ? mappedRequirements : prev.requirements,
+      }));
+
+      toast({
+        title: "AI Draft Generated",
+        description: "Fields have been populated with a draft. Review and edit before submitting.",
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'AI Assist failed unexpectedly';
+      toast({
+        title: "AI Assist Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -146,15 +225,34 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700">
         <DialogHeader>
-          <DialogTitle className="text-white">Request a New Challenge</DialogTitle>
-          <DialogDescription className="text-gray-300">
-            Suggest a new challenge idea for the NoCodeJam community. Our admins will review and potentially add it to the platform.
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle className="text-white">Request a New Challenge</DialogTitle>
+              <DialogDescription className="text-gray-300">
+                Suggest a new challenge idea for the NoCodeJam community. Our admins will review and potentially add it to the platform.
+              </DialogDescription>
+            </div>
+
+          </div>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="title" className="text-white">Challenge Title *</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="title" className="text-white">Challenge Title *</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleAiAssist}
+                disabled={aiLoading}
+                className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20 h-6 px-2 text-xs"
+                title="Generate a draft using AI"
+              >
+                <Sparkles className="w-3 h-3 mr-1.5" />
+                {aiLoading ? 'Generating...' : 'AI Assist'}
+              </Button>
+            </div>
             <Input
               id="title"
               value={formData.title}

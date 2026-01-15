@@ -1,173 +1,102 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import React, { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Eye, EyeOff } from "lucide-react";
 
 export function LoginPage() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
-  const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const { login, isLoading } = useAuth();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    
-    const success = await login(email, password);
-    if (success) {
+
+    // Proof handler is firing
+    console.log("LOGIN SUBMIT", { email });
+
+    const res = await login(email, password);
+
+    if (!res.ok) {
       toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
-      });
-      navigate('/dashboard');
-    } else {
-      // Set specific error message based on the failure
-      setError('Invalid email or password. Please check your credentials and try again.');
-      toast({
-        title: "Login failed",
-        description: "Invalid email or password. Please try again.",
+        title: "Sign in failed",
+        description: res.error,
         variant: "destructive",
       });
+      return;
     }
+
+    toast({ title: "Signed in", description: "Welcome back." });
+    navigate("/dashboard");
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 items-center">
-        {/* Left side - Welcome content */}
-        <div className="hidden lg:block">
-          <div className="text-center lg:text-left">
-            <h1 className="text-4xl font-bold text-white mb-4">
-              Welcome Back to
-              <span className="block bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-                NoCodeJam
-              </span>
-            </h1>
-            <p className="text-xl text-gray-300 mb-8 leading-relaxed">
-              Continue your no-code development journey. Complete challenges, earn XP, 
-              and climb the leaderboards with fellow developers.
-            </p>
-            <div className="grid grid-cols-3 gap-6 text-center">
-              <div>
-                <div className="text-2xl font-bold text-purple-400">1,000+</div>
-                <div className="text-sm text-gray-300">Active Developers</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-400">50+</div>
-                <div className="text-sm text-gray-300">Challenges</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-400">25</div>
-                <div className="text-sm text-gray-300">Badges</div>
-              </div>
-            </div>
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center px-4">
+      <div className="w-full max-w-md rounded-xl border border-gray-700 bg-gray-800 p-8">
+        <h1 className="text-2xl font-semibold text-white">Sign in</h1>
+        <p className="text-gray-300 mt-1">Access challenges and your dashboard.</p>
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-6">
+          <div className="space-y-2">
+            <Label className="text-white" htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-gray-700 border-gray-600 text-white"
+              required
+              autoComplete="email"
+            />
           </div>
-        </div>
-        
-        {/* Right side - Login form */}
-        <Card className="w-full max-w-md mx-auto lg:mx-0">
-        <CardHeader className="text-center">
-          <div className="w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center mx-auto mb-4">
-            <span className="text-white font-bold text-xl">N</span>
-          </div>
-          <CardTitle className="text-2xl font-bold lg:hidden">Welcome Back</CardTitle>
-          <CardTitle className="text-2xl font-bold hidden lg:block">Sign In</CardTitle>
-          <CardDescription>
-            <span className="lg:hidden">Sign in to your NoCodeJam account</span>
-            <span className="hidden lg:inline">Access your dashboard and continue building</span>
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md flex items-start space-x-2">
-              <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label htmlFor="email">Email</Label>
+
+          <div className="space-y-2">
+            <Label className="text-white" htmlFor="password">Password</Label>
+            <div className="flex items-center">
               <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError(''); // Clear error when user types
-                }}
-                placeholder="Enter your email"
+                id="password"
+                type={showPw ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-gray-700 border-gray-600 text-white rounded-r-none focus-visible:ring-offset-0 placeholder:text-gray-400"
                 required
-                className={`mt-1 ${error ? 'border-red-300 focus:border-red-500' : ''}`}
+                autoComplete="current-password"
               />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <div className="relative mt-1">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-                    setError(''); // Clear error when user types
-                  }}
-                  placeholder="Enter your password"
-                  required
-                  className={error ? 'border-red-300 focus:border-red-500 pr-10' : 'pr-10'}
-                />
-                <button
-                  type="button"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center justify-center bg-transparent border-0 shadow-none outline-none focus:outline-none hover:bg-transparent cursor-pointer rounded-l-none"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    height: '36px',
-                    width: '36px',
-                    padding: '0',
-                    minHeight: '0',
-                    minWidth: '0',
-                    borderTopLeftRadius: '0',
-                    borderBottomLeftRadius: '0',
-                    borderTopRightRadius: '6px',
-                    borderBottomRightRadius: '6px'
-                  }}
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
-                  ) : (
-                    <Eye className="w-4 h-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? 'Signing in...' : 'Sign In'}
-            </Button>
-          </form>
-          
-          <div className="mt-6 space-y-4">
-            <div className="text-center">
-              <Link to="/forgot-password" className="text-sm text-purple-600 hover:underline">
-                Forgot your password?
-              </Link>
-            </div>
-            <div className="text-center text-sm text-gray-600">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-purple-600 hover:underline font-medium">
-                Sign up here
-              </Link>
+              <button
+                type="button"
+                onClick={() => setShowPw((v) => !v)}
+                className="h-10 px-3 bg-purple-600 hover:bg-purple-700 text-white rounded-r-md flex items-center justify-center transition-colors shadow-sm"
+                aria-label={showPw ? "Hide password" : "Show password"}
+              >
+                {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            {isLoading ? "Signing in..." : "Sign In"}
+          </Button>
+        </form>
+
+        <div className="mt-6 flex justify-between text-sm">
+          <Link to="/register" className="text-purple-300 hover:text-purple-200">
+            Create an account
+          </Link>
+          <Link to="/forgot-password" className="text-gray-300 hover:text-white">
+            Forgot password?
+          </Link>
+        </div>
       </div>
     </div>
   );

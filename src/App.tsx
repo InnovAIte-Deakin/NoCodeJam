@@ -73,11 +73,6 @@ function AppRoutes() {
           <LeaderboardPage />
         </ProtectedRoute>
       } />
-      <Route path="/learn" element={
-        <ProtectedRoute>
-          <LearnPage />
-        </ProtectedRoute>
-      } />
       <Route path="/profile" element={
         <ProtectedRoute>
           <ProfilePage />

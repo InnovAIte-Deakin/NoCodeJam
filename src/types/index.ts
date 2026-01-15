@@ -43,10 +43,15 @@ export interface Submission {
   reviewedBy?: string;
 }
 
+export interface AuthResult {
+  ok: boolean;
+  error?: string;
+}
+
 export interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, username: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  register: (email: string, password: string, username: string) => Promise<AuthResult>;
   logout: () => void;
   isLoading: boolean;
   setUser: (user: User | null) => void;

@@ -78,7 +78,7 @@ export function Dashboard() {
                   <div>
                     <div className="flex justify-between text-xs sm:text-sm text-gray-300 mb-2">
                       <span>Progress to next milestone</span>
-                      <span>{nextLevelXP - user.xp} XP remaining</span>
+                      <span>{nextLevelXP - (user?.xp ?? 0)} XP remaining</span> 
                     </div>
                     <Progress value={progressToNextLevel} className="h-3" />
                   </div>
@@ -88,7 +88,7 @@ export function Dashboard() {
                       <div className="text-xs sm:text-sm text-gray-300">Challenges Completed</div>
                     </div>
                     <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{user.badges.length}</div>
+                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{(user?.badges ?? []).length}</div>
                       <div className="text-xs sm:text-sm text-gray-300">Badges Earned</div>
                     </div>
                   </div>
