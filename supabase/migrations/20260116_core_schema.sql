@@ -108,6 +108,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_set_challenge_xp ON public.challenges;
 CREATE TRIGGER trigger_set_challenge_xp
     BEFORE INSERT OR UPDATE OF difficulty, estimated_time, challenge_type ON public.challenges
     FOR EACH ROW

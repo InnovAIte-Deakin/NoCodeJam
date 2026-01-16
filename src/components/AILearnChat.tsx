@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, Send, Sparkles, X, BookOpen } from 'lucide-react';
+import { Loader2, Send, BookOpen } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -90,19 +90,9 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl h-[80vh] flex flex-col bg-gray-800 border-gray-700">
                 <DialogHeader>
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            <BookOpen className="w-5 h-5 text-blue-400" />
-                            <DialogTitle className="text-white">AI Learning Guide</DialogTitle>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onOpenChange(false)}
-                            className="text-gray-400 hover:text-white"
-                        >
-                            <X className="w-4 h-4" />
-                        </Button>
+                    <div className="flex items-center space-x-2">
+                        <BookOpen className="w-5 h-5 text-blue-400" />
+                        <DialogTitle className="text-white">AI Learning Guide</DialogTitle>
                     </div>
                     <DialogDescription className="text-gray-300">
                         Ask me about No-Code tools, coding concepts, or where to start!

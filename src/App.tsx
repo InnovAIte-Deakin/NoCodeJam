@@ -14,6 +14,8 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { AdminDashboard } from '@/pages/AdminDashboard';
 import { ProfilePage } from '@/pages/ProfilePage';
 import { LearnPage } from '@/pages/LearnPage';
+import { BrowsePathways } from '@/pages/BrowsePathways';
+import { PathwayDetail } from '@/pages/PathwayDetail';
 
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
@@ -54,7 +56,19 @@ function AppRoutes() {
           <ChallengeDetailPage />
         </ProtectedRoute>
       } />
-      
+
+      {/* Pathway routes */}
+      <Route path="/pathways" element={
+        <ProtectedRoute>
+          <BrowsePathways />
+        </ProtectedRoute>
+      } />
+      <Route path="/pathway/:pathwayId" element={
+        <ProtectedRoute>
+          <PathwayDetail />
+        </ProtectedRoute>
+      } />
+
       {/* Onboarding routes */}
       <Route path="/onboarding/:step" element={
         <ProtectedRoute>
