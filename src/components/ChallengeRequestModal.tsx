@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, XCircle, Sparkles } from 'lucide-react';
 import { AIChallengeChat } from './AIChallengeChat';
+import type { CreateChallengeInput, ChallengeType } from '@/types';
 
 interface ChallengeRequestModalProps {
   children: React.ReactNode;
@@ -53,32 +54,40 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     setLoading(true);
 
     try {
+      // Parse recommended tools from comma-separated string to array
+      const toolsArray = formData.recommendedTools
+        .split(',')
+        .map(tool => tool.trim())
+        .filter(Boolean);
+
+      // Create the challenge input matching the new schema
+      const challengeInput: CreateChallengeInput = {
+        title: formData.title,
+        description: formData.description,
+        requirements: formData.requirements.filter(Boolean),
+        difficulty: formData.difficulty as CreateChallengeInput['difficulty'],
+        challenge_type: (formData.challengeType || 'Build') as ChallengeType,
+        estimated_time: parseInt(formData.estimatedTime) || 60,
+        recommended_tools: toolsArray,
+        status: 'draft', // Start as draft for review
+        ai_generated: false, // User-created challenge
+        created_by: user.id,
+      };
+
       const { data, error } = await supabase
-        .from('challenge_requests')
-        .insert({
-          user_id: user.id,
-          title: formData.title,
-          description: formData.description,
-          difficulty: formData.difficulty.toLowerCase(),
-          category: 'general',
-          requirements: formData.requirements.filter(Boolean).join('; '),
-          expected_outcome: '',
-          estimated_time: formData.estimatedTime,
-          additional_notes: `Type: ${formData.challengeType} | Tools: ${formData.recommendedTools} | Version: ${formData.versionNumber} | Cover: ${formData.coverImageDescription} | XP: ${formData.xpReward}`,
-          status: 'pending',
-          created_at: new Date().toISOString(),
-        })
+        .from('challenges')
+        .insert(challengeInput)
         .select();
 
       if (error) {
         if (
-          error.message?.includes('relation "challenge_requests" does not exist') ||
+          error.message?.includes('relation "challenges" does not exist') ||
           error.message?.includes('404') ||
           error.code === 'PGRST116'
         ) {
           toast({
             title: "Table Not Found",
-            description: "The challenge_requests table doesn't exist yet. Please run the database migration first.",
+            description: "The challenges table doesn't exist yet. Please run the database migration first.",
             variant: "destructive",
           });
           return;

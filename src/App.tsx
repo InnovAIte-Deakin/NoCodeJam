@@ -16,6 +16,7 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { LearnPage } from '@/pages/LearnPage';
 import { BrowsePathways } from '@/pages/BrowsePathways';
 import { PathwayDetail } from '@/pages/PathwayDetail';
+import { ReviewDashboard } from '@/pages/ReviewDashboard';
 
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
@@ -102,6 +103,11 @@ function AppRoutes() {
       <Route path="/admin" element={
         <ProtectedRoute adminOnly>
           <AdminDashboard />
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/review" element={
+        <ProtectedRoute adminOnly>
+          <ReviewDashboard />
         </ProtectedRoute>
       } />
       
