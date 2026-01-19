@@ -31,39 +31,53 @@ export function ChallengeListPage() {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      
-      // Fetch all challenges
-      const { data: challengesData } = await supabase
-        .from('challenges')
-        .select('*');
-      
-      if (challengesData) {
-        // Separate onboarding challenge from regular challenges
-        const onboarding = challengesData.find(c => c.challenge_type === 'onboarding');
-        const regularChallenges = challengesData.filter(c => c.challenge_type !== 'onboarding');
-        
-        setOnboardingChallenge(onboarding);
-        setChallenges(regularChallenges);
+
+      try {
+        // Fetch all challenges
+        const { data: challengesData, error } = await supabase
+          .from('challenges')
+          .select('*');
+
+        if (error) {
+          console.error('Error fetching challenges:', error);
+          setLoading(false);
+          return;
+        }
+
+        if (challengesData) {
+          // Separate onboarding challenge from regular challenges
+          const onboarding = challengesData.find(c => c.challenge_type === 'onboarding');
+          const regularChallenges = challengesData.filter(c => c.challenge_type !== 'onboarding');
+
+          setOnboardingChallenge(onboarding);
+          setChallenges(regularChallenges);
+        }
+      } catch (error) {
+        console.error('Unexpected error fetching challenges:', error);
       }
 
       // Fetch user-specific data
       if (user) {
-        // Fetch submissions
-        const { data: submissionsData } = await supabase
-          .from('submissions')
-          .select('*')
-          .eq('user_id', user.id);
-        setSubmissions(submissionsData || []);
+        try {
+          // Fetch submissions
+          const { data: submissionsData } = await supabase
+            .from('submissions')
+            .select('*')
+            .eq('user_id', user.id);
+          setSubmissions(submissionsData || []);
 
-        // Fetch user's onboarding visibility preference
-        const { data: userData } = await supabase
-          .from('users')
-          .select('onboarding_hidden')
-          .eq('id', user.id)
-          .single();
-        
-        if (userData) {
-          setIsOnboardingHidden(userData.onboarding_hidden || false);
+          // Fetch user's onboarding visibility preference
+          const { data: userData } = await supabase
+            .from('users')
+            .select('onboarding_hidden')
+            .eq('id', user.id)
+            .single();
+
+          if (userData) {
+            setIsOnboardingHidden(userData.onboarding_hidden || false);
+          }
+        } catch (error) {
+          console.error('Error fetching user data:', error);
         }
       } else {
         setSubmissions([]);
@@ -133,6 +147,14 @@ export function ChallengeListPage() {
       case 'pending': return <Clock className="w-5 h-5 text-yellow-600" />;
       default: return <Circle className="w-5 h-5 text-gray-400" />;
     }
+  };
+
+  const getShortDescription = (description: string) => {
+    // Extract just the first paragraph, removing markdown headers
+    if (!description) return '';
+    const lines = description.split('\n').filter(line => line.trim());
+    const firstParagraph = lines.find(line => !line.startsWith('#') && line.trim().length > 0);
+    return firstParagraph || lines[0] || description.substring(0, 150);
   };
 
   return (
@@ -223,19 +245,21 @@ export function ChallengeListPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredChallenges.map((challenge) => {
             const status = getChallengeStatus(challenge.id);
-            // Parse requirements string to array for display
-            const requirementsArr = challenge.requirements ? challenge.requirements.split(';').map((r: string) => r.trim()).filter(Boolean) : [];
+            // Handle requirements as either array or string for backward compatibility
+            const requirementsArr = Array.isArray(challenge.requirements)
+              ? challenge.requirements
+              : (challenge.requirements ? challenge.requirements.split(';').map((r: string) => r.trim()).filter(Boolean) : []);
             return (
               <Card key={challenge.id} className="hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                 <div className="relative">
                   <img
-                    src={challenge.image}
+                    src={challenge.image || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800'}
                     alt={challenge.title}
                     className="w-full h-48 object-cover"
                   />
                   <div className="absolute top-4 left-4">
                     <Badge className={getDifficultyColor(challenge.difficulty)}>
-                      {challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1)}
+                      {challenge.difficulty ? challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1) : 'Unknown'}
                     </Badge>
                   </div>
                   <div className="absolute top-4 right-4">
@@ -245,14 +269,14 @@ export function ChallengeListPage() {
                 <CardHeader>
                   <CardTitle className="line-clamp-2">{challenge.title}</CardTitle>
                   <CardDescription className="line-clamp-3">
-                    {challenge.description}
+                    {getShortDescription(challenge.description)}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center space-x-1 text-purple-600">
                       <Star className="w-4 h-4" />
-                      <span className="font-medium">{challenge.xp_reward} XP</span>
+                      <span className="font-medium">{challenge.xp_reward || challenge.xp || 0} XP</span>
                     </div>
                     <span className="text-sm text-gray-500">
                       {requirementsArr.length} requirements

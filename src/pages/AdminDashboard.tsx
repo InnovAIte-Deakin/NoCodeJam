@@ -219,7 +219,7 @@ export function AdminDashboard() {
         difficulty: newChallenge.difficulty.toLowerCase(),
         xp_reward: newChallenge.xpReward,
         image: newChallenge.imageUrl,
-        requirements: newChallenge.requirements.join('; '),
+        requirements: newChallenge.requirements.filter(r => r.trim()), // Store as array
         // created_by: user?.id, // if you want to track the creator
       }
     ]);
@@ -430,7 +430,9 @@ export function AdminDashboard() {
       difficulty: challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1),
       xpReward: challenge.xp_reward,
       imageUrl: challenge.image || '',
-      requirements: challenge.requirements ? challenge.requirements.split('; ').filter((r: string) => r.trim()) : ['']
+      requirements: Array.isArray(challenge.requirements)
+        ? challenge.requirements
+        : (challenge.requirements ? challenge.requirements.split('; ').filter((r: string) => r.trim()) : [''])
     });
     setIsEditDialogOpen(true);
   };
@@ -454,7 +456,7 @@ export function AdminDashboard() {
         difficulty: editingChallenge.difficulty.toLowerCase(),
         xp_reward: editingChallenge.xpReward,
         image: editingChallenge.imageUrl,
-        requirements: editingChallenge.requirements.join('; ')
+        requirements: editingChallenge.requirements.filter((r: string) => r.trim()) // Store as array
       })
       .eq('id', editingChallenge.id);
 
