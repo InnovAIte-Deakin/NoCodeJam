@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -560,6 +561,7 @@ export function LearnPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [aiChatOpen, setAiChatOpen] = useState(false);
   const platformRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const navigate = useNavigate();
 
   const filteredPlatforms = useMemo(() => {
     return platforms.filter((platform) => {
@@ -633,6 +635,13 @@ export function LearnPage() {
               >
                 <Sparkles className="w-4 h-4 mr-2" />
                 AI Assist
+              </Button>
+              <Button
+                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-lg"
+                onClick={() => navigate('/pathways')}
+              >
+                <BookOpen className="w-4 h-4 mr-2" />
+                Learning Pathways
               </Button>
               {(difficultyFilter !== 'all' || categoryFilter !== 'all') && (
                 <Button variant="ghost" className="text-gray-300" onClick={() => { setDifficultyFilter('all'); setCategoryFilter('all'); }}>
