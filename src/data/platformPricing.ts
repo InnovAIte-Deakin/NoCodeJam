@@ -483,5 +483,67 @@ export const platformPricing: Record<string, PricingTier[]> = {
       ],
       ctaUrl: 'https://abacus.ai/contact'
     }
+  ],
+  'zapier': [
+    {
+      id: 'zapier-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: [
+        '100 tasks per month',
+        'Unlimited Zaps',
+        'Tables & Interfaces included',
+        'Access to core AI workflow tools'
+      ],
+      ctaUrl: 'https://zapier.com/pricing'
+    },
+    {
+      id: 'zapier-professional',
+      key: 'paid',
+      name: 'Professional',
+      price: '$19.99',
+      billing: 'per month (billed annually)',
+      features: [
+        '750 tasks per month',
+        'Multi-step Zaps',
+        'Premium app integrations',
+        'Advanced workflow logic (Filters, Paths, Formatter)',
+        'Faster polling'
+      ],
+      ctaUrl: 'https://zapier.com/pricing'
+    },
+    {
+      id: 'zapier-team',
+      key: 'paid',
+      name: 'Team',
+      price: '$69',
+      billing: 'per month (billed annually)',
+      features: [
+        '2,000 tasks per month',
+        'Shared workspaces',
+        'Shared app connections',
+        'User roles & permissions',
+        'Priority support',
+        'One-minute update intervals'
+      ],
+      ctaUrl: 'https://zapier.com/pricing'
+    },
+    {
+      id: 'zapier-enterprise',
+      key: 'enterprise',
+      name: 'Enterprise',
+      price: 'Contact Sales',
+      billing: 'custom pricing',
+      features: [
+        'SAML SSO',
+        'Audit logs',
+        'Enterprise admin tools',
+        'Observability and deployment controls',
+        'Technical account manager'
+      ],
+      ctaUrl: 'https://zapier.com/contact'
+    }
   ]
 };
