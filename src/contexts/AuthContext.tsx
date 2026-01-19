@@ -14,7 +14,7 @@ function mapUser(u: SupabaseUser): User {
     id: u.id,
     email: u.email || "",
     username: md.username || u.email?.split("@")[0] || "User",
-    role: "user", // Default role
+    role: (md.role === 'admin' ? 'admin' : 'user'), // Read from metadata or default to user
     xp: md.xp || 0,
     badges: md.badges || [],
     bio: md.bio,
