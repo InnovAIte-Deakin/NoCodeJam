@@ -11,10 +11,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -89,10 +92,13 @@ By completing this challenge, you will be able to:
   'Beginner',
   'Build',
   150, -- 2.5 hours
+  150, -- estimated_minutes (same as estimated_time)
   ARRAY['VS Code', 'CodePen', 'Chrome DevTools', 'Flexbox', 'CSS Grid'],
+  180, -- xp (Beginner base 50 + time bonus 30 * 1.5 Build multiplier)
   'published',
   true,
   'Frontend',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -113,10 +119,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -194,10 +203,13 @@ By completing this challenge, you will be able to:
   'Beginner',
   'Build',
   150, -- 2.5 hours
+  150, -- estimated_minutes
   ARRAY['CSS Variables', 'localStorage', 'JavaScript', 'prefers-color-scheme'],
+  180, -- xp
   'published',
   true,
   'Frontend',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -218,10 +230,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -297,10 +312,13 @@ By completing this challenge, you will be able to:
   'Beginner',
   'Build',
   105, -- 1.75 hours
+  105, -- estimated_minutes
   ARRAY['Node.js', 'Express', 'Postman', 'curl'],
+  155, -- xp
   'published',
   true,
   'Backend',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -321,10 +339,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -418,10 +439,13 @@ By completing this challenge, you will be able to:
   'Intermediate',
   'Build',
   210, -- 3.5 hours
+  210, -- estimated_minutes
   ARRAY['React', 'fetch API', 'axios', 'JSONPlaceholder'],
+  320, -- xp
   'published',
   true,
   'Frontend',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -442,10 +466,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -532,10 +559,13 @@ By completing this challenge, you will be able to:
   'Intermediate',
   'Build',
   210, -- 3.5 hours
+  210, -- estimated_minutes
   ARRAY['Express.js', 'Middleware', 'Postman', 'RBAC'],
+  320, -- xp
   'published',
   true,
   'Backend',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -556,10 +586,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -648,10 +681,13 @@ By completing this challenge, you will be able to:
   'Intermediate',
   'Build',
   210, -- 3.5 hours
+  210, -- estimated_minutes
   ARRAY['PostgreSQL', 'SQL', 'Express.js', 'ORM'],
+  320, -- xp
   'published',
   true,
   'Backend',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -672,10 +708,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -771,10 +810,13 @@ By completing this challenge, you will be able to:
   'Advanced',
   'Build',
   270, -- 4.5 hours
+  270, -- estimated_minutes
   ARRAY['PostgreSQL', 'Express.js', 'Transactions', 'Security'],
+  420, -- xp
   'published',
   true,
   'Architecture',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -795,10 +837,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -898,10 +943,13 @@ By completing this challenge, you will be able to:
   'Advanced',
   'Build',
   270, -- 4.5 hours
+  270, -- estimated_minutes
   ARRAY['React', 'State Management', 'Async', 'UX'],
+  420, -- xp
   'published',
   true,
   'Frontend',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -922,10 +970,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -1030,10 +1081,13 @@ By completing this challenge, you will be able to:
   'Expert',
   'Build',
   330, -- 5.5 hours
+  330, -- estimated_minutes
   ARRAY['PostgreSQL', 'Event Sourcing', 'Cryptography', 'CQRS'],
+  540, -- xp
   'published',
   true,
   'Architecture',
+  null, -- image
   NOW(),
   NOW()
 )
@@ -1054,10 +1108,13 @@ INSERT INTO public.challenges (
   difficulty,
   challenge_type,
   estimated_time,
+  estimated_minutes,
   recommended_tools,
+  xp,
   status,
   ai_generated,
   category,
+  image,
   created_at,
   updated_at
 )
@@ -1163,10 +1220,13 @@ By completing this challenge, you will be able to:
   'Expert',
   'Build',
   420, -- 7 hours
+  420, -- estimated_minutes
   ARRAY['AI API', 'PostgreSQL', 'State Machine', 'Governance'],
+  660, -- xp
   'published',
   true,
   'AI / Governance',
+  null, -- image
   NOW(),
   NOW()
 )
