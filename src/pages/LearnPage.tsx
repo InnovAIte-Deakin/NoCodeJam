@@ -1,17 +1,14 @@
+// src/pages/LearnPage.tsx
 import { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import {
-  ExternalLink,
-  BookOpen,
-  Code,
-  Zap,
-  Palette,
-  Database,
-  Globe
-} from 'lucide-react';
 
-// ✅ Logos (make sure these files exist in your /src/images folder)
+import PricingPill from '@/components/PricingPill';
+import { platformPricing } from '@/data/platformPricing';
+
+import { ExternalLink, BookOpen, Code, Zap, Palette, Database, Globe } from 'lucide-react';
+
+// ✅ Logos (make sure these exist in /src/images)
 import lovableLogo from '@/images/logoblack.svg';
 import boltLogo from '@/images/Bolt Logo.svg';
 import windsurfLogo from '@/images/windsurf Logo.png';
@@ -21,11 +18,11 @@ import githubCopilotLogo from '@/images/Github Copilot Logo.webp';
 import claudeCodeLogo from '@/images/Claude Code Logo.webp';
 import geminiLogo from '@/images/Gemini Logo.png';
 import figmaLogo from '@/images/figma-logo.svg';
-
-// ✅ Add Webflow logo file in your project and update this import path accordingly:
-import webflowLogo from 'C:/Users/ramad/Downloads/webflow-logo-rounded-free-png.webp';
-
-
+import base44Logo from '@/images/base44-logo.png';
+import emergentLogo from '@/images/Emergent Logo.jpg';
+import grokLogo from '@/images/grok-icon.png';
+import v0Logo from '@/images/v0-icon.png';
+import webflowLogo from '@/images/webflow-logo.webp';
 
 type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 type Category = 'Visual Builder' | 'AI-Powered' | 'Database' | 'Web Development';
@@ -39,18 +36,28 @@ interface Tutorial {
   url: string;
 }
 
+interface PricingTier {
+  id: string;
+  key: 'free' | 'freemium' | 'paid' | 'enterprise';
+  name: string;
+  price?: string;
+  billing?: string;
+  features?: string[];
+  ctaUrl?: string;
+}
+
 interface Platform {
   id: string;
   name: string;
   description: string;
   logo: string;
   website: string;
+  docsUrl?: string;
   features: string[];
   difficulty: Difficulty;
   category: Category;
   tutorials: Tutorial[];
-  pricing?: string;
-  docsUrl?: string; // ✅ avoid broken "/docs" links
+  pricing?: PricingTier[]; // populated from platformPricing
 }
 
 const platforms: Platform[] = [
@@ -65,7 +72,6 @@ const platforms: Platform[] = [
     features: ['Visual Builder', 'Drag & Drop', 'Responsive Design', 'Real-time Preview'],
     difficulty: 'Beginner',
     category: 'Visual Builder',
-    pricing: 'Pro $9',
     tutorials: [
       {
         id: 'lovable-1',
@@ -94,17 +100,46 @@ const platforms: Platform[] = [
     ]
   },
   {
+    id: 'base44',
+    name: 'Base44',
+    description:
+      'Base44 is an AI-powered platform that lets you turn any idea into a fully-functional custom app, without the need for any coding experience.',
+    logo: base44Logo,
+    website: 'https://base44.com/',
+    docsUrl: 'https://docs.base44.com/',
+    features: ['Prompt-to-App', 'Fullstack Generation', 'All-in-One Infrastructure', 'Instant Deployment'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'base44-1',
+        title: 'Getting Started with Base44',
+        description: 'Getting Started with Base44 with Meltics Media',
+        duration: '39 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=FN9fyZ9IPWs'
+      },
+      {
+        id: 'base44-2',
+        title: 'Building with Base44',
+        description: 'Step by Step to building with Base44 by Design with May',
+        duration: '26 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=cbFudIg_zWA'
+      }
+    ]
+  },
+  {
     id: 'windsurf',
     name: 'Windsurf',
     description:
-      'Windsurf is an AI-powered no-code platform that helps you build applications using natural language. Simply describe what you want to build, and Windsurf creates it for you.',
+      'Windsurf is an AI-powered platform that helps you build applications using natural language. Simply describe what you want to build, and Windsurf creates it for you.',
     logo: windsurfLogo,
     website: 'https://windsurf.dev',
     docsUrl: 'https://docs.windsurf.com/windsurf/getting-started',
     features: ['AI-Powered', 'Natural Language', 'Auto-Generation', 'Smart Suggestions'],
     difficulty: 'Beginner',
     category: 'AI-Powered',
-    pricing: 'Pro $29',
     tutorials: [
       {
         id: 'windsurf-1',
@@ -135,7 +170,6 @@ const platforms: Platform[] = [
     features: ['Online IDE', 'Real-time Collaboration', 'Version Control', 'Community'],
     difficulty: 'Beginner',
     category: 'Web Development',
-    pricing: 'Hacker $7',
     tutorials: [
       {
         id: 'replit-1',
@@ -174,7 +208,6 @@ const platforms: Platform[] = [
     features: ['Database Management', 'Business Logic', 'API Integration', 'User Management'],
     difficulty: 'Intermediate',
     category: 'Database',
-    pricing: 'Free/Pro',
     tutorials: [
       {
         id: 'bolt-1',
@@ -197,15 +230,13 @@ const platforms: Platform[] = [
   {
     id: 'github-copilot',
     name: 'GitHub Copilot',
-    description:
-      'GitHub Copilot is an AI pair programmer that helps you write code faster and more accurately.',
+    description: 'GitHub Copilot is an AI pair programmer that helps you write code faster and more accurately.',
     logo: githubCopilotLogo,
     website: 'https://github.com/features/copilot',
     docsUrl: 'https://docs.github.com/en/copilot',
     features: ['AI Pair Programming', 'Intelligent Suggestions', 'Code Generation', 'Integration'],
     difficulty: 'Intermediate',
     category: 'Web Development',
-    pricing: 'Paid',
     tutorials: [
       {
         id: 'github-copilot-1',
@@ -236,15 +267,13 @@ const platforms: Platform[] = [
   {
     id: 'cursor',
     name: 'Cursor',
-    description:
-      'Cursor is an AI-first code editor that helps you write, edit, and debug code faster.',
+    description: 'Cursor is an AI-first code editor that helps you write, edit, and debug code faster.',
     logo: cursorLogo,
     website: 'https://cursor.com',
     docsUrl: 'https://docs.cursor.com/en/get-started/installation',
     features: ['AI Code Assistant', 'Code Generation', 'Debugging', 'Multi-language Support'],
     difficulty: 'Advanced',
     category: 'Web Development',
-    pricing: 'Paid',
     tutorials: [
       {
         id: 'cursor-1',
@@ -275,15 +304,13 @@ const platforms: Platform[] = [
   {
     id: 'claude-code',
     name: 'Claude Code',
-    description:
-      'Claude Code is an AI-powered code assistant that helps you write, debug, and optimize code.',
+    description: 'Claude Code is an AI-powered code assistant that helps you write, debug, and optimize code.',
     logo: claudeCodeLogo,
     website: 'https://claude.ai',
     docsUrl: 'https://docs.anthropic.com/en/docs/claude-code/setup',
     features: ['AI Code Assistant', 'Code Generation', 'Debugging', 'Multi-language Support'],
     difficulty: 'Advanced',
     category: 'Web Development',
-    pricing: 'Paid',
     tutorials: [
       {
         id: 'claude-code-1',
@@ -314,15 +341,13 @@ const platforms: Platform[] = [
   {
     id: 'gemini-cli',
     name: 'Gemini CLI',
-    description:
-      'Gemini CLI brings Gemini into your terminal to help query, refactor, and automate developer tasks.',
+    description: 'Gemini CLI brings Gemini into your terminal to help query, refactor, and automate developer tasks.',
     logo: geminiLogo,
     website: 'https://github.com/google-gemini/gemini-cli',
     docsUrl: 'https://github.com/google-gemini/gemini-cli',
     features: ['Terminal AI Agent', 'Code Analysis', 'Multimodal Generation', 'Tool Integration'],
     difficulty: 'Advanced',
     category: 'Web Development',
-    pricing: 'Free',
     tutorials: [
       {
         id: 'gemini-cli-1',
@@ -345,15 +370,13 @@ const platforms: Platform[] = [
   {
     id: 'figma',
     name: 'Figma',
-    description:
-      'A collaborative interface design tool — learn UI fundamentals, prototyping, design systems, and handoff workflows.',
+    description: 'A collaborative interface design tool — learn UI fundamentals, prototyping, design systems, and handoff workflows.',
     logo: figmaLogo,
     website: 'https://www.figma.com',
     docsUrl: 'https://help.figma.com/hc/en-us',
     features: ['Design Systems', 'Prototyping', 'Collaboration', 'Plugins'],
     difficulty: 'Beginner',
     category: 'Visual Builder',
-    pricing: 'Free/Paid',
     tutorials: [
       {
         id: 'figma-1',
@@ -365,8 +388,6 @@ const platforms: Platform[] = [
       }
     ]
   },
-
-  // ✅ FIXED Webflow object (previously outside array + wrong logo syntax)
   {
     id: 'webflow',
     name: 'Webflow',
@@ -378,7 +399,6 @@ const platforms: Platform[] = [
     features: ['Visual Builder', 'Responsive Design', 'CMS', 'Hosting'],
     difficulty: 'Beginner',
     category: 'Visual Builder',
-    pricing: 'Free/Paid',
     tutorials: [
       {
         id: 'webflow-1',
@@ -397,8 +417,95 @@ const platforms: Platform[] = [
         url: 'https://university.webflow.com'
       }
     ]
+  },
+  {
+    id: 'emergent',
+    name: 'Emergent',
+    description:
+      'Emergent is an AI-assisted builder that helps you spin up working app prototypes quickly. This tutorial track links straight to concise YouTube videos so you can learn the workflow fast.',
+    logo: emergentLogo,
+    website: 'https://emergent.dev',
+    docsUrl: 'https://emergent.dev/docs',
+    features: ['AI-Assisted', 'Rapid Prototyping', 'Web App Scaffolding', 'Iteration Friendly'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'emergent-1',
+        title: 'Emergent AI Walkthrough',
+        description: 'A quick tour of Emergent and what you can build with it.',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=ZplFP8Mo7_M'
+      },
+      {
+        id: 'emergent-2',
+        title: 'Build a full app with Emergent AI',
+        description: 'Create a simple app from scratch and deploy it.',
+        duration: '13 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=atnYF5wll74'
+      }
+    ]
+  },
+  {
+    id: 'grok',
+    name: 'Grok',
+    description:
+      'Grok is an AI-powered chatbot developed by xAI that provides real-time, context-aware responses with access to current information.',
+    logo: grokLogo,
+    website: 'https://grok.com',
+    docsUrl: 'https://docs.x.ai/docs/overview',
+    features: ['AI Chatbot', 'Real-time Data', 'Code Generation', 'Advanced Reasoning'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'grok-1',
+        title: 'Getting Started with Grok',
+        description: 'Learn the basics of using Grok AI chatbot and its key features',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://docs.x.ai/docs/overview'
+      }
+    ]
+  },
+  {
+    id: 'v0',
+    name: 'v0',
+    description:
+      'v0 is Vercel’s AI-powered development platform that turns natural-language prompts into production-ready web apps and UI, generating React code styled with Tailwind.',
+    logo: v0Logo,
+    website: 'https://v0.app',
+    docsUrl: 'https://v0.dev/docs',
+    features: ['AI UI Generation', 'React Components', 'Tailwind CSS', 'Instant Prototyping'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'v0-1',
+        title: 'Introduction to v0',
+        description: 'Introduction to v0 through the documents and guides',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://v0.dev/docs'
+      },
+      {
+        id: 'v0-2',
+        title: 'Building Fullstack with v0',
+        description: 'Create complex React components and interfaces using v0',
+        duration: '7 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=cyFVtaLy-bA'
+      }
+    ]
   }
 ];
+
+// Attach pricing arrays from platformPricing to the platforms by id.
+platforms.forEach((p) => {
+  p.pricing = platformPricing[p.id] ?? [];
+});
 
 function difficultyRank(d: Difficulty) {
   if (d === 'Beginner') return 1;
@@ -456,29 +563,15 @@ export function LearnPage() {
   const recommendedIds = useMemo(() => {
     const rec = new Set<string>();
 
-    if (goal === 'Build fast') {
-      ['lovable', 'windsurf', 'bolt', 'replit', 'webflow', 'figma'].forEach((id) => rec.add(id));
-    }
-    if (goal === 'Learn UI') {
-      ['figma', 'webflow', 'lovable'].forEach((id) => rec.add(id));
-    }
-    if (goal === 'Code with AI') {
-      ['github-copilot', 'cursor', 'claude-code', 'gemini-cli'].forEach((id) => rec.add(id));
-    }
-    if (goal === 'Ship a web app') {
-      ['replit', 'lovable', 'webflow', 'github-copilot', 'windsurf'].forEach((id) => rec.add(id));
-    }
+    if (goal === 'Build fast') ['lovable', 'windsurf', 'bolt', 'replit', 'webflow', 'figma', 'v0'].forEach((id) => rec.add(id));
+    if (goal === 'Learn UI') ['figma', 'webflow', 'lovable'].forEach((id) => rec.add(id));
+    if (goal === 'Code with AI') ['github-copilot', 'cursor', 'claude-code', 'gemini-cli', 'v0'].forEach((id) => rec.add(id));
+    if (goal === 'Ship a web app') ['replit', 'lovable', 'webflow', 'windsurf', 'v0'].forEach((id) => rec.add(id));
 
-    if (skill === 'Beginner') {
-      ['lovable', 'windsurf', 'replit', 'webflow', 'figma'].forEach((id) => rec.add(id));
-    }
-    if (skill === 'Advanced') {
-      ['cursor', 'claude-code', 'gemini-cli'].forEach((id) => rec.add(id));
-    }
+    if (skill === 'Beginner') ['lovable', 'windsurf', 'replit', 'webflow', 'figma', 'base44', 'emergent', 'v0'].forEach((id) => rec.add(id));
+    if (skill === 'Advanced') ['cursor', 'claude-code', 'gemini-cli'].forEach((id) => rec.add(id));
 
-    if (budget === 'Free') {
-      ['replit', 'figma', 'gemini-cli'].forEach((id) => rec.add(id));
-    }
+    if (budget === 'Free') ['replit', 'figma', 'gemini-cli'].forEach((id) => rec.add(id));
 
     return rec;
   }, [goal, skill, budget]);
@@ -488,8 +581,7 @@ export function LearnPage() {
   const filtered = useMemo(() => {
     const base = platforms.filter((p) => {
       if (!normalizedQuery) return true;
-      const haystack =
-        `${p.name} ${p.description} ${p.category} ${p.difficulty} ${p.features.join(' ')}`.toLowerCase();
+      const haystack = `${p.name} ${p.description} ${p.category} ${p.difficulty} ${p.features.join(' ')}`.toLowerCase();
       return haystack.includes(normalizedQuery);
     });
 
@@ -529,9 +621,7 @@ export function LearnPage() {
           <p className="mt-3 text-sm sm:text-base text-white/70 max-w-3xl mx-auto">
             Discover no-code + AI tools, compare features, and follow guided learning paths to build faster.
           </p>
-          <p className="mt-2 text-xs text-white/50">
-            Tip: Use Goal + Skill + Budget to highlight tools, then Search/Sort.
-          </p>
+          <p className="mt-2 text-xs text-white/50">Tip: Use Goal + Skill + Budget to highlight tools, then Search/Sort.</p>
         </div>
 
         {/* Control Panel */}
@@ -695,13 +785,13 @@ export function LearnPage() {
 
                           <span className="text-white/30">•</span>
 
-                          <span
-                            className={`inline-flex items-center px-2 py-1 rounded-full ${getDifficultyColor(
-                              platform.difficulty
-                            )}`}
-                          >
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full ${getDifficultyColor(platform.difficulty)}`}>
                             {platform.difficulty}
                           </span>
+                        </div>
+
+                        <div className="mt-3">
+                          <PricingPill pricing={platform.pricing} />
                         </div>
                       </div>
                     </div>
@@ -710,35 +800,12 @@ export function LearnPage() {
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       {platform.features.slice(0, 4).map((feature) => (
-                        <span
-                          key={feature}
-                          className="text-[11px] px-2 py-1 rounded-full bg-black/25 border border-white/10 text-white/70"
-                        >
+                        <span key={feature} className="text-[11px] px-2 py-1 rounded-full bg-black/25 border border-white/10 text-white/70">
                           {feature}
                         </span>
                       ))}
                     </div>
                   </button>
-
-                  <div className="mt-5 flex flex-col sm:flex-row gap-3">
-                    <Button asChild className="flex-1">
-                      <a href={platform.website} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Visit
-                      </a>
-                    </Button>
-
-                    <Button
-                      variant="outline"
-                      asChild
-                      className="flex-1 border-white/15 text-white/80 hover:bg-white/10"
-                    >
-                      <a href={platform.docsUrl ?? platform.website} target="_blank" rel="noopener noreferrer">
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        Docs
-                      </a>
-                    </Button>
-                  </div>
                 </CardContent>
               </Card>
             );
@@ -754,14 +821,33 @@ export function LearnPage() {
                   <div className="w-14 h-14 rounded-xl bg-black/30 border border-white/10 p-2 flex items-center justify-center">
                     <img src={selected.logo} alt={selected.name} className="w-full h-full object-contain" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <CardTitle className="text-2xl">{selected.name}</CardTitle>
                     <CardDescription className="text-white/65">{selected.description}</CardDescription>
+                    <div className="mt-3">
+                      <PricingPill pricing={selected.pricing} />
+                    </div>
                   </div>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button asChild className="flex-1">
+                    <a href={selected.website} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Visit
+                    </a>
+                  </Button>
+
+                  <Button variant="outline" asChild className="flex-1 border-white/15 text-white/80 hover:bg-white/10">
+                    <a href={selected.docsUrl ?? selected.website} target="_blank" rel="noopener noreferrer">
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Docs
+                    </a>
+                  </Button>
+                </div>
+
                 <div>
                   <h3 className="text-white font-semibold mb-3">Learning Path</h3>
                   <div className="space-y-3">

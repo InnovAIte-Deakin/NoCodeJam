@@ -101,20 +101,31 @@ export function RegisterPage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Create a strong password"
                   required
+                  className="pr-10"
                 />
-                <Button
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center justify-center bg-transparent border-0 shadow-none outline-none focus:outline-none hover:bg-transparent cursor-pointer rounded-l-none"
                   onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    height: '36px',
+                    width: '36px',
+                    padding: '0',
+                    minHeight: '0',
+                    minWidth: '0',
+                    borderTopLeftRadius: '0',
+                    borderBottomLeftRadius: '0',
+                    borderTopRightRadius: '6px',
+                    borderBottomRightRadius: '6px'
+                  }}
                 >
                   {showPassword ? (
                     <EyeOff className="h-4 w-4" />
                   ) : (
                     <Eye className="h-4 w-4" />
                   )}
-                </Button>
+                </button>
               </div>
               
               {password && (
