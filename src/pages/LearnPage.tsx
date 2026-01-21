@@ -389,35 +389,28 @@ const platforms: Platform[] = [
     ]
   },
   {
-    id: 'webflow',
-    name: 'Webflow',
-    description:
-      'Webflow is a visual no-code website builder that lets you design and publish responsive websites with a powerful CMS—ideal for landing pages and fast MVP websites.',
-    logo: webflowLogo,
-    website: 'https://webflow.com',
-    docsUrl: 'https://university.webflow.com',
-    features: ['Visual Builder', 'Responsive Design', 'CMS', 'Hosting'],
-    difficulty: 'Beginner',
-    category: 'Visual Builder',
-    tutorials: [
-      {
-        id: 'webflow-1',
-        title: 'Webflow University (Start Here)',
-        description: 'Official learning hub with beginner-friendly lessons',
-        duration: 'Self-paced',
-        difficulty: 'Beginner',
-        url: 'https://university.webflow.com'
-      },
-      {
-        id: 'webflow-2',
-        title: 'CMS Basics',
-        description: 'Build collections and dynamic pages using CMS',
-        duration: 'Self-paced',
-        difficulty: 'Intermediate',
-        url: 'https://university.webflow.com'
-      }
-    ]
-  },
+  id: 'webflow',
+  name: 'Webflow',
+  description:
+    'Webflow is a visual no-code website builder that lets you design and publish responsive websites with a powerful CMS—ideal for landing pages and fast MVP websites.',
+  logo: webflowLogo,
+  website: 'https://webflow.com',
+  docsUrl: 'https://university.webflow.com',
+  features: ['Visual Builder', 'Responsive Design', 'CMS', 'Hosting'],
+  difficulty: 'Beginner',
+  category: 'Visual Builder',
+  tutorials: [
+    {
+      id: 'webflow-1',
+      title: 'Webflow University (Start Here)',
+      description: 'Official learning hub with beginner-friendly lessons',
+      duration: 'Self-paced',
+      difficulty: 'Beginner',
+      url: 'https://university.webflow.com'
+    }
+  ]
+},
+
   {
     id: 'emergent',
     name: 'Emergent',
