@@ -20,6 +20,7 @@ import base44Logo from '@/images/base44-logo.png';
 import emergentLogo from '@/images/Emergent Logo.jpg';
 import grokLogo from '@/images/grok-icon.png';
 import v0Logo from '@/images/v0-icon.png';
+import anythingLogo from '@/images/Anything Logo.png';
 
 
 interface Platform {
@@ -538,6 +539,34 @@ const platforms: Platform[] = [
         url: 'https://www.youtube.com/watch?v=cyFVtaLy-bA'
       }
     ]
+  },
+  {
+    id: 'anything',
+    name: 'Anything',
+    description: 'Anything.ai is a learning-driven AI platform that enables users to explore AI tools, experiment with real use cases, and build practical applications using generative technoligies.',
+    logo: anythingLogo,
+    website: 'https://www.createanything.com/',
+    features: ['Prompt Experimentation', 'Rapid Ideation', 'Practical Use-Case Building', 'Simple Learning UI'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'anything-1',
+        title: 'Introduction',
+        description: 'Getting Started with Anything AI',
+        duration: '12 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=KfGdYv_YNoM'
+      },
+      {
+        id: 'anything-2',
+        title: 'Crash Course',
+        description: 'Video Tutorial on how to build a web application using Anything AI',
+        duration: '8 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=6RSSDFEWbm8'
+      }
+    ]
   }
   
 ];
@@ -799,6 +828,7 @@ export function LearnPage() {
                         platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
                         platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
                         platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
+                        platform.id === 'anything' ? 'https://www.createanything.com/docs/welcome' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />

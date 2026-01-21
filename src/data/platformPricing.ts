@@ -263,6 +263,37 @@ export const platformPricing: Record<string, PricingTier[]> = {
       ctaUrl: 'https://www.figma.com/pricing'
     }
   ],
+
+  'gemini-3': [
+    {
+      id: 'gemini-3-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: ['Access to Gemini 3 (standard)', 'Limited daily usage', 'Text and image generation'],
+      ctaUrl: 'https://gemini.google/au/subscriptions/?hl=en-AU'
+    },
+    {
+      id: 'gemini-3-pro',
+      key: 'paid',
+      name: 'Google AI Pro',
+      price: '$33',
+      billing: 'per month',
+      features: ['Full access to Gemini 3', 'Higher usage limits', 'Advanced reasoning and analysis', 'Priority access to new features'],
+      ctaUrl: 'https://gemini.google/au/subscriptions/?hl=en-AU'
+    },
+    {
+      id: 'gemini-3-ultra',
+      key: 'paid',
+      name: 'Google AI Ultra',
+      price: '$410',
+      billing: 'per month',
+      features: ['Access to Gemini 3 Ultra model', 'Highest usage limits', 'Complex reasoning and long-context tasks', 'Early access to experimental models'],
+      ctaUrl: 'https://gemini.google/au/subscriptions/?hl=en-AU'
+    }
+  ],
+
   base44: [
     {
       id: 'base44-free',
@@ -482,6 +513,36 @@ export const platformPricing: Record<string, PricingTier[]> = {
         'Advanced enterprise features and integrations'
       ],
       ctaUrl: 'https://abacus.ai/contact'
+    }
+  ],
+
+  anything: [
+    {
+      id: 'anything-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: ['Chat & generate', 'Publish', 'AI integrations'],
+      ctaUrl: 'https://www.createanything.com/pricing'
+    },
+    {
+      id: 'anything-pro-50k',
+      key: 'paid',
+      name: 'Pro 50k',
+      price: '$49',
+      billing: 'per month',
+      features: ['More credits per month', 'Private projects', 'Remove Anything branding', 'Custom domains'],
+      ctaUrl: 'https://www.createanything.com/pricing'
+    },
+    {
+      id: 'anything-max',
+      key: 'paid',
+      name: 'MAX',
+      price: '$199',
+      billing: 'per month',
+      features: ['Everything in Pro 50K plus access to autonomous software engineer', 'Priority support'],
+      ctaUrl: 'https://www.createanything.com/pricing'
     }
   ]
 };
