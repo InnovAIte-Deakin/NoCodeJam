@@ -24,9 +24,13 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
     title: request?.title || '',
     description: request?.description || '',
     difficulty: request?.difficulty || '',
-    requirements: request?.requirements ? request.requirements.split(';').map(r => r.trim()).filter(r => r) : [''],
+    requirements: request?.requirements
+      ? (Array.isArray(request.requirements)
+          ? request.requirements
+          : request.requirements.split(';').map(r => r.trim()).filter(r => r))
+      : [''],
     imageUrl: '',
-    xpReward: request?.difficulty === 'Beginner' ? 200 : 
+    xpReward: request?.difficulty === 'Beginner' ? 200 :
               request?.difficulty === 'Intermediate' ? 500 : 1000
   });
 
