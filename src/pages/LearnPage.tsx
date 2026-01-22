@@ -57,10 +57,25 @@ interface Platform {
   difficulty: Difficulty;
   category: Category;
   tutorials: Tutorial[];
-  pricing?: PricingTier[]; // populated from platformPricing
+  pricing?: PricingTier[];
+  isNew?: boolean;
 }
 
-const platforms: Platform[] = [
+/**
+ * ✅ No-file fallback logo (so images NEVER go blank on Vercel)
+ * (Data URI SVG)
+ */
+const fallbackLogo =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">
+    <rect width="128" height="128" rx="24" fill="#111827"/>
+    <circle cx="64" cy="64" r="34" fill="#1f2937"/>
+    <text x="64" y="72" text-anchor="middle" font-size="28" fill="#9ca3af" font-family="Arial">?</text>
+  </svg>
+`);
+
+const platformsRaw: Platform[] = [
   {
     id: 'lovable',
     name: 'Lovable',
@@ -388,28 +403,31 @@ const platforms: Platform[] = [
       }
     ]
   },
+
+  // ✅ Webflow (marked NEW)
   {
-  id: 'webflow',
-  name: 'Webflow',
-  description:
-    'Webflow is a visual no-code website builder that lets you design and publish responsive websites with a powerful CMS—ideal for landing pages and fast MVP websites.',
-  logo: webflowLogo,
-  website: 'https://webflow.com',
-  docsUrl: 'https://university.webflow.com',
-  features: ['Visual Builder', 'Responsive Design', 'CMS', 'Hosting'],
-  difficulty: 'Beginner',
-  category: 'Visual Builder',
-  tutorials: [
-    {
-      id: 'webflow-1',
-      title: 'Webflow University (Start Here)',
-      description: 'Official learning hub with beginner-friendly lessons',
-      duration: 'Self-paced',
-      difficulty: 'Beginner',
-      url: 'https://university.webflow.com'
-    }
-  ]
-},
+    id: 'webflow',
+    name: 'Webflow',
+    description:
+      'Webflow is a visual no-code website builder that lets you design and publish responsive websites with a powerful CMS—ideal for landing pages and fast MVP websites.',
+    logo: webflowLogo,
+    website: 'https://webflow.com',
+    docsUrl: 'https://university.webflow.com',
+    features: ['Visual Builder', 'Responsive Design', 'CMS', 'Hosting'],
+    difficulty: 'Beginner',
+    category: 'Visual Builder',
+    isNew: true,
+    tutorials: [
+      {
+        id: 'webflow-1',
+        title: 'Webflow University (Start Here)',
+        description: 'Official learning hub with beginner-friendly lessons',
+        duration: 'Self-paced',
+        difficulty: 'Beginner',
+        url: 'https://university.webflow.com'
+      }
+    ]
+  },
 
   {
     id: 'emergent',
@@ -474,6 +492,7 @@ const platforms: Platform[] = [
     features: ['AI UI Generation', 'React Components', 'Tailwind CSS', 'Instant Prototyping'],
     difficulty: 'Beginner',
     category: 'AI-Powered',
+    isNew: true,
     tutorials: [
       {
         id: 'v0-1',
@@ -495,11 +514,6 @@ const platforms: Platform[] = [
   }
 ];
 
-// Attach pricing arrays from platformPricing to the platforms by id.
-platforms.forEach((p) => {
-  p.pricing = platformPricing[p.id] ?? [];
-});
-
 function difficultyRank(d: Difficulty) {
   if (d === 'Beginner') return 1;
   if (d === 'Intermediate') return 2;
@@ -507,8 +521,13 @@ function difficultyRank(d: Difficulty) {
 }
 
 export function LearnPage() {
-  const [selectedPlatform, setSelectedPlatform] = useState<string>(platforms[0]?.id ?? 'lovable');
+  // ✅ Attach pricing without mutating the original array
+  const platforms = useMemo<Platform[]>(
+    () => platformsRaw.map((p) => ({ ...p, pricing: platformPricing[p.id] ?? [] })),
+    []
+  );
 
+  const [selectedPlatform, setSelectedPlatform] = useState<string>(platforms[0]?.id ?? 'lovable');
   const [goal, setGoal] = useState<'Build fast' | 'Learn UI' | 'Code with AI' | 'Ship a web app'>('Build fast');
   const [skill, setSkill] = useState<Difficulty>('Beginner');
   const [budget, setBudget] = useState<'Free' | 'Free/Paid' | 'Paid'>('Free');
@@ -578,7 +597,7 @@ export function LearnPage() {
       return haystack.includes(normalizedQuery);
     });
 
-    return base.sort((a, b) => {
+    const sorted = [...base].sort((a, b) => {
       if (sortBy === 'Recommended') {
         const ar = recommendedIds.has(a.id) ? 0 : 1;
         const br = recommendedIds.has(b.id) ? 0 : 1;
@@ -590,11 +609,19 @@ export function LearnPage() {
       if (sortBy === 'Category') return a.category.localeCompare(b.category);
       return 0;
     });
-  }, [normalizedQuery, sortBy, recommendedIds]);
+
+    // ✅ Force Webflow to always be present
+    if (!sorted.some((p) => p.id === 'webflow')) {
+      const webflow = platforms.find((p) => p.id === 'webflow');
+      if (webflow) sorted.unshift(webflow);
+    }
+
+    return sorted;
+  }, [platforms, normalizedQuery, sortBy, recommendedIds]);
 
   const selected = useMemo(() => {
     return platforms.find((p) => p.id === selectedPlatform) ?? filtered[0] ?? platforms[0];
-  }, [selectedPlatform, filtered]);
+  }, [platforms, selectedPlatform, filtered]);
 
   return (
     <div className="min-h-screen bg-[#070A12] text-white">
@@ -607,7 +634,7 @@ export function LearnPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="text-center mb-10">
+        <div className="text-center mb-6">
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
             <span className="mr-2">🎓</span>Explore No-Code Platforms for Fast Prototyping
           </h1>
@@ -615,6 +642,20 @@ export function LearnPage() {
             Discover no-code + AI tools, compare features, and follow guided learning paths to build faster.
           </p>
           <p className="mt-2 text-xs text-white/50">Tip: Use Goal + Skill + Budget to highlight tools, then Search/Sort.</p>
+          <p className="mt-1 text-xs text-white/40">Total platforms available: {platforms.length}</p>
+        </div>
+
+        {/* Quick category buttons */}
+        <div className="flex flex-wrap justify-center gap-3 mb-8">
+          {['All', 'Visual Builder', 'AI-Powered', 'Web Development', 'Database'].map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setQuery(cat === 'All' ? '' : cat)}
+              className="px-4 py-2 rounded-full bg-white/10 hover:bg-purple-500/20 text-sm border border-white/10"
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
         {/* Control Panel */}
@@ -757,12 +798,27 @@ export function LearnPage() {
                   <button onClick={() => scrollToPlatform(platform.id)} className="w-full text-left">
                     <div className="flex items-start gap-4">
                       <div className="w-14 h-14 rounded-xl bg-black/30 border border-white/10 p-2 flex items-center justify-center">
-                        <img src={platform.logo} alt={platform.name} className="w-full h-full object-contain" />
+                        <img
+                          src={platform.logo}
+                          alt={platform.name}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                          }}
+                          className="w-full h-full object-contain"
+                        />
                       </div>
 
                       <div className="flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <h3 className="text-lg font-semibold">{platform.name}</h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">{platform.name}</h3>
+                            {platform.isNew && (
+                              <span className="text-[10px] px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30">
+                                NEW
+                              </span>
+                            )}
+                          </div>
+
                           {isRecommended && (
                             <span className="text-[11px] px-2 py-1 rounded-full bg-purple-500/15 border border-purple-500/20 text-purple-200">
                               Recommended
@@ -793,7 +849,10 @@ export function LearnPage() {
 
                     <div className="mt-4 flex flex-wrap gap-2">
                       {platform.features.slice(0, 4).map((feature) => (
-                        <span key={feature} className="text-[11px] px-2 py-1 rounded-full bg-black/25 border border-white/10 text-white/70">
+                        <span
+                          key={feature}
+                          className="text-[11px] px-2 py-1 rounded-full bg-black/25 border border-white/10 text-white/70"
+                        >
                           {feature}
                         </span>
                       ))}
@@ -812,10 +871,25 @@ export function LearnPage() {
               <CardHeader>
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 rounded-xl bg-black/30 border border-white/10 p-2 flex items-center justify-center">
-                    <img src={selected.logo} alt={selected.name} className="w-full h-full object-contain" />
+                    <img
+                      src={selected.logo}
+                      alt={selected.name}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                      }}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
+
                   <div className="min-w-0">
-                    <CardTitle className="text-2xl">{selected.name}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-2xl">{selected.name}</CardTitle>
+                      {selected.isNew && (
+                        <span className="text-[10px] px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30">
+                          NEW
+                        </span>
+                      )}
+                    </div>
                     <CardDescription className="text-white/65">{selected.description}</CardDescription>
                     <div className="mt-3">
                       <PricingPill pricing={selected.pricing} />

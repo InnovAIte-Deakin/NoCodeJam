@@ -439,6 +439,45 @@ export const platformPricing: Record<string, PricingTier[]> = {
       ctaUrl: 'https://v0.app/pricing'
     }
   ],
+    webflow: [
+    {
+      id: 'webflow-starter',
+      key: 'free',
+      name: 'Starter',
+      price: '$0',
+      billing: 'free',
+      features: ['Webflow.io domain', '2 pages', '20 CMS collections', '50 CMS items', 'Webflow AI'],
+      ctaUrl: 'https://webflow.com/pricing'
+    },
+    {
+      id: 'webflow-basic',
+      key: 'paid',
+      name: 'Basic',
+      price: '$14',
+      billing: 'per month (billed yearly)',
+      features: ['Custom domain', '150 pages', 'No CMS features', 'Webflow AI'],
+      ctaUrl: 'https://webflow.com/pricing'
+    },
+    {
+      id: 'webflow-cms',
+      key: 'paid',
+      name: 'CMS',
+      price: '$23',
+      billing: 'per month (billed yearly)',
+      features: ['Custom domain', '150 pages', '20 CMS collections', '2,000 CMS items', 'Webflow AI'],
+      ctaUrl: 'https://webflow.com/pricing'
+    },
+    {
+      id: 'webflow-business',
+      key: 'paid',
+      name: 'Business',
+      price: '$39',
+      billing: 'per month (billed yearly)',
+      features: ['Custom domain', '300 pages', '40 CMS collections', 'Up to 10,000 CMS items', 'Webflow AI'],
+      ctaUrl: 'https://webflow.com/pricing'
+    }
+  ],
+
 
   'abacus-ai': [
     {
