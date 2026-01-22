@@ -522,5 +522,95 @@ export const platformPricing: Record<string, PricingTier[]> = {
       ],
       ctaUrl: 'https://abacus.ai/contact'
     }
+  ],
+
+  'gemini-3': [
+    {
+      id: 'gemini-3-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'per month',
+      features: [
+        '15 requests per minute',
+        '1,500 requests per day',
+        '1 million tokens per minute',
+        'Standard context window'
+      ],
+      ctaUrl: 'https://ai.google.dev/pricing'
+    },
+    {
+      id: 'gemini-3-pay-as-you-go',
+      key: 'paid',
+      name: 'Pay As You Go',
+      price: 'Usage-based',
+      billing: 'per request',
+      features: [
+        'Higher rate limits',
+        'Extended context window',
+        'Priority processing',
+        'Production-ready'
+      ],
+      ctaUrl: 'https://ai.google.dev/pricing'
+    },
+    {
+      id: 'gemini-3-enterprise',
+      key: 'enterprise',
+      name: 'Enterprise',
+      price: 'Contact Sales',
+      billing: 'custom',
+      features: [
+        'Dedicated capacity',
+        'Custom models',
+        'SLA guarantees',
+        'Enterprise support'
+      ],
+      ctaUrl: 'https://cloud.google.com/contact'
+    }
+  ],
+
+  'emergent': [
+    {
+      id: 'emergent-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: [
+        'Basic app prototyping',
+        'AI-assisted development',
+        'Community templates',
+        'Up to 3 projects'
+      ],
+      ctaUrl: 'https://emergent.dev/pricing'
+    },
+    {
+      id: 'emergent-pro',
+      key: 'paid',
+      name: 'Pro',
+      price: '$15',
+      billing: 'per month',
+      features: [
+        'Unlimited projects',
+        'Advanced AI features',
+        'Custom deployment',
+        'Priority support'
+      ],
+      ctaUrl: 'https://emergent.dev/pricing'
+    },
+    {
+      id: 'emergent-enterprise',
+      key: 'enterprise',
+      name: 'Enterprise',
+      price: 'Contact Sales',
+      billing: 'custom',
+      features: [
+        'Team collaboration',
+        'SSO & security',
+        'Dedicated support',
+        'Custom SLA'
+      ],
+      ctaUrl: 'https://emergent.dev/contact'
+    }
   ]
 };
