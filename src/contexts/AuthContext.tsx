@@ -7,21 +7,48 @@ export type AuthResult = { ok: true } | { ok: false; error: string };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-function mapUser(u: SupabaseUser): User {
+type UserProfileRow = {
+  id: string;
+  email?: string | null;
+  username?: string | null;
+  role?: string | null;
+  total_xp?: number | null;
+  bio?: string | null;
+  github_username?: string | null;
+  avatar?: string | null;
+};
+
+function mapUser(u: SupabaseUser, profile?: UserProfileRow | null): User {
   const md = u.user_metadata || {};
+
+  // IMPORTANT: do not trust client-editable user_metadata for admin role.
+  // Prefer the DB role (or app_metadata in the future).
+  const dbRole = profile?.role;
+  const role: "user" | "admin" = dbRole === "admin" ? "admin" : "user";
 
   return {
     id: u.id,
-    email: u.email || "",
-    username: md.username || u.email?.split("@")[0] || "User",
-    role: (md.role === 'admin' ? 'admin' : 'user'), // Read from metadata or default to user
-    xp: md.xp || 0,
+    email: u.email || profile?.email || "",
+    username: profile?.username || md.username || u.email?.split("@")[0] || "User",
+    role,
+    xp: profile?.total_xp ?? md.xp ?? 0,
     badges: md.badges || [],
-    bio: md.bio,
-    githubUsername: md.githubUsername,
-    avatar: md.avatar,
+    bio: profile?.bio ?? md.bio,
+    githubUsername: profile?.github_username ?? md.githubUsername,
+    avatar: profile?.avatar ?? md.avatar,
     joinedAt: new Date(u.created_at || Date.now()), // Map created_at to joinedAt
   };
+}
+
+async function fetchUserProfile(userId: string): Promise<UserProfileRow | null> {
+  const { data, error } = await supabase
+    .from("users")
+    .select("id, email, username, role, total_xp, bio, github_username, avatar")
+    .eq("id", userId)
+    .maybeSingle();
+
+  if (error) return null;
+  return (data as UserProfileRow) ?? null;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -48,15 +75,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const session: Session | null = data.session;
-      setUser(session?.user ? mapUser(session.user) : null);
+      if (session?.user) {
+        const profile = await fetchUserProfile(session.user.id);
+        if (!mounted) return;
+        setUser(mapUser(session.user, profile));
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     };
 
     init();
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ? mapUser(session.user) : null);
-      setIsLoading(false);
+      // Fire-and-forget profile fetch; keep loading true until role is known
+      (async () => {
+        if (!session?.user) {
+          setUser(null);
+          setIsLoading(false);
+          return;
+        }
+
+        setIsLoading(true);
+        const profile = await fetchUserProfile(session.user.id);
+        setUser(mapUser(session.user, profile));
+        setIsLoading(false);
+      })();
     });
 
     return () => {
