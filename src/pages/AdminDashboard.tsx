@@ -46,10 +46,22 @@ export function AdminDashboard() {
     requirements: ['']
   });
 
+  const [newPathway, setNewPathway] = useState({
+    title: '',
+    slug: '',
+    description: '',
+    difficulty: 'Beginner' as 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert',
+    estimated_time: 300,
+    total_xp: 1000,
+    cover_image: '',
+    status: 'published' as 'draft' | 'published' | 'archived'
+  });
+
   // Step 1: Fetch real pending submissions and challenges
   const [pendingSubmissions, setPendingSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
   const [challengeRequests, setChallengeRequests] = useState<any[]>([]);
+  const [pathways, setPathways] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [userProfiles, setUserProfiles] = useState<{[key: string]: any}>({});
 
@@ -80,15 +92,23 @@ export function AdminDashboard() {
       const { data: usersData, error: usersError } = await supabase
         .from('users')
         .select('id, username, email');
-      
+
+      // Fetch pathways
+      const { data: pathwaysData, error: pathwaysError } = await supabase
+        .from('pathways')
+        .select('*')
+        .order('created_at', { ascending: false });
+
       console.log('Admin Dashboard - Challenges query result:', { challengesData, chalError });
       console.log('Admin Dashboard - Challenge requests query result:', { requestsData, reqError });
       console.log('Admin Dashboard - Users query result:', { usersData, usersError });
-      
-      if (!subError && !chalError && !reqError && !usersError && submissions && challengesData && requestsData && usersData) {
+      console.log('Admin Dashboard - Pathways query result:', { pathwaysData, pathwaysError });
+
+      if (!subError && !chalError && !reqError && !usersError && !pathwaysError && submissions && challengesData && requestsData && usersData && pathwaysData) {
         setPendingSubmissions(submissions);
         setChallenges(challengesData);
         setChallengeRequests(requestsData);
+        setPathways(pathwaysData);
         
         // Create users lookup map
         const usersMap: {[key: string]: any} = {};
@@ -97,7 +117,7 @@ export function AdminDashboard() {
         });
         setUserProfiles(usersMap);
       } else {
-        console.error('Query errors:', { subError, chalError, reqError, usersError });
+        console.error('Query errors:', { subError, chalError, reqError, usersError, pathwaysError });
       }
       setLoadingSubmissions(false);
     };
@@ -219,7 +239,7 @@ export function AdminDashboard() {
         difficulty: newChallenge.difficulty.toLowerCase(),
         xp_reward: newChallenge.xpReward,
         image: newChallenge.imageUrl,
-        requirements: newChallenge.requirements.join('; '),
+        requirements: newChallenge.requirements.filter(r => r.trim()), // Store as array
         // created_by: user?.id, // if you want to track the creator
       }
     ]);
@@ -251,12 +271,102 @@ export function AdminDashboard() {
 
   // Helper to refresh challenges
   const refreshChallenges = async () => {
-    const { data: challengesData, error: chalError } = await supabase
+    const { data: challengesData, error: chalError} = await supabase
       .from('challenges')
       .select('*');
     if (!chalError && challengesData) {
       setChallenges(challengesData);
     }
+  };
+
+  // Pathway Management Functions
+  const handleCreatePathway = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPathway.title || !newPathway.description) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in title and description.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Auto-generate slug from title if not provided
+    const slug = newPathway.slug || newPathway.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const { error } = await supabase.from('pathways').insert([
+      {
+        title: newPathway.title,
+        slug: slug,
+        description: newPathway.description,
+        difficulty: newPathway.difficulty,
+        estimated_time: newPathway.estimated_time,
+        total_xp: newPathway.total_xp,
+        cover_image: newPathway.cover_image,
+        status: newPathway.status
+      }
+    ]);
+
+    if (error) {
+      console.error('Create pathway error:', error);
+      toast({
+        title: "Failed to create pathway",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Pathway created",
+      description: "New learning pathway has been successfully created.",
+    });
+
+    refreshPathways();
+    // Reset form
+    setNewPathway({
+      title: '',
+      slug: '',
+      description: '',
+      difficulty: 'Beginner',
+      estimated_time: 300,
+      total_xp: 1000,
+      cover_image: '',
+      status: 'published'
+    });
+  };
+
+  const refreshPathways = async () => {
+    const { data: pathwaysData, error } = await supabase
+      .from('pathways')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (!error && pathwaysData) {
+      setPathways(pathwaysData);
+    }
+  };
+
+  const deletePathway = async (id: string) => {
+    const { error } = await supabase
+      .from('pathways')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: "Failed to delete pathway",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Pathway deleted",
+      description: "The pathway has been removed.",
+    });
+
+    refreshPathways();
   };
 
   const addRequirement = () => {
@@ -430,7 +540,9 @@ export function AdminDashboard() {
       difficulty: challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1),
       xpReward: challenge.xp_reward,
       imageUrl: challenge.image || '',
-      requirements: challenge.requirements ? challenge.requirements.split('; ').filter((r: string) => r.trim()) : ['']
+      requirements: Array.isArray(challenge.requirements)
+        ? challenge.requirements
+        : (challenge.requirements ? challenge.requirements.split('; ').filter((r: string) => r.trim()) : [''])
     });
     setIsEditDialogOpen(true);
   };
@@ -454,7 +566,7 @@ export function AdminDashboard() {
         difficulty: editingChallenge.difficulty.toLowerCase(),
         xp_reward: editingChallenge.xpReward,
         image: editingChallenge.imageUrl,
-        requirements: editingChallenge.requirements.join('; ')
+        requirements: editingChallenge.requirements.filter((r: string) => r.trim()) // Store as array
       })
       .eq('id', editingChallenge.id);
 
@@ -572,6 +684,13 @@ export function AdminDashboard() {
           </Card>
           <Card className="bg-gray-800 border-gray-700">
             <CardContent className="p-6 flex flex-col items-center">
+              <FileText className="w-8 h-8 text-purple-500" />
+              <p className="text-gray-300 mt-1 mb-0">Learning Pathways</p>
+              <p className="text-2xl font-bold mt-0 mb-0">{pathways.length}</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-gray-800 border-gray-700">
+            <CardContent className="p-6 flex flex-col items-center">
               <CheckCircle className="w-8 h-8 text-purple-500" />
               <p className="text-gray-300 mt-1 mb-0">Admin Users</p>
               <p className="text-2xl font-bold mt-0 mb-0">{users.filter(u => u.role === 'admin').length}</p>
@@ -596,6 +715,12 @@ export function AdminDashboard() {
             </TabsTrigger>
             <TabsTrigger value="users" className="admin-tabs-trigger">
               Manage Users
+            </TabsTrigger>
+            <TabsTrigger value="create-pathway" className="admin-tabs-trigger">
+              Create Pathway
+            </TabsTrigger>
+            <TabsTrigger value="manage-pathways" className="admin-tabs-trigger">
+              Manage Pathways
             </TabsTrigger>
           </TabsList>
 
@@ -1161,6 +1286,198 @@ export function AdminDashboard() {
                           >
                             {deletingUserId === user.id ? 'Deleting...' : 'Delete'}
                           </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Create Pathway */}
+          <TabsContent value="create-pathway">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle>Create New Pathway</CardTitle>
+                <CardDescription>
+                  Add a new learning pathway for users to follow
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleCreatePathway} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="pathway-title">Pathway Title</Label>
+                      <Input
+                        id="pathway-title"
+                        value={newPathway.title}
+                        onChange={(e) => setNewPathway({...newPathway, title: e.target.value})}
+                        placeholder="Evidence-Based Care Prototyping"
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pathway-slug">Slug (URL)</Label>
+                      <Input
+                        id="pathway-slug"
+                        value={newPathway.slug}
+                        onChange={(e) => setNewPathway({...newPathway, slug: e.target.value})}
+                        placeholder="evidence-based-care-prototyping (auto-generated if empty)"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="pathway-description">Description (Markdown)</Label>
+                    <Textarea
+                      id="pathway-description"
+                      value={newPathway.description}
+                      onChange={(e) => setNewPathway({...newPathway, description: e.target.value})}
+                      placeholder="# Who This Is For&#10;&#10;Healthcare professionals...&#10;&#10;## What You'll Learn&#10;..."
+                      rows={10}
+                      required
+                      className="mt-1 font-mono text-sm"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Use Markdown formatting. Include sections like "Who This Is For", "What You'll Learn", "Prerequisites", etc.</p>
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="pathway-difficulty">Difficulty</Label>
+                      <Select
+                        value={newPathway.difficulty}
+                        onValueChange={(value) => setNewPathway({...newPathway, difficulty: value as any})}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Beginner">Beginner</SelectItem>
+                          <SelectItem value="Intermediate">Intermediate</SelectItem>
+                          <SelectItem value="Advanced">Advanced</SelectItem>
+                          <SelectItem value="Expert">Expert</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="pathway-time">Estimated Time (minutes)</Label>
+                      <Input
+                        id="pathway-time"
+                        type="number"
+                        value={newPathway.estimated_time}
+                        onChange={(e) => setNewPathway({...newPathway, estimated_time: parseInt(e.target.value)})}
+                        placeholder="300"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="pathway-xp">Total XP</Label>
+                      <Input
+                        id="pathway-xp"
+                        type="number"
+                        value={newPathway.total_xp}
+                        onChange={(e) => setNewPathway({...newPathway, total_xp: parseInt(e.target.value)})}
+                        placeholder="1000"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="pathway-image">Cover Image URL</Label>
+                    <Input
+                      id="pathway-image"
+                      type="url"
+                      value={newPathway.cover_image}
+                      onChange={(e) => setNewPathway({...newPathway, cover_image: e.target.value})}
+                      placeholder="https://images.unsplash.com/photo-xyz?w=800"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="pathway-status">Status</Label>
+                    <Select
+                      value={newPathway.status}
+                      onValueChange={(value) => setNewPathway({...newPathway, status: value as any})}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button type="submit" className="w-full bg-purple-600 hover:bg-purple-700">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Pathway
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Manage Pathways */}
+          <TabsContent value="manage-pathways">
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle>Manage Pathways</CardTitle>
+                <CardDescription>
+                  View and manage all learning pathways ({pathways.length} total)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {pathways.length === 0 ? (
+                  <p className="text-gray-400 text-center py-8">
+                    No pathways created yet. Create your first pathway in the "Create Pathway" tab!
+                  </p>
+                ) : (
+                  <div className="space-y-4">
+                    {pathways.map((pathway) => (
+                      <div key={pathway.id} className="border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors">
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <h3 className="text-lg font-semibold text-white">{pathway.title}</h3>
+                              <Badge className={
+                                pathway.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
+                                pathway.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                                pathway.difficulty === 'Advanced' ? 'bg-orange-100 text-orange-800' :
+                                'bg-red-100 text-red-800'
+                              }>
+                                {pathway.difficulty}
+                              </Badge>
+                              <Badge variant={pathway.status === 'published' ? 'default' : 'secondary'}>
+                                {pathway.status}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-gray-400 mb-2">
+                              {pathway.estimated_time} mins • {pathway.total_xp} XP • {pathway.slug}
+                            </p>
+                            {pathway.cover_image && (
+                              <img src={pathway.cover_image} alt={pathway.title} className="w-32 h-20 object-cover rounded mt-2" />
+                            )}
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to delete "${pathway.title}"?`)) {
+                                  deletePathway(pathway.id);
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
