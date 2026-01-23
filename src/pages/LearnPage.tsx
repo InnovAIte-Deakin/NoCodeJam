@@ -2,7 +2,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-
 import PricingPill from '@/components/PricingPill';
 import { platformPricing } from '@/data/platformPricing';
 
@@ -641,7 +640,6 @@ export function LearnPage() {
           <p className="mt-3 text-sm sm:text-base text-white/70 max-w-3xl mx-auto">
             Discover no-code + AI tools, compare features, and follow guided learning paths to build faster.
           </p>
-          <p className="mt-2 text-xs text-white/50">Tip: Use Goal + Skill + Budget to highlight tools, then Search/Sort.</p>
           <p className="mt-1 text-xs text-white/40">Total platforms available: {platforms.length}</p>
         </div>
 
@@ -907,7 +905,7 @@ export function LearnPage() {
                     </a>
                   </Button>
 
-                  <Button variant="outline" asChild className="flex-1 border-white/15 text-white/80 hover:bg-white/10">
+                  <Button variant="outline" asChild className="flex-1 border-white/15 text-black/80 hover:bg-white/10">
                     <a href={selected.docsUrl ?? selected.website} target="_blank" rel="noopener noreferrer">
                       <BookOpen className="w-4 h-4 mr-2" />
                       Docs
@@ -938,7 +936,7 @@ export function LearnPage() {
                           variant="outline"
                           size="sm"
                           asChild
-                          className="border-white/15 text-white/80 hover:bg-white/10 shrink-0"
+                          className="border-white/15 text-black/80 hover:bg-white/10 shrink-0"
                         >
                           <a href={t.url} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4 mr-2" />
