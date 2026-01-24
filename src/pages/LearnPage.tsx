@@ -22,6 +22,8 @@ import emergentLogo from '@/images/Emergent Logo.jpg';
 import grokLogo from '@/images/grok-icon.png';
 import v0Logo from '@/images/v0-icon.png';
 import webflowLogo from '@/images/webflow-logo.webp';
+import anythingLogo from '@/images/Anything Logo.png';
+import perplexityLogo from '@/images/perplexity.jpg.avif';
 
 type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 type Category = 'Visual Builder' | 'AI-Powered' | 'Database' | 'Web Development';
@@ -75,6 +77,48 @@ const fallbackLogo =
 `);
 
 const platformsRaw: Platform[] = [
+  {
+    id: 'perplexity',
+    name: 'Perplexity',
+    description:
+      'Perplexity is an AI-native answer engine that combines web search, grounded large language models, and citations to help you research, learn, and build faster.',
+    logo: perplexityLogo,
+    website: 'https://www.perplexity.ai',
+    features: [
+      'Web-grounded answers with citations',
+      'Fast Pro search across the web',
+      'Labs for advanced experimentation',
+      'APIs for search and grounded LLMs'
+    ],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'perplexity-docs-overview',
+        title: 'Perplexity Docs: Getting Started',
+        description: 'Official documentation overview for building with Perplexity APIs and models.',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://docs.perplexity.ai/getting-started/overview'
+      },
+      {
+        id: 'perplexity-guide-1',
+        title: 'How To Use Perplexity',
+        description: 'YouTube walkthrough on using Perplexity for everyday research and Q&A.',
+        duration: '12 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=bOHfJZ4DVqE'
+      },
+      {
+        id: 'perplexity-guide-2',
+        title: 'Every Perplexity Feature Explained',
+        description: 'YouTube guide to using Perplexity for more complex research and projects.',
+        duration: '19 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=LnURCxwsB34'
+      }
+    ]
+  },
   {
     id: 'lovable',
     name: 'Lovable',
@@ -382,6 +426,68 @@ const platformsRaw: Platform[] = [
     ]
   },
   {
+    id: 'abacus-ai',
+    name: 'Abacus.AI',
+    description:
+      'Abacus.AI is a full-stack AI platform for teams and enterprises that makes it easy to ingest data, train and fine-tune models, evaluate them, and deploy AI into real-world applications without managing complex infrastructure.',
+    logo: 'https://abacus.ai/help/img/abacus_logo.jpg',
+    website: 'https://abacus.ai',
+    features: [
+      'Full-Stack AI Platform',
+      'Data Ingestion & Management',
+      'Model Training & Fine-Tuning',
+      'Evaluation & Monitoring',
+      'Production Deployment'
+    ],
+    difficulty: 'Intermediate',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'abacus-ai-1',
+        title: 'Abacus.AI Platform Overview',
+        description: 'Introductory video on using Abacus.AI as a full-stack AI platform for real-world applications.',
+        duration: '15 min',
+        difficulty: 'Intermediate',
+        url: 'https://youtu.be/RSksIo_tDVo?si=uKcMd0bT-j24ambe'
+      }
+    ]
+  },
+  {
+    id: 'zapier',
+    name: 'Zapier',
+    description:
+      'Zapier is an automation platform that connects your favorite apps and services to automate workflows. Build powerful integrations between thousands of apps without writing code, enabling you to streamline tasks and boost productivity.',
+    logo: 'https://cdn.zapier.com/zapier/images/logos/zapier-logo.png',
+    website: 'https://zapier.com',
+    features: [
+      'Workflow Automation',
+      'App Integrations',
+      'No-Code Automation',
+      'Multi-Step Zaps',
+      'Data Transformation'
+    ],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'zapier-1',
+        title: 'Getting Started with Zapier',
+        description: 'Learn the basics of Zapier and create your first automation workflow',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://youtu.be/JtdUgJGI_Oo?si=uVAL2s3YnReL1uI9'
+      },
+      {
+        id: 'zapier-2',
+        title: 'Building Your First Zap',
+        description: 'Step-by-step tutorial on creating automated workflows between apps',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://youtu.be/avQMU1yJkyY?si=QjLC7pHxhdjJRMu4'
+      }
+    ]
+  },
+  {
     id: 'figma',
     name: 'Figma',
     description: 'A collaborative interface design tool — learn UI fundamentals, prototyping, design systems, and handoff workflows.',
@@ -508,6 +614,34 @@ const platformsRaw: Platform[] = [
         duration: '7 min',
         difficulty: 'Beginner',
         url: 'https://www.youtube.com/watch?v=cyFVtaLy-bA'
+      }
+    ]
+  },
+  {
+    id: 'anything',
+    name: 'Anything',
+    description: 'Anything.ai is a learning-driven AI platform that enables users to explore AI tools, experiment with real use cases, and build practical applications using generative technoligies.',
+    logo: anythingLogo,
+    website: 'https://www.createanything.com/',
+    features: ['Prompt Experimentation', 'Rapid Ideation', 'Practical Use-Case Building', 'Simple Learning UI'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'anything-1',
+        title: 'Introduction',
+        description: 'Getting Started with Anything AI',
+        duration: '12 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=KfGdYv_YNoM'
+      },
+      {
+        id: 'anything-2',
+        title: 'Crash Course',
+        description: 'Video Tutorial on how to build a web application using Anything AI',
+        duration: '8 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=6RSSDFEWbm8'
       }
     ]
   }

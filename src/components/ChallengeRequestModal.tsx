@@ -10,7 +10,6 @@ import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
 import { Plus, XCircle, Sparkles } from 'lucide-react';
 import { AIChallengeChat } from './AIChallengeChat';
-import type { CreateChallengeInput, ChallengeType } from '@/types';
 
 interface ChallengeRequestModalProps {
   children: React.ReactNode;
@@ -54,40 +53,44 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
     setLoading(true);
 
     try {
-      // Parse recommended tools from comma-separated string to array
-      const toolsArray = formData.recommendedTools
-        .split(',')
-        .map(tool => tool.trim())
-        .filter(Boolean);
+      // Combine recommended tools and cover image description into additional notes
+      const additionalNotesParts = [];
+      if (formData.recommendedTools) {
+        additionalNotesParts.push(`Recommended Tools: ${formData.recommendedTools}`);
+      }
+      if (formData.coverImageDescription) {
+        additionalNotesParts.push(`Cover Image: ${formData.coverImageDescription}`);
+      }
+      const additionalNotes = additionalNotesParts.join('\n\n');
 
-      // Create the challenge input matching the new schema
-      const challengeInput: CreateChallengeInput = {
+      // Create the challenge request matching challenge_requests schema
+      const challengeRequest = {
+        user_id: user.id,
         title: formData.title,
         description: formData.description,
-        requirements: formData.requirements.filter(Boolean),
-        difficulty: formData.difficulty as CreateChallengeInput['difficulty'],
-        challenge_type: (formData.challengeType || 'Build') as ChallengeType,
-        estimated_time: parseInt(formData.estimatedTime) || 60,
-        recommended_tools: toolsArray,
-        status: 'draft', // Start as draft for review
-        ai_generated: false, // User-created challenge
-        created_by: user.id,
+        difficulty: formData.difficulty.toLowerCase(), // Must be lowercase: beginner/intermediate/advanced
+        category: formData.challengeType || 'Build',
+        requirements: formData.requirements.filter(Boolean).join('; '), // TEXT column: semicolon-separated
+        expected_outcome: formData.description, // Use description as expected outcome for now
+        estimated_time: formData.estimatedTime || '60',
+        additional_notes: additionalNotes || null,
+        status: 'pending', // Always pending for all users (admin or not)
       };
 
       const { data, error } = await supabase
-        .from('challenges')
-        .insert(challengeInput)
+        .from('challenge_requests')
+        .insert(challengeRequest)
         .select();
 
       if (error) {
         if (
-          error.message?.includes('relation "challenges" does not exist') ||
+          error.message?.includes('relation "challenge_requests" does not exist') ||
           error.message?.includes('404') ||
           error.code === 'PGRST116'
         ) {
           toast({
             title: "Table Not Found",
-            description: "The challenges table doesn't exist yet. Please run the database migration first.",
+            description: "The challenge_requests table doesn't exist yet. Please run the database migration first.",
             variant: "destructive",
           });
           return;
@@ -412,9 +415,9 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
                 <Sparkles className="w-12 h-12 text-green-400" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-bold text-white">Challenge Submitted!</h3>
+                <h3 className="text-2xl font-bold text-white">Challenge Request Submitted!</h3>
                 <p className="text-gray-300 max-w-md">
-                  Your challenge request has been successfully created. Our team will review it shortly.
+                  Your challenge request is now pending review. An admin will review and approve it before it's published to the platform.
                 </p>
               </div>
 

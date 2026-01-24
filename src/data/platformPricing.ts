@@ -263,6 +263,37 @@ export const platformPricing: Record<string, PricingTier[]> = {
       ctaUrl: 'https://www.figma.com/pricing'
     }
   ],
+
+  'gemini-3': [
+    {
+      id: 'gemini-3-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: ['Access to Gemini 3 (standard)', 'Limited daily usage', 'Text and image generation'],
+      ctaUrl: 'https://gemini.google/au/subscriptions/?hl=en-AU'
+    },
+    {
+      id: 'gemini-3-pro',
+      key: 'paid',
+      name: 'Google AI Pro',
+      price: '$33',
+      billing: 'per month',
+      features: ['Full access to Gemini 3', 'Higher usage limits', 'Advanced reasoning and analysis', 'Priority access to new features'],
+      ctaUrl: 'https://gemini.google/au/subscriptions/?hl=en-AU'
+    },
+    {
+      id: 'gemini-3-ultra',
+      key: 'paid',
+      name: 'Google AI Ultra',
+      price: '$410',
+      billing: 'per month',
+      features: ['Access to Gemini 3 Ultra model', 'Highest usage limits', 'Complex reasoning and long-context tasks', 'Early access to experimental models'],
+      ctaUrl: 'https://gemini.google/au/subscriptions/?hl=en-AU'
+    }
+  ],
+
   base44: [
     {
       id: 'base44-free',
@@ -523,65 +554,102 @@ export const platformPricing: Record<string, PricingTier[]> = {
       ctaUrl: 'https://abacus.ai/contact'
     }
   ],
-
-  'gemini-3': [
+  zapier: [
     {
-      id: 'gemini-3-free',
+      id: 'zapier-free',
       key: 'free',
       name: 'Free',
       price: '$0',
-      billing: 'per month',
-      features: [
-        '15 requests per minute',
-        '1,500 requests per day',
-        '1 million tokens per minute',
-        'Standard context window'
-      ],
-      ctaUrl: 'https://ai.google.dev/pricing'
+      billing: 'forever',
+      features: ['100 tasks per month', 'Unlimited Zaps', 'Tables & Interfaces included', 'Access to core AI workflow tools'],
+      ctaUrl: 'https://zapier.com/pricing'
     },
     {
-      id: 'gemini-3-pay-as-you-go',
+      id: 'zapier-professional',
       key: 'paid',
-      name: 'Pay As You Go',
-      price: 'Usage-based',
-      billing: 'per request',
+      name: 'Professional',
+      price: '$19.99',
+      billing: 'per month (billed annually)',
       features: [
-        'Higher rate limits',
-        'Extended context window',
-        'Priority processing',
-        'Production-ready'
+        '750 tasks per month',
+        'Multi-step Zaps',
+        'Premium app integrations',
+        'Advanced workflow logic (Filters, Paths, Formatter)',
+        'Faster polling'
       ],
-      ctaUrl: 'https://ai.google.dev/pricing'
+      ctaUrl: 'https://zapier.com/pricing'
     },
     {
-      id: 'gemini-3-enterprise',
+      id: 'zapier-team',
+      key: 'paid',
+      name: 'Team',
+      price: '$69',
+      billing: 'per month (billed annually)',
+      features: [
+        '2,000 tasks per month',
+        'Shared workspaces',
+        'Shared app connections',
+        'User roles & permissions',
+        'Priority support',
+        'One-minute update intervals'
+      ],
+      ctaUrl: 'https://zapier.com/pricing'
+    },
+    {
+      id: 'zapier-enterprise',
       key: 'enterprise',
       name: 'Enterprise',
       price: 'Contact Sales',
-      billing: 'custom',
+      billing: 'custom pricing',
       features: [
-        'Dedicated capacity',
-        'Custom models',
-        'SLA guarantees',
-        'Enterprise support'
+        'SAML SSO',
+        'Audit logs',
+        'Enterprise admin tools',
+        'Observability and deployment controls',
+        'Technical account manager'
       ],
-      ctaUrl: 'https://cloud.google.com/contact'
+      ctaUrl: 'https://zapier.com/contact'
     }
   ],
 
-  'emergent': [
+  anything: [
+    {
+      id: 'anything-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: ['Chat & generate', 'Publish', 'AI integrations'],
+      ctaUrl: 'https://www.createanything.com/pricing'
+    },
+    {
+      id: 'anything-pro-50k',
+      key: 'paid',
+      name: 'Pro 50k',
+      price: '$49',
+      billing: 'per month',
+      features: ['More credits per month', 'Private projects', 'Remove Anything branding', 'Custom domains'],
+      ctaUrl: 'https://www.createanything.com/pricing'
+    },
+    {
+      id: 'anything-max',
+      key: 'paid',
+      name: 'MAX',
+      price: '$199',
+      billing: 'per month',
+      features: ['Everything in Pro 50K plus access to autonomous software engineer', 'Priority support'],
+      ctaUrl: 'https://www.createanything.com/pricing'
+    }
+  ],
+
+  emergent: [
     {
       id: 'emergent-free',
       key: 'free',
       name: 'Free',
       price: '$0',
       billing: 'forever',
-      features: [
-        'Basic app prototyping',
-        'AI-assisted development',
-        'Community templates',
-        'Up to 3 projects'
-      ],
+      features: ['Basic app prototyping', 'AI-assisted development', 'Community templates', 'Up to 3 projects'],
       ctaUrl: 'https://emergent.dev/pricing'
     },
     {
@@ -590,12 +658,7 @@ export const platformPricing: Record<string, PricingTier[]> = {
       name: 'Pro',
       price: '$15',
       billing: 'per month',
-      features: [
-        'Unlimited projects',
-        'Advanced AI features',
-        'Custom deployment',
-        'Priority support'
-      ],
+      features: ['Unlimited projects', 'Advanced AI features', 'Custom deployment', 'Priority support'],
       ctaUrl: 'https://emergent.dev/pricing'
     },
     {
@@ -604,13 +667,66 @@ export const platformPricing: Record<string, PricingTier[]> = {
       name: 'Enterprise',
       price: 'Contact Sales',
       billing: 'custom',
-      features: [
-        'Team collaboration',
-        'SSO & security',
-        'Dedicated support',
-        'Custom SLA'
-      ],
+      features: ['Team collaboration', 'SSO & security', 'Dedicated support', 'Custom SLA'],
       ctaUrl: 'https://emergent.dev/contact'
+    }
+  ],
+
+  perplexity: [
+    {
+      id: 'perplexity-pro-personal',
+      key: 'paid',
+      name: 'Perplexity Pro',
+      price: '$20',
+      billing: 'per month (or $200/year)',
+      features: [
+        'Unlimited Pro searches',
+        '10x citations in answers',
+        'Extended access to Research, Labs, and image generation',
+        'One subscription to the latest AI models',
+        'For personal, non-commercial use'
+      ],
+      ctaUrl: 'https://www.perplexity.ai/enterprise/pricing'
+    },
+    {
+      id: 'perplexity-enterprise-pro',
+      key: 'enterprise',
+      name: 'Enterprise Pro (Teams)',
+      price: '$40',
+      billing: 'per seat/month (or $400/year)',
+      features: [
+        'All features of Perplexity Pro',
+        'Collaborate in private Spaces',
+        'Answers from files, productivity, and organizational apps',
+        'Up to 15,000 file uploads',
+        'SSO or SCIM provisioning',
+        'User management, permissions, and team insights',
+        'Configurable data retention and audit logs',
+        'No training on your data',
+        'SOC 2 Type II compliant',
+        '50 seat minimum'
+      ],
+      ctaUrl: 'https://www.perplexity.ai/enterprise/pricing'
+    },
+    {
+      id: 'perplexity-enterprise-max',
+      key: 'enterprise',
+      name: 'Enterprise Max',
+      price: '$325',
+      billing: 'per seat/month (or $3,250/year)',
+      features: [
+        'All features of Enterprise Pro',
+        'Unlimited Labs queries',
+        'Access to advanced AI models',
+        'Greater file upload limits',
+        'Enhanced video generation',
+        'Comet Max assistant',
+        'Team insights with no seat minimum',
+        'Configurable data retention and audit logs',
+        'No training on your data',
+        'SOC 2 Type II compliant'
+      ],
+      ctaUrl: 'https://www.perplexity.ai/enterprise/pricing'
     }
   ]
 };

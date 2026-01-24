@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { normalizeRequirements } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, XCircle } from 'lucide-react';
+import type { ChallengeType, DifficultyLevel } from '@/types';
 
 interface EditChallengeRequestModalProps {
   children: React.ReactNode;
@@ -20,18 +22,52 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  const normalizeDifficulty = (value: unknown): DifficultyLevel | '' => {
+    if (typeof value !== 'string') return '';
+    const v = value.trim();
+    const lower = v.toLowerCase();
+    if (lower === 'beginner') return 'Beginner';
+    if (lower === 'intermediate') return 'Intermediate';
+    if (lower === 'advanced') return 'Advanced';
+    if (lower === 'expert') return 'Expert';
+    if (v === 'Beginner' || v === 'Intermediate' || v === 'Advanced' || v === 'Expert') return v;
+    return '';
+  };
+
+  const normalizeChallengeType = (value: unknown): ChallengeType => {
+    if (typeof value !== 'string') return 'Build';
+    const v = value.trim();
+    if (v === 'Build' || v === 'Modify' || v === 'Analyse' || v === 'Deploy' || v === 'Reflect') return v;
+    const lower = v.toLowerCase();
+    if (lower === 'build') return 'Build';
+    if (lower === 'modify') return 'Modify';
+    if (lower === 'analyse' || lower === 'analyze') return 'Analyse';
+    if (lower === 'deploy') return 'Deploy';
+    if (lower === 'reflect') return 'Reflect';
+    return 'Build';
+  };
+
+  const initialDifficulty = useMemo(
+    () => normalizeDifficulty(request?.difficulty),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [request?.difficulty]
+  );
+
   const [formData, setFormData] = useState({
     title: request?.title || '',
     description: request?.description || '',
-    difficulty: request?.difficulty || '',
-    requirements: request?.requirements
-      ? (Array.isArray(request.requirements)
-          ? request.requirements
-          : request.requirements.split(';').map(r => r.trim()).filter(r => r))
-      : [''],
+    difficulty: initialDifficulty,
+    requirements: (() => {
+      const reqs = normalizeRequirements(request?.requirements);
+      return reqs.length ? reqs : [''];
+    })(),
     imageUrl: '',
-    xpReward: request?.difficulty === 'Beginner' ? 200 :
-              request?.difficulty === 'Intermediate' ? 500 : 1000
+    xpReward:
+      initialDifficulty === 'Beginner'
+        ? 200
+        : initialDifficulty === 'Intermediate'
+          ? 500
+          : 1000
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,17 +76,41 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
 
     try {
       console.log('Creating challenge from request:', formData);
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      const userId = userData.user?.id;
+      if (!userId) {
+        toast({
+          title: "Not signed in",
+          description: "Please sign in again and retry.",
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Create the challenge
+      const difficulty = normalizeDifficulty(formData.difficulty);
+      if (!difficulty) {
+        throw new Error('Invalid difficulty');
+      }
+
+      const requirements = formData.requirements.map((r: string) => r.trim()).filter(Boolean);
+      const challengeType = normalizeChallengeType(request?.category);
+
       const { data: challengeData, error: challengeError } = await supabase
         .from('challenges')
         .insert({
           title: formData.title,
           description: formData.description,
-          difficulty: formData.difficulty.toLowerCase(),
+          difficulty,
+          challenge_type: challengeType,
+          status: 'published',
+          ai_generated: false,
+          created_by: userId,
           xp_reward: formData.xpReward,
           image: formData.imageUrl,
-          requirements: formData.requirements.join('; '),
+          requirements,
           created_at: new Date().toISOString()
         })
         .select();
@@ -85,9 +145,13 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
       onSuccess();
     } catch (error) {
       console.error('Error creating challenge:', error);
+      const err = error as { code?: string; message?: string } | null;
       toast({
         title: "Error",
-        description: "Failed to create challenge. Please try again.",
+        description:
+          err?.code === '42501'
+            ? "Permission denied by database security (RLS). Make sure you're signed in as an admin."
+            : "Failed to create challenge. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -101,9 +165,11 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
       [field]: value
     }));
     if (field === 'difficulty') {
+      const normalized = normalizeDifficulty(value);
       setFormData(prev => ({
         ...prev,
-        xpReward: value === 'Beginner' ? 200 : value === 'Intermediate' ? 500 : 1000,
+        difficulty: normalized,
+        xpReward: normalized === 'Beginner' ? 200 : normalized === 'Intermediate' ? 500 : 1000,
       }));
     }
   };
@@ -126,7 +192,7 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
 
   const removeRequirement = (index: number) => {
     if (formData.requirements.length > 1) {
-      const updated = formData.requirements.filter((_, i) => i !== index);
+      const updated = formData.requirements.filter((_: string, i: number) => i !== index);
       setFormData(prev => ({
         ...prev,
         requirements: updated
@@ -180,6 +246,7 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
                 <SelectContent className="bg-gray-700 border-gray-600">
                   <SelectItem value="Beginner" className="text-white">Beginner</SelectItem>
                   <SelectItem value="Intermediate" className="text-white">Intermediate</SelectItem>
+                  <SelectItem value="Advanced" className="text-white">Advanced</SelectItem>
                   <SelectItem value="Expert" className="text-white">Expert</SelectItem>
                 </SelectContent>
               </Select>
@@ -212,7 +279,7 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
           <div className="space-y-2">
             <Label className="text-white">Requirements *</Label>
             <div className="space-y-2">
-              {formData.requirements.map((req, index) => (
+              {formData.requirements.map((req: string, index: number) => (
                 <div key={index} className="flex space-x-2">
                   <Input
                     value={req}

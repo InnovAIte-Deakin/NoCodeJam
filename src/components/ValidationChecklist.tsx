@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/lib/supabaseClient';
+import { normalizeRequirements } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle2, XCircle, AlertTriangle, Loader2 } from 'lucide-react';
@@ -76,7 +77,7 @@ export function ValidationChecklist({
         id: 'has-requirements',
         category: 'Template Compliance',
         description: 'Has specific, measurable requirements',
-        passed: Array.isArray(challenge.requirements) && challenge.requirements.length > 0,
+        passed: normalizeRequirements(challenge.requirements).length > 0,
         notes: '',
       });
 
