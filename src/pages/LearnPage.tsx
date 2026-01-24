@@ -1,11 +1,13 @@
 // src/pages/LearnPage.tsx
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import PricingPill from '@/components/PricingPill';
 import { platformPricing } from '@/data/platformPricing';
 
-import { ExternalLink, BookOpen, Code, Zap, Palette, Database, Globe } from 'lucide-react';
+import { ExternalLink, BookOpen, Code, Zap, Palette, Database, Globe, Sparkles } from 'lucide-react';
+import { AILearnChat } from '@/components/AILearnChat';
 
 // ✅ Logos (make sure these exist in /src/images)
 import lovableLogo from '@/images/logoblack.svg';
@@ -654,6 +656,8 @@ function difficultyRank(d: Difficulty) {
 }
 
 export function LearnPage() {
+  const navigate = useNavigate();
+
   // ✅ Attach pricing without mutating the original array
   const platforms = useMemo<Platform[]>(
     () => platformsRaw.map((p) => ({ ...p, pricing: platformPricing[p.id] ?? [] })),
@@ -661,13 +665,39 @@ export function LearnPage() {
   );
 
   const [selectedPlatform, setSelectedPlatform] = useState<string>(platforms[0]?.id ?? 'lovable');
+
+  const [viewMode, setViewMode] = useState<'Classic' | 'Explorer'>(() => {
+    try {
+      const saved = typeof window !== 'undefined' ? window.localStorage.getItem('learn:viewMode') : null;
+      if (saved === 'Classic' || saved === 'Explorer') return saved;
+    } catch {
+      // ignore
+    }
+    // Default to the old experience; users can opt into Explorer mode.
+    return 'Classic';
+  });
+
   const [goal, setGoal] = useState<'Build fast' | 'Learn UI' | 'Code with AI' | 'Ship a web app'>('Build fast');
   const [skill, setSkill] = useState<Difficulty>('Beginner');
   const [budget, setBudget] = useState<'Free' | 'Free/Paid' | 'Paid'>('Free');
   const [query, setQuery] = useState('');
   const [sortBy, setSortBy] = useState<'Recommended' | 'Name' | 'Difficulty' | 'Category'>('Recommended');
 
+  // Classic (main) filters
+  const [difficultyFilter, setDifficultyFilter] = useState<'all' | Difficulty>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | Category>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+
   const platformRefs = useRef<Record<string, HTMLDivElement | null>>({});
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem('learn:viewMode', viewMode);
+    } catch {
+      // ignore
+    }
+  }, [viewMode]);
 
   const scrollToPlatform = (platformId: string) => {
     setSelectedPlatform(platformId);
@@ -723,6 +753,21 @@ export function LearnPage() {
 
   const normalizedQuery = query.trim().toLowerCase();
 
+  const classicFiltered = useMemo(() => {
+    return platforms.filter((p) => {
+      const matchesDifficulty = difficultyFilter === 'all' || p.difficulty === difficultyFilter;
+      const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
+      return matchesDifficulty && matchesCategory;
+    });
+  }, [platforms, difficultyFilter, categoryFilter]);
+
+  useEffect(() => {
+    if (viewMode !== 'Classic') return;
+    if (!classicFiltered.some((p) => p.id === selectedPlatform)) {
+      setSelectedPlatform(classicFiltered[0]?.id ?? platforms[0]?.id ?? 'lovable');
+    }
+  }, [viewMode, classicFiltered, selectedPlatform, platforms]);
+
   const filtered = useMemo(() => {
     const base = platforms.filter((p) => {
       if (!normalizedQuery) return true;
@@ -756,8 +801,53 @@ export function LearnPage() {
     return platforms.find((p) => p.id === selectedPlatform) ?? filtered[0] ?? platforms[0];
   }, [platforms, selectedPlatform, filtered]);
 
+  const docsUrlFor = (p: Platform) => {
+    // Prefer explicit docsUrl when available.
+    if (p.docsUrl) return p.docsUrl;
+    // Fallback mapping for platforms without docsUrl in data.
+    switch (p.id) {
+      case 'windsurf':
+        return 'https://docs.windsurf.com/windsurf/getting-started';
+      case 'bolt':
+        return 'https://support.bolt.new/';
+      case 'lovable':
+        return 'https://docs.lovable.dev/introduction/welcome';
+      case 'replit':
+        return 'https://docs.replit.com/';
+      case 'github-copilot':
+        return 'https://docs.github.com/en/copilot';
+      case 'claude-code':
+        return 'https://docs.anthropic.com/claude';
+      case 'gemini-cli':
+        return 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli';
+      case 'figma':
+        return 'https://help.figma.com/hc/en-us';
+      case 'gemini-3':
+        return 'https://ai.google.dev/gemini-api/docs/gemini-3';
+      case 'base44':
+        return 'https://docs.base44.com/';
+      case 'emergent':
+        return 'https://emergent.dev/docs';
+      case 'grok':
+        return 'https://docs.x.ai/docs/overview';
+      case 'v0':
+        return 'https://v0.app/docs/introduction';
+      case 'abacus-ai':
+        return 'https://abacus.ai/help';
+      case 'anything':
+        return 'https://www.createanything.com/docs/welcome';
+      case 'perplexity':
+        return 'https://docs.perplexity.ai/getting-started/overview';
+      case 'zapier':
+        return 'https://zapier.com/learn';
+      default:
+        return `${p.website}/docs`;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#070A12] text-white">
+      <AILearnChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
       {/* Background glow */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute left-1/2 top-[-140px] h-[420px] w-[900px] -translate-x-1/2 rounded-full bg-purple-600/10 blur-[120px]" />
@@ -777,18 +867,284 @@ export function LearnPage() {
           <p className="mt-1 text-xs text-white/40">Total platforms available: {platforms.length}</p>
         </div>
 
-        {/* Quick category buttons */}
-        <div className="flex flex-wrap justify-center gap-3 mb-8">
-          {['All', 'Visual Builder', 'AI-Powered', 'Web Development', 'Database'].map((cat) => (
+        {/* View mode toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
             <button
-              key={cat}
-              onClick={() => setQuery(cat === 'All' ? '' : cat)}
-              className="px-4 py-2 rounded-full bg-white/10 hover:bg-purple-500/20 text-sm border border-white/10"
+              type="button"
+              onClick={() => setViewMode('Classic')}
+              className={[
+                'px-4 py-2 rounded-full text-sm transition',
+                viewMode === 'Classic' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+              ].join(' ')}
             >
-              {cat}
+              Classic
             </button>
-          ))}
+            <button
+              type="button"
+              onClick={() => setViewMode('Explorer')}
+              className={[
+                'px-4 py-2 rounded-full text-sm transition',
+                viewMode === 'Explorer' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+              ].join(' ')}
+            >
+              Explorer
+            </button>
+          </div>
         </div>
+
+        {viewMode === 'Classic' ? (
+          <>
+            {/* Classic controls (from old main) */}
+            <div className="mb-6 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    className="border-white/15 text-black/80 hover:bg-white/10"
+                    onClick={() => setShowFilters((prev) => !prev)}
+                  >
+                    {showFilters ? 'Hide Filters' : 'Filter'}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="border-white/15 text-black/80 hover:bg-white/10"
+                    onClick={() => setAiChatOpen(true)}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    AI Assist
+                  </Button>
+
+                  <Button onClick={() => navigate('/pathways')} className="bg-white/10 hover:bg-white/15 border border-white/10">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Learning Pathways
+                  </Button>
+
+                  {(difficultyFilter !== 'all' || categoryFilter !== 'all') && (
+                    <Button
+                      variant="ghost"
+                      className="text-white/70 hover:text-white"
+                      onClick={() => {
+                        setDifficultyFilter('all');
+                        setCategoryFilter('all');
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {showFilters && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-white/70">Difficulty</label>
+                    <select
+                      value={difficultyFilter}
+                      onChange={(e) => setDifficultyFilter(e.target.value as any)}
+                      className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
+                                 focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                    >
+                      <option value="all">All</option>
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-white/70">Category</label>
+                    <select
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value as any)}
+                      className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
+                                 focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                    >
+                      <option value="all">All</option>
+                      <option value="Visual Builder">Visual Builder</option>
+                      <option value="AI-Powered">AI-Powered</option>
+                      <option value="Web Development">Web Development</option>
+                      <option value="Database">Database</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Classic platform grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {classicFiltered.map((p) => (
+                <Card
+                  key={p.id}
+                  className={[
+                    'cursor-pointer transition-all bg-white/[0.03] border-white/10 hover:bg-white/[0.05]',
+                    selectedPlatform === p.id ? 'ring-2 ring-purple-500/60' : ''
+                  ].join(' ')}
+                  onClick={() => scrollToPlatform(p.id)}
+                >
+                  <CardContent className="p-5 text-center">
+                    <div className="w-full h-16 mb-3 flex items-center justify-center p-2">
+                      <img
+                        src={p.logo}
+                        alt={p.name}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                        }}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
+
+                    <h3 className="font-semibold text-base text-white">{p.name}</h3>
+                    <div className="mt-2 flex items-center justify-center gap-2 text-xs text-white/75">
+                      <span className="inline-flex items-center gap-1">
+                        {getCategoryIcon(p.category)}
+                        {p.category}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full ${getDifficultyColor(p.difficulty)}`}>
+                        {p.difficulty}
+                      </span>
+                    </div>
+
+                    <div className="mt-3">
+                      <PricingPill pricing={p.pricing} />
+                    </div>
+
+                    <p className="text-sm text-white/65 line-clamp-3 pt-3">{p.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {classicFiltered.length === 0 && (
+                <div className="col-span-full text-center text-white/70 border border-dashed border-white/10 rounded-lg p-6">
+                  No platforms match the selected filters.
+                </div>
+              )}
+            </div>
+
+            {/* Classic details */}
+            {selected && (
+              <div className="mt-10" ref={(el) => (platformRefs.current[selected.id] = el)}>
+                <Card className="bg-white/[0.03] border-white/10 backdrop-blur-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-black/30 border border-white/10 p-2 flex items-center justify-center">
+                        <img
+                          src={selected.logo}
+                          alt={selected.name}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                          }}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <CardTitle className="text-2xl">{selected.name}</CardTitle>
+                        <CardDescription className="text-white/65">{selected.description}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-6">
+                    <div>
+                      <div className="text-sm font-semibold text-white mb-2">Key Features</div>
+                      <div className="flex flex-wrap gap-2">
+                        {selected.features.map((f) => (
+                          <span key={f} className="text-[11px] px-2 py-1 rounded-full bg-black/25 border border-white/10 text-white/70">
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4 text-sm text-white/75">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-white/50" />
+                        <span>Category: {selected.category}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-white/50" />
+                        <span>Difficulty: {selected.difficulty}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-white/50" />
+                        <span>{selected.tutorials.length} Tutorials</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button asChild className="flex-1">
+                        <a href={selected.website} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Visit {selected.name}
+                        </a>
+                      </Button>
+
+                      <Button variant="outline" asChild className="flex-1 border-white/15 text-black/80 hover:bg-white/10">
+                        <a href={docsUrlFor(selected)} target="_blank" rel="noopener noreferrer">
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          Documentation
+                        </a>
+                      </Button>
+                    </div>
+
+                    <div>
+                      <PricingPill pricing={selected.pricing} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-white font-semibold mb-3">Learning Path</h3>
+                      <div className="space-y-3">
+                        {selected.tutorials.map((t) => (
+                          <div
+                            key={t.id}
+                            className="rounded-lg border border-white/10 bg-black/25 px-4 py-4 flex items-center justify-between gap-4"
+                          >
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-white">{t.title}</div>
+                              <div className="text-xs text-white/65 mt-1">{t.description}</div>
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className={`text-[11px] px-2 py-1 rounded-full ${getDifficultyColor(t.difficulty)}`}>
+                                  {t.difficulty}
+                                </span>
+                                <span className="text-xs text-white/45">{t.duration}</span>
+                              </div>
+                            </div>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="border-white/15 text-black/80 hover:bg-white/10 shrink-0"
+                            >
+                              <a href={t.url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Start
+                              </a>
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Quick category buttons */}
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              {['All', 'Visual Builder', 'AI-Powered', 'Web Development', 'Database'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setQuery(cat === 'All' ? '' : cat)}
+                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-purple-500/20 text-sm border border-white/10"
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
 
         {/* Control Panel */}
         <Card className="bg-white/[0.03] border-white/10 backdrop-blur-md shadow-xl">
@@ -1040,7 +1396,7 @@ export function LearnPage() {
                   </Button>
 
                   <Button variant="outline" asChild className="flex-1 border-white/15 text-black/80 hover:bg-white/10">
-                    <a href={selected.docsUrl ?? selected.website} target="_blank" rel="noopener noreferrer">
+                    <a href={docsUrlFor(selected)} target="_blank" rel="noopener noreferrer">
                       <BookOpen className="w-4 h-4 mr-2" />
                       Docs
                     </a>
@@ -1084,6 +1440,8 @@ export function LearnPage() {
               </CardContent>
             </Card>
           </div>
+        )}
+          </>
         )}
       </div>
     </div>
