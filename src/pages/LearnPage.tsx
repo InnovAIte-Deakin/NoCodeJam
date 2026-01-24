@@ -22,6 +22,7 @@ import base44Logo from '@/images/base44-logo.png';
 import emergentLogo from '@/images/Emergent Logo.jpg';
 import grokLogo from '@/images/grok-icon.png';
 import v0Logo from '@/images/v0-icon.png';
+import anythingLogo from '@/images/Anything Logo.png';
 import perplexityLogo from '@/images/perplexity.jpg.avif';
 
 
@@ -420,6 +421,41 @@ const platforms: Platform[] = [
     ]
   },
   {
+    id: 'zapier',
+    name: 'Zapier',
+    description:
+      'Zapier is an automation platform that connects your favorite apps and services to automate workflows. Build powerful integrations between thousands of apps without writing code, enabling you to streamline tasks and boost productivity.',
+    logo: 'https://cdn.zapier.com/zapier/images/logos/zapier-logo.png',
+    website: 'https://zapier.com',
+    features: [
+      'Workflow Automation',
+      'App Integrations',
+      'No-Code Automation',
+      'Multi-Step Zaps',
+      'Data Transformation'
+    ],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'zapier-1',
+        title: 'Getting Started with Zapier',
+        description: 'Learn the basics of Zapier and create your first automation workflow',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://youtu.be/JtdUgJGI_Oo?si=uVAL2s3YnReL1uI9'
+      },
+      {
+        id: 'zapier-2',
+        title: 'Building Your First Zap',
+        description: 'Step-by-step tutorial on creating automated workflows between apps',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://youtu.be/avQMU1yJkyY?si=QjLC7pHxhdjJRMu4'
+      }
+    ]
+  },
+  {
     id: 'figma',
     name: 'Figma',
     description: 'A collaborative interface design tool — learn UI fundamentals, prototyping, design systems, and handoff workflows.',
@@ -581,6 +617,34 @@ const platforms: Platform[] = [
         duration: '7 min',
         difficulty: 'Beginner',
         url: 'https://www.youtube.com/watch?v=cyFVtaLy-bA'
+      }
+    ]
+  },
+  {
+    id: 'anything',
+    name: 'Anything',
+    description: 'Anything.ai is a learning-driven AI platform that enables users to explore AI tools, experiment with real use cases, and build practical applications using generative technoligies.',
+    logo: anythingLogo,
+    website: 'https://www.createanything.com/',
+    features: ['Prompt Experimentation', 'Rapid Ideation', 'Practical Use-Case Building', 'Simple Learning UI'],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'anything-1',
+        title: 'Introduction',
+        description: 'Getting Started with Anything AI',
+        duration: '12 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=KfGdYv_YNoM'
+      },
+      {
+        id: 'anything-2',
+        title: 'Crash Course',
+        description: 'Video Tutorial on how to build a web application using Anything AI',
+        duration: '8 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=6RSSDFEWbm8'
       }
     ]
   }
@@ -848,21 +912,23 @@ export function LearnPage() {
                     <Button variant="outline" asChild className="flex-1">
                       <a href={
                         platform.id === 'windsurf' ? 'https://docs.windsurf.com/windsurf/getting-started' :
-                          platform.id === 'bolt' ? 'https://support.bolt.new/' :
-                          platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
-                          platform.id === 'replit' ? 'https://docs.replit.com/' :
-                          platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
-                          platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
-                          platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
-                          platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
-                          platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
-                          platform.id === 'base44' ? 'https://docs.base44.com/' :
-                          platform.id === 'emergent' ? 'https://emergent.dev/docs' :
-                          platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
-                          platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
-                          platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
-                          platform.id === 'perplexity' ? 'https://docs.perplexity.ai/getting-started/overview' :
-                            `${platform.website}/docs`
+                        platform.id === 'bolt' ? 'https://support.bolt.new/' :
+                        platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
+                        platform.id === 'replit' ? 'https://docs.replit.com/' :
+                        platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
+                        platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
+                        platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
+                        platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
+                        platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
+                        platform.id === 'base44' ? 'https://docs.base44.com/' :
+                        platform.id === 'emergent' ? 'https://emergent.dev/docs' :
+                        platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
+                        platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
+                        platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
+                        platform.id === 'anything' ? 'https://www.createanything.com/docs/welcome' :
+                        platform.id === 'perplexity' ? 'https://docs.perplexity.ai/getting-started/overview' :
+                        platform.id === 'zapier' ? 'https://zapier.com/learn' :
+                        `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
                         Documentation
