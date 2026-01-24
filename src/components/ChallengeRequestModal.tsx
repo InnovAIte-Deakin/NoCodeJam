@@ -269,9 +269,9 @@ export function ChallengeRequestModal({ children }: ChallengeRequestModalProps) 
                     <SelectValue placeholder="Select difficulty" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-700 border-gray-600">
-                    <SelectItem value="Beginner" className="text-white">Beginner</SelectItem>
-                    <SelectItem value="Intermediate" className="text-white">Intermediate</SelectItem>
-                    <SelectItem value="Expert" className="text-white">Expert</SelectItem>
+                    <SelectItem value="beginner" className="text-white">Beginner</SelectItem>
+                    <SelectItem value="intermediate" className="text-white">Intermediate</SelectItem>
+                    <SelectItem value="advanced" className="text-white">Advanced</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

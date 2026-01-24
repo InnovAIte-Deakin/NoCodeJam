@@ -20,18 +20,28 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
+  // Normalize difficulty to lowercase and map Expert -> advanced
+  const normalizeDifficulty = (diff: string | undefined) => {
+    if (!diff) return '';
+    const lower = diff.toLowerCase();
+    if (lower === 'expert') return 'advanced';
+    return lower;
+  };
+
+  const normalizedDifficulty = normalizeDifficulty(request?.difficulty);
+
   const [formData, setFormData] = useState({
     title: request?.title || '',
     description: request?.description || '',
-    difficulty: request?.difficulty || '',
+    difficulty: normalizedDifficulty,
     requirements: request?.requirements
       ? (Array.isArray(request.requirements)
           ? request.requirements
           : request.requirements.split(';').map(r => r.trim()).filter(r => r))
       : [''],
     imageUrl: '',
-    xpReward: request?.difficulty === 'beginner' ? 200 :
-              request?.difficulty === 'intermediate' ? 500 : 1000
+    xpReward: normalizedDifficulty === 'beginner' ? 200 :
+              normalizedDifficulty === 'intermediate' ? 500 : 1000
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
