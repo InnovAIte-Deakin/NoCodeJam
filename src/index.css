@@ -479,3 +479,35 @@ html, body, #root {
 .admin-tabs-trigger:hover, .admin-tabs-trigger[data-state="active"] {
   filter: brightness(1.12);
 }
+
+/* Success confetti animation */
+@keyframes confetti {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.animate-confetti {
+  animation: confetti 3s ease-out forwards;
+}
+
+/* Success pulse animation */
+@keyframes success-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+.animate-success-pulse {
+  animation: success-pulse 0.6s ease-in-out;
+}

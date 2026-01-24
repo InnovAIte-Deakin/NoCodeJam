@@ -34,6 +34,17 @@ NoCodeJam is a hackathon-style platform where developers can:
    npm install
    ```
 
+2. Configure environment variables (frontend):
+
+   Create a `.env.local` in the project root with:
+
+   ```bash
+   VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+   ```
+
+   You can find these in Supabase Dashboard → Project Settings → API.
+
 2. Start the development server:
    ```bash
    npm run dev
@@ -70,6 +81,15 @@ The platform features a comprehensive onboarding system that guides new users th
 - **Frontend**: React components with TypeScript
 - **Backend**: Supabase Edge Functions for progress tracking
 - **Database**: PostgreSQL with RLS policies for security
+
+### Supabase Edge Functions (backend) environment
+The functions under `supabase/functions/*` read these from their runtime environment:
+
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (required for admin writes, e.g. `update-onboarding-progress`)
+
+These are configured in Supabase (function secrets / project env), not in the frontend `.env.local`.
 - **API Endpoints**:
   - `get-onboarding-steps`: Fetches tutorial steps
   - `get-onboarding-progress`: Tracks user completion

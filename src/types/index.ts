@@ -1,3 +1,7 @@
+// Re-export database types
+export * from './database.types';
+
+// Legacy types (for backward compatibility during migration)
 export interface User {
   id: string;
   email: string;
@@ -19,7 +23,9 @@ export interface Badge {
   unlockedAt: Date;
 }
 
-export interface Challenge {
+// Legacy Challenge interface - use database.types.Challenge for new code
+/** @deprecated Use Challenge from database.types instead */
+export interface LegacyChallenge {
   id: string;
   title: string;
   description: string;
@@ -43,10 +49,15 @@ export interface Submission {
   reviewedBy?: string;
 }
 
+export interface AuthResult {
+  ok: boolean;
+  error?: string;
+}
+
 export interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  register: (email: string, password: string, username: string) => Promise<boolean>;
+  login: (email: string, password: string) => Promise<AuthResult>;
+  register: (email: string, password: string, username: string) => Promise<AuthResult>;
   logout: () => void;
   isLoading: boolean;
   setUser: (user: User | null) => void;

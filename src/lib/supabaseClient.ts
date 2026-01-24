@@ -1,6 +1,15 @@
-import { createClient } from '@supabase/supabase-js';
+// src/lib/supabaseClient.ts
+import { createClient } from "@supabase/supabase-js";
 
-export const supabaseUrl = 'https://sulcylvskbtobhbkpkte.supabase.co';
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN1bGN5bHZza2J0b2JoYmtwa3RlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMyNTExMjMsImV4cCI6MjA2ODgyNzEyM30.ISG3r9xBlogxb8XyIU-trDGiZT3WrdcigfgBjlnCdpI';
+export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+if (!supabaseUrl) {
+  throw new Error("Missing VITE_SUPABASE_URL in .env.local");
+}
+
+if (!supabaseAnonKey) {
+  throw new Error("Missing VITE_SUPABASE_ANON_KEY in .env.local");
+}
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
