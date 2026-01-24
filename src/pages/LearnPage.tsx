@@ -421,6 +421,41 @@ const platforms: Platform[] = [
     ]
   },
   {
+    id: 'zapier',
+    name: 'Zapier',
+    description:
+      'Zapier is an automation platform that connects your favorite apps and services to automate workflows. Build powerful integrations between thousands of apps without writing code, enabling you to streamline tasks and boost productivity.',
+    logo: 'https://cdn.zapier.com/zapier/images/logos/zapier-logo.png',
+    website: 'https://zapier.com',
+    features: [
+      'Workflow Automation',
+      'App Integrations',
+      'No-Code Automation',
+      'Multi-Step Zaps',
+      'Data Transformation'
+    ],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'zapier-1',
+        title: 'Getting Started with Zapier',
+        description: 'Learn the basics of Zapier and create your first automation workflow',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://youtu.be/JtdUgJGI_Oo?si=uVAL2s3YnReL1uI9'
+      },
+      {
+        id: 'zapier-2',
+        title: 'Building Your First Zap',
+        description: 'Step-by-step tutorial on creating automated workflows between apps',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://youtu.be/avQMU1yJkyY?si=QjLC7pHxhdjJRMu4'
+      }
+    ]
+  },
+  {
     id: 'figma',
     name: 'Figma',
     description: 'A collaborative interface design tool — learn UI fundamentals, prototyping, design systems, and handoff workflows.',
@@ -892,6 +927,7 @@ export function LearnPage() {
                         platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
                         platform.id === 'anything' ? 'https://www.createanything.com/docs/welcome' :
                         platform.id === 'perplexity' ? 'https://docs.perplexity.ai/getting-started/overview' :
+                        platform.id === 'zapier' ? 'https://zapier.com/learn' :
                         `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
