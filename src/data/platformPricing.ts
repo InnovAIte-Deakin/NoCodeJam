@@ -573,5 +573,63 @@ export const platformPricing: Record<string, PricingTier[]> = {
       ],
       ctaUrl: 'https://emergent.dev/contact'
     }
+  ],
+
+  perplexity: [
+    {
+      id: 'perplexity-pro-personal',
+      key: 'paid',
+      name: 'Perplexity Pro',
+      price: '$20',
+      billing: 'per month (or $200/year)',
+      features: [
+        'Unlimited Pro searches',
+        '10x citations in answers',
+        'Extended access to Research, Labs, and image generation',
+        'One subscription to the latest AI models',
+        'For personal, non-commercial use'
+      ],
+      ctaUrl: 'https://www.perplexity.ai/enterprise/pricing'
+    },
+    {
+      id: 'perplexity-enterprise-pro',
+      key: 'enterprise',
+      name: 'Enterprise Pro (Teams)',
+      price: '$40',
+      billing: 'per seat/month (or $400/year)',
+      features: [
+        'All features of Perplexity Pro',
+        'Collaborate in private Spaces',
+        'Answers from files, productivity, and organizational apps',
+        'Up to 15,000 file uploads',
+        'SSO or SCIM provisioning',
+        'User management, permissions, and team insights',
+        'Configurable data retention and audit logs',
+        'No training on your data',
+        'SOC 2 Type II compliant',
+        '50 seat minimum'
+      ],
+      ctaUrl: 'https://www.perplexity.ai/enterprise/pricing'
+    },
+    {
+      id: 'perplexity-enterprise-max',
+      key: 'enterprise',
+      name: 'Enterprise Max',
+      price: '$325',
+      billing: 'per seat/month (or $3,250/year)',
+      features: [
+        'All features of Enterprise Pro',
+        'Unlimited Labs queries',
+        'Access to advanced AI models',
+        'Greater file upload limits',
+        'Enhanced video generation',
+        'Comet Max assistant',
+        'Team insights with no seat minimum',
+        'Configurable data retention and audit logs',
+        'No training on your data',
+        'SOC 2 Type II compliant'
+      ],
+      ctaUrl: 'https://www.perplexity.ai/enterprise/pricing'
+    }
   ]
 };

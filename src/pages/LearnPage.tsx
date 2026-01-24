@@ -22,6 +22,7 @@ import base44Logo from '@/images/base44-logo.png';
 import emergentLogo from '@/images/Emergent Logo.jpg';
 import grokLogo from '@/images/grok-icon.png';
 import v0Logo from '@/images/v0-icon.png';
+import perplexityLogo from '@/images/perplexity.jpg.avif';
 
 
 interface Platform {
@@ -57,6 +58,48 @@ interface PricingTier {
 }
 
 const platforms: Platform[] = [
+  {
+    id: 'perplexity',
+    name: 'Perplexity',
+    description:
+      'Perplexity is an AI-native answer engine that combines web search, grounded large language models, and citations to help you research, learn, and build faster.',
+    logo: perplexityLogo,
+    website: 'https://www.perplexity.ai',
+    features: [
+      'Web-grounded answers with citations',
+      'Fast Pro search across the web',
+      'Labs for advanced experimentation',
+      'APIs for search and grounded LLMs'
+    ],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'perplexity-docs-overview',
+        title: 'Perplexity Docs: Getting Started',
+        description: 'Official documentation overview for building with Perplexity APIs and models.',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://docs.perplexity.ai/getting-started/overview'
+      },
+      {
+        id: 'perplexity-guide-1',
+        title: 'How To Use Perplexity',
+        description: 'YouTube walkthrough on using Perplexity for everyday research and Q&A.',
+        duration: '12 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=bOHfJZ4DVqE'
+      },
+      {
+        id: 'perplexity-guide-2',
+        title: 'Every Perplexity Feature Explained',
+        description: 'YouTube guide to using Perplexity for more complex research and projects.',
+        duration: '19 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=LnURCxwsB34'
+      }
+    ]
+  },
   {
     id: 'lovable',
     name: 'Lovable',
@@ -806,19 +849,20 @@ export function LearnPage() {
                       <a href={
                         platform.id === 'windsurf' ? 'https://docs.windsurf.com/windsurf/getting-started' :
                           platform.id === 'bolt' ? 'https://support.bolt.new/' :
-                            platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
-                              platform.id === 'replit' ? 'https://docs.replit.com/' :
-                                platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
-                                  platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
-                                    platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
-                                      platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
-                                        platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
-                                          platform.id === 'base44' ? 'https://docs.base44.com/' :
-                                            platform.id === 'emergent' ? 'https://emergent.dev/docs' :
-                                              platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
-                                                platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
-                                                  platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
-                                                    `${platform.website}/docs`
+                          platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
+                          platform.id === 'replit' ? 'https://docs.replit.com/' :
+                          platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
+                          platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
+                          platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
+                          platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
+                          platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
+                          platform.id === 'base44' ? 'https://docs.base44.com/' :
+                          platform.id === 'emergent' ? 'https://emergent.dev/docs' :
+                          platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
+                          platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
+                          platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
+                          platform.id === 'perplexity' ? 'https://docs.perplexity.ai/getting-started/overview' :
+                            `${platform.website}/docs`
                       } target="_blank" rel="noopener noreferrer">
                         <BookOpen className="w-4 h-4 mr-2" />
                         Documentation
