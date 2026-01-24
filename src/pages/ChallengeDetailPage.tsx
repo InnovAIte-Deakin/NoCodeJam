@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/lib/supabaseClient';
+import { normalizeRequirements } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Star, CheckCircle, Clock, User, ExternalLink, Send } from 'lucide-react';
@@ -122,10 +123,7 @@ export function ChallengeDetailPage() {
     }
   };
 
-  // Handle requirements as either array or string for backward compatibility
-  const requirementsArr = Array.isArray(challenge.requirements)
-    ? challenge.requirements
-    : (challenge.requirements ? (challenge.requirements as string).split(';').map((r: string) => r.trim()).filter((r: string) => Boolean(r)) : []);
+  const requirementsArr = normalizeRequirements(challenge.requirements);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">

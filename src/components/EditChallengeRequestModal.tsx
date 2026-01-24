@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { normalizeRequirements } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Plus, XCircle } from 'lucide-react';
 import type { ChallengeType, DifficultyLevel } from '@/types';
@@ -56,11 +57,10 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
     title: request?.title || '',
     description: request?.description || '',
     difficulty: initialDifficulty,
-    requirements: request?.requirements
-      ? (Array.isArray(request.requirements)
-          ? request.requirements
-          : request.requirements.split(';').map((r: string) => r.trim()).filter((r: string) => r))
-      : [''],
+    requirements: (() => {
+      const reqs = normalizeRequirements(request?.requirements);
+      return reqs.length ? reqs : [''];
+    })(),
     imageUrl: '',
     xpReward:
       initialDifficulty === 'Beginner'

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { supabase, supabaseUrl } from '@/lib/supabaseClient';
+import { normalizeRequirements } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { OnboardingChallengeCard } from '@/components/OnboardingChallengeCard';
 import { ChallengeRequestModal } from '@/components/ChallengeRequestModal';
@@ -245,10 +246,7 @@ export function ChallengeListPage() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredChallenges.map((challenge) => {
             const status = getChallengeStatus(challenge.id);
-            // Handle requirements as either array or string for backward compatibility
-            const requirementsArr = Array.isArray(challenge.requirements)
-              ? challenge.requirements
-              : (challenge.requirements ? challenge.requirements.split(';').map((r: string) => r.trim()).filter(Boolean) : []);
+            const requirementsArr = normalizeRequirements(challenge.requirements);
             return (
               <Card key={challenge.id} className="hover:shadow-lg transition-shadow duration-300 overflow-hidden">
                 <div className="relative">

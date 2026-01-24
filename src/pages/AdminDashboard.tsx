@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabaseClient';
+import { normalizeRequirements } from '@/lib/utils';
 import {
   CheckCircle,
   XCircle,
@@ -552,9 +553,10 @@ export function AdminDashboard() {
       difficulty: challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1),
       xpReward: challenge.xp_reward,
       imageUrl: challenge.image || '',
-      requirements: Array.isArray(challenge.requirements)
-        ? challenge.requirements
-        : (challenge.requirements ? challenge.requirements.split('; ').filter((r: string) => r.trim()) : [''])
+      requirements: (() => {
+        const reqs = normalizeRequirements(challenge.requirements);
+        return reqs.length ? reqs : [''];
+      })()
     });
     setIsEditDialogOpen(true);
   };
@@ -1216,7 +1218,11 @@ export function AdminDashboard() {
                             
                             <div>
                               <h4 className="font-medium text-white mb-1">Requirements</h4>
-                              <p className="text-gray-300 text-sm">{request.requirements}</p>
+                              <ul className="text-gray-300 text-sm list-disc pl-5 space-y-1">
+                                {normalizeRequirements(request.requirements).map((req: string, idx: number) => (
+                                  <li key={idx}>{req}</li>
+                                ))}
+                              </ul>
                             </div>
                           </div>
                           
