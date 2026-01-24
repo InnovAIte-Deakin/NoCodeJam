@@ -231,12 +231,24 @@ export function AdminDashboard() {
       });
       return;
     }
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user?.id) {
+      toast({
+        title: "Not signed in",
+        description: "Please sign in again and retry.",
+        variant: "destructive",
+      });
+      return;
+    }
     // Insert new challenge into Supabase (requirements as string, difficulty lowercase)
     const { error } = await supabase.from('challenges').insert([
       {
         title: newChallenge.title,
         description: newChallenge.description,
-        difficulty: newChallenge.difficulty.toLowerCase(),
+        difficulty: newChallenge.difficulty,
+        status: 'published',
+        ai_generated: false,
+        created_by: userData.user.id,
         xp_reward: newChallenge.xpReward,
         image: newChallenge.imageUrl,
         requirements: newChallenge.requirements.filter(r => r.trim()), // Store as array
@@ -563,7 +575,7 @@ export function AdminDashboard() {
       .update({
         title: editingChallenge.title,
         description: editingChallenge.description,
-        difficulty: editingChallenge.difficulty.toLowerCase(),
+        difficulty: editingChallenge.difficulty,
         xp_reward: editingChallenge.xpReward,
         image: editingChallenge.imageUrl,
         requirements: editingChallenge.requirements.filter((r: string) => r.trim()) // Store as array
