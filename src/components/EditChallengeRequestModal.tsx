@@ -30,8 +30,8 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
           : request.requirements.split(';').map(r => r.trim()).filter(r => r))
       : [''],
     imageUrl: '',
-    xpReward: request?.difficulty === 'Beginner' ? 200 :
-              request?.difficulty === 'Intermediate' ? 500 : 1000
+    xpReward: request?.difficulty === 'beginner' ? 200 :
+              request?.difficulty === 'intermediate' ? 500 : 1000
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -103,7 +103,7 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
     if (field === 'difficulty') {
       setFormData(prev => ({
         ...prev,
-        xpReward: value === 'Beginner' ? 200 : value === 'Intermediate' ? 500 : 1000,
+        xpReward: value === 'beginner' ? 200 : value === 'intermediate' ? 500 : 1000,
       }));
     }
   };
@@ -178,9 +178,9 @@ export function EditChallengeRequestModal({ children, request, onSuccess }: Edit
                   <SelectValue placeholder="Select difficulty" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-700 border-gray-600">
-                  <SelectItem value="Beginner" className="text-white">Beginner</SelectItem>
-                  <SelectItem value="Intermediate" className="text-white">Intermediate</SelectItem>
-                  <SelectItem value="Expert" className="text-white">Expert</SelectItem>
+                  <SelectItem value="beginner" className="text-white">Beginner</SelectItem>
+                  <SelectItem value="intermediate" className="text-white">Intermediate</SelectItem>
+                  <SelectItem value="advanced" className="text-white">Advanced</SelectItem>
                 </SelectContent>
               </Select>
             </div>
