@@ -666,15 +666,22 @@ export function LearnPage() {
 
   const [selectedPlatform, setSelectedPlatform] = useState<string>(platforms[0]?.id ?? 'lovable');
 
-  const [viewMode, setViewMode] = useState<'Classic' | 'Explorer'>(() => {
+  const [filtersMode, setFiltersMode] = useState<'on' | 'off'>(() => {
     try {
-      const saved = typeof window !== 'undefined' ? window.localStorage.getItem('learn:viewMode') : null;
-      if (saved === 'Classic' || saved === 'Explorer') return saved;
+      // New key
+      const saved = typeof window !== 'undefined' ? window.localStorage.getItem('learn:filtersMode') : null;
+      if (saved === 'on' || saved === 'off') return saved;
+
+      // Back-compat: older toggle naming
+      const legacy = typeof window !== 'undefined' ? window.localStorage.getItem('learn:viewMode') : null;
+      // User expectation: "Filters on" == Explorer, "Filters off" == Classic
+      if (legacy === 'Classic') return 'off';
+      if (legacy === 'Explorer') return 'on';
     } catch {
       // ignore
     }
-    // Default to the old experience; users can opt into Explorer mode.
-    return 'Classic';
+    // Default to the old experience (Classic).
+    return 'off';
   });
 
   const [goal, setGoal] = useState<'Build fast' | 'Learn UI' | 'Code with AI' | 'Ship a web app'>('Build fast');
@@ -693,11 +700,13 @@ export function LearnPage() {
 
   useEffect(() => {
     try {
-      window.localStorage.setItem('learn:viewMode', viewMode);
+      window.localStorage.setItem('learn:filtersMode', filtersMode);
+      // Clean up legacy key if present so it doesn't confuse future reads
+      window.localStorage.removeItem('learn:viewMode');
     } catch {
       // ignore
     }
-  }, [viewMode]);
+  }, [filtersMode]);
 
   const scrollToPlatform = (platformId: string) => {
     setSelectedPlatform(platformId);
@@ -762,11 +771,12 @@ export function LearnPage() {
   }, [platforms, difficultyFilter, categoryFilter]);
 
   useEffect(() => {
-    if (viewMode !== 'Classic') return;
+    // Classic selection behavior only applies in Classic mode ("filters off")
+    if (filtersMode !== 'off') return;
     if (!classicFiltered.some((p) => p.id === selectedPlatform)) {
       setSelectedPlatform(classicFiltered[0]?.id ?? platforms[0]?.id ?? 'lovable');
     }
-  }, [viewMode, classicFiltered, selectedPlatform, platforms]);
+  }, [filtersMode, classicFiltered, selectedPlatform, platforms]);
 
   const filtered = useMemo(() => {
     const base = platforms.filter((p) => {
@@ -872,28 +882,28 @@ export function LearnPage() {
           <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
             <button
               type="button"
-              onClick={() => setViewMode('Classic')}
+              onClick={() => setFiltersMode('on')}
               className={[
                 'px-4 py-2 rounded-full text-sm transition',
-                viewMode === 'Classic' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+                filtersMode === 'on' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
               ].join(' ')}
             >
-              Classic
+              Filters on
             </button>
             <button
               type="button"
-              onClick={() => setViewMode('Explorer')}
+              onClick={() => setFiltersMode('off')}
               className={[
                 'px-4 py-2 rounded-full text-sm transition',
-                viewMode === 'Explorer' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+                filtersMode === 'off' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
               ].join(' ')}
             >
-              Explorer
+              Filters off
             </button>
           </div>
         </div>
 
-        {viewMode === 'Classic' ? (
+        {filtersMode === 'off' ? (
           <>
             {/* Classic controls (from old main) */}
             <div className="mb-6 space-y-3">
@@ -939,8 +949,11 @@ export function LearnPage() {
               {showFilters && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-white/70">Difficulty</label>
+                    <label htmlFor="learn-difficulty-filter" className="text-xs font-medium text-white/70">
+                      Difficulty
+                    </label>
                     <select
+                      id="learn-difficulty-filter"
                       value={difficultyFilter}
                       onChange={(e) => setDifficultyFilter(e.target.value as any)}
                       className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
@@ -954,8 +967,11 @@ export function LearnPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-medium text-white/70">Category</label>
+                    <label htmlFor="learn-category-filter" className="text-xs font-medium text-white/70">
+                      Category
+                    </label>
                     <select
+                      id="learn-category-filter"
                       value={categoryFilter}
                       onChange={(e) => setCategoryFilter(e.target.value as any)}
                       className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
@@ -1162,8 +1178,11 @@ export function LearnPage() {
             {/* Picker row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-xs font-medium text-white/70">Goal</label>
+                <label htmlFor="learn-goal" className="text-xs font-medium text-white/70">
+                  Goal
+                </label>
                 <select
+                  id="learn-goal"
                   value={goal}
                   onChange={(e) => setGoal(e.target.value as any)}
                   className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
@@ -1177,8 +1196,11 @@ export function LearnPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-white/70">Skill level</label>
+                <label htmlFor="learn-skill" className="text-xs font-medium text-white/70">
+                  Skill level
+                </label>
                 <select
+                  id="learn-skill"
                   value={skill}
                   onChange={(e) => setSkill(e.target.value as Difficulty)}
                   className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
@@ -1191,8 +1213,11 @@ export function LearnPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-white/70">Budget</label>
+                <label htmlFor="learn-budget" className="text-xs font-medium text-white/70">
+                  Budget
+                </label>
                 <select
+                  id="learn-budget"
                   value={budget}
                   onChange={(e) => setBudget(e.target.value as any)}
                   className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
@@ -1249,8 +1274,11 @@ export function LearnPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-xs font-medium text-white/70">Sort by</label>
+                <label htmlFor="learn-sort-by" className="text-xs font-medium text-white/70">
+                  Sort by
+                </label>
                 <select
+                  id="learn-sort-by"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
