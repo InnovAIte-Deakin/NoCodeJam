@@ -17,7 +17,6 @@ import { LearnPage } from '@/pages/LearnPage';
 import { BrowsePathways } from '@/pages/BrowsePathways';
 import { PathwayDetail } from '@/pages/PathwayDetail';
 import { ReviewDashboard } from '@/pages/ReviewDashboard';
-
 import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import OnboardingStepPage from '@/pages/onboarding/[step]';

@@ -1,13 +1,15 @@
+// src/pages/LearnPage.tsx
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { AILearnChat } from '@/components/AILearnChat';
 import PricingPill from '@/components/PricingPill';
 import { platformPricing } from '@/data/platformPricing';
 
-import { ExternalLink, Play, BookOpen, Code, Zap, Palette, Database, Globe, Sparkles } from 'lucide-react';
+import { ExternalLink, BookOpen, Code, Zap, Palette, Database, Globe, Sparkles } from 'lucide-react';
+import { AILearnChat } from '@/components/AILearnChat';
+
+// ✅ Logos (make sure these exist in /src/images)
 import lovableLogo from '@/images/logoblack.svg';
 import boltLogo from '@/images/Bolt Logo.svg';
 import windsurfLogo from '@/images/windsurf Logo.png';
@@ -16,15 +18,36 @@ import replitLogo from '@/images/Replit Logo.png';
 import githubCopilotLogo from '@/images/Github Copilot Logo.webp';
 import claudeCodeLogo from '@/images/Claude Code Logo.webp';
 import geminiLogo from '@/images/Gemini Logo.png';
-import innovAIteLogo from '@/images/InnovAIte DarkMode Logo.png';
 import figmaLogo from '@/images/figma-logo.svg';
 import base44Logo from '@/images/base44-logo.png';
 import emergentLogo from '@/images/Emergent Logo.jpg';
 import grokLogo from '@/images/grok-icon.png';
 import v0Logo from '@/images/v0-icon.png';
+import webflowLogo from '@/images/webflow-logo.webp';
 import anythingLogo from '@/images/Anything Logo.png';
 import perplexityLogo from '@/images/perplexity.jpg.avif';
 
+type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced';
+type Category = 'Visual Builder' | 'AI-Powered' | 'Database' | 'Web Development';
+
+interface Tutorial {
+  id: string;
+  title: string;
+  description: string;
+  duration: string;
+  difficulty: Difficulty;
+  url: string;
+}
+
+interface PricingTier {
+  id: string;
+  key: 'free' | 'freemium' | 'paid' | 'enterprise';
+  name: string;
+  price?: string;
+  billing?: string;
+  features?: string[];
+  ctaUrl?: string;
+}
 
 interface Platform {
   id: string;
@@ -32,33 +55,30 @@ interface Platform {
   description: string;
   logo: string;
   website: string;
+  docsUrl?: string;
   features: string[];
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  category: 'Visual Builder' | 'AI-Powered' | 'Database' | 'Web Development';
+  difficulty: Difficulty;
+  category: Category;
   tutorials: Tutorial[];
   pricing?: PricingTier[];
+  isNew?: boolean;
 }
 
-interface Tutorial {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  url: string;
-}
+/**
+ * ✅ No-file fallback logo (so images NEVER go blank on Vercel)
+ * (Data URI SVG)
+ */
+const fallbackLogo =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(`
+  <svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">
+    <rect width="128" height="128" rx="24" fill="#111827"/>
+    <circle cx="64" cy="64" r="34" fill="#1f2937"/>
+    <text x="64" y="72" text-anchor="middle" font-size="28" fill="#9ca3af" font-family="Arial">?</text>
+  </svg>
+`);
 
-interface PricingTier {
-  id: string;
-  key: 'free' | 'freemium' | 'paid' | 'enterprise';
-  name: string;            // e.g. "Free", "Professional"
-  price?: string;          // e.g. "$0", "$12/mo", "Contact Sales"
-  billing?: string;        // e.g. "per editor/month"
-  features?: string[];     // short bullets shown in details
-  ctaUrl?: string;         // link to provider pricing page
-}
-
-const platforms: Platform[] = [
+const platformsRaw: Platform[] = [
   {
     id: 'perplexity',
     name: 'Perplexity',
@@ -104,9 +124,11 @@ const platforms: Platform[] = [
   {
     id: 'lovable',
     name: 'Lovable',
-    description: 'Lovable is a visual development platform that allows you to build web applications using a drag-and-drop interface. Perfect for creating beautiful, responsive websites and web apps without writing code.',
+    description:
+      'Lovable is a visual development platform that allows you to build web applications using a drag-and-drop interface. Perfect for creating beautiful, responsive websites and web apps without writing code.',
     logo: lovableLogo,
     website: 'https://lovable.dev',
+    docsUrl: 'https://docs.lovable.dev/introduction/welcome',
     features: ['Visual Builder', 'Drag & Drop', 'Responsive Design', 'Real-time Preview'],
     difficulty: 'Beginner',
     category: 'Visual Builder',
@@ -122,7 +144,7 @@ const platforms: Platform[] = [
       {
         id: 'lovable-2',
         title: 'Mastering Lovable',
-        description: 'Video Tutorial by Darrel Wilson on Lovable',
+        description: 'Video tutorial by Darrel Wilson on Lovable',
         duration: '20 min',
         difficulty: 'Beginner',
         url: 'https://www.youtube.com/watch?v=mOak_imYmqU'
@@ -130,19 +152,21 @@ const platforms: Platform[] = [
       {
         id: 'lovable-3',
         title: 'Deep Dive',
-        description: 'Video Tutorial deep dive into Lovable',
+        description: 'Deep dive into Lovable',
         duration: '15 min',
         difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=N8JWiuVLi9E&t'
+        url: 'https://www.youtube.com/watch?v=N8JWiuVLi9E'
       }
     ]
   },
   {
     id: 'base44',
     name: 'Base44',
-    description: 'Base44 is an AI-powered platform that lets you turn any idea into a fully-functional custom app, without the need for any coding experience.',
+    description:
+      'Base44 is an AI-powered platform that lets you turn any idea into a fully-functional custom app, without the need for any coding experience.',
     logo: base44Logo,
     website: 'https://base44.com/',
+    docsUrl: 'https://docs.base44.com/',
     features: ['Prompt-to-App', 'Fullstack Generation', 'All-in-One Infrastructure', 'Instant Deployment'],
     difficulty: 'Beginner',
     category: 'AI-Powered',
@@ -168,9 +192,11 @@ const platforms: Platform[] = [
   {
     id: 'windsurf',
     name: 'Windsurf',
-    description: 'Windsurf is an AI-powered no-code platform that helps you build applications using natural language. Simply describe what you want to build, and Windsurf creates it for you.',
+    description:
+      'Windsurf is an AI-powered platform that helps you build applications using natural language. Simply describe what you want to build, and Windsurf creates it for you.',
     logo: windsurfLogo,
     website: 'https://windsurf.dev',
+    docsUrl: 'https://docs.windsurf.com/windsurf/getting-started',
     features: ['AI-Powered', 'Natural Language', 'Auto-Generation', 'Smart Suggestions'],
     difficulty: 'Beginner',
     category: 'AI-Powered',
@@ -178,7 +204,7 @@ const platforms: Platform[] = [
       {
         id: 'windsurf-1',
         title: 'Windsurf Basics',
-        description: 'Video Tutorial by Tech With Tim on Windsurf',
+        description: 'Video tutorial by Tech With Tim on Windsurf',
         duration: '20 min',
         difficulty: 'Beginner',
         url: 'https://www.youtube.com/watch?v=8TcWGk1DJVs'
@@ -186,19 +212,21 @@ const platforms: Platform[] = [
       {
         id: 'windsurf-2',
         title: 'Deep Dive',
-        description: 'Video Tutorial deep dive into Windsurf',
+        description: 'Deep dive into Windsurf',
         duration: '20 min',
         difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=qVuWRQh4Buo&t'
+        url: 'https://www.youtube.com/watch?v=qVuWRQh4Buo'
       }
     ]
   },
   {
     id: 'replit',
     name: 'Replit',
-    description: 'Replit is a powerful online IDE that allows you to write, run, and share code with others. It\'s perfect for beginners and experienced developers alike, offering a seamless development experience.',
+    description:
+      "Replit is a powerful online IDE that allows you to write, run, and share code with others. It's perfect for beginners and experienced developers alike.",
     logo: replitLogo,
     website: 'https://replit.com',
+    docsUrl: 'https://docs.replit.com/',
     features: ['Online IDE', 'Real-time Collaboration', 'Version Control', 'Community'],
     difficulty: 'Beginner',
     category: 'Web Development',
@@ -206,7 +234,7 @@ const platforms: Platform[] = [
       {
         id: 'replit-1',
         title: 'Getting Started with Replit',
-        description: 'Learn how to create your first Replit project and navigate the interface',
+        description: 'Create your first Replit project and navigate the interface',
         duration: '10 min',
         difficulty: 'Beginner',
         url: 'https://www.youtube.com/watch?v=St95nPOwsa8'
@@ -214,15 +242,15 @@ const platforms: Platform[] = [
       {
         id: 'replit-2',
         title: 'Deep Dive',
-        description: 'Video Tutorial deep dive into Replit',
+        description: 'Deep dive into Replit',
         duration: '20 min',
         difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=KH63ojH6tQI&t'
+        url: 'https://www.youtube.com/watch?v=KH63ojH6tQI'
       },
       {
         id: 'replit-3',
         title: 'Replit AI Agent',
-        description: 'Video Tutorial full Replit course',
+        description: 'Full Replit course',
         duration: '2 hours',
         difficulty: 'Intermediate',
         url: 'https://www.youtube.com/watch?v=DaXQ5L7r7Lg'
@@ -232,9 +260,11 @@ const platforms: Platform[] = [
   {
     id: 'bolt',
     name: 'Bolt',
-    description: 'Bolt is a powerful no-code platform focused on building database-driven applications. Create complex business applications with ease using its intuitive interface and robust data management tools.',
+    description:
+      'Bolt is a powerful no-code platform focused on building database-driven applications. Create complex business apps using robust data management tools.',
     logo: boltLogo,
-    website: 'https://bolt.com',
+    website: 'https://bolt.new',
+    docsUrl: 'https://support.bolt.new/',
     features: ['Database Management', 'Business Logic', 'API Integration', 'User Management'],
     difficulty: 'Intermediate',
     category: 'Database',
@@ -242,7 +272,7 @@ const platforms: Platform[] = [
       {
         id: 'bolt-1',
         title: 'Bolt Basics',
-        description: 'Video Tutorial by No Code MBA on building apps with Bolt',
+        description: 'Build apps with Bolt (No Code MBA)',
         duration: '30 min',
         difficulty: 'Beginner',
         url: 'https://www.youtube.com/watch?v=0_Ij8FEvY4U'
@@ -250,19 +280,20 @@ const platforms: Platform[] = [
       {
         id: 'bolt-2',
         title: 'Deep Dive',
-        description: 'Video Tutorial deep dive into Bolt',
+        description: 'Deep dive into Bolt',
         duration: '20 min',
         difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=JMBqw2SkuRw&t'
+        url: 'https://www.youtube.com/watch?v=JMBqw2SkuRw'
       }
     ]
   },
   {
     id: 'github-copilot',
     name: 'GitHub Copilot',
-    description: 'GitHub Copilot is an AI pair programmer that helps you write code faster and more accurately. It integrates with your existing workflow and provides intelligent suggestions.',
+    description: 'GitHub Copilot is an AI pair programmer that helps you write code faster and more accurately.',
     logo: githubCopilotLogo,
     website: 'https://github.com/features/copilot',
+    docsUrl: 'https://docs.github.com/en/copilot',
     features: ['AI Pair Programming', 'Intelligent Suggestions', 'Code Generation', 'Integration'],
     difficulty: 'Intermediate',
     category: 'Web Development',
@@ -270,15 +301,15 @@ const platforms: Platform[] = [
       {
         id: 'github-copilot-1',
         title: 'Getting Started With GitHub Copilot',
-        description: 'Video Tutorial learn how to get started with GitHub Copilot and its features',
+        description: 'Start with Copilot and learn the core features',
         duration: '10 min',
         difficulty: 'Beginner',
-        url: 'https://www.youtube.com/watch?v=n0NlxUyA7FI '
+        url: 'https://www.youtube.com/watch?v=n0NlxUyA7FI'
       },
       {
         id: 'github-copilot-2',
         title: 'Essential Features',
-        description: 'Video Tutorial essential features of GitHub Copilot',
+        description: 'Essential Copilot features',
         duration: '10 min',
         difficulty: 'Intermediate',
         url: 'https://www.youtube.com/watch?v=b5xcWdzAB5c'
@@ -286,19 +317,20 @@ const platforms: Platform[] = [
       {
         id: 'github-copilot-3',
         title: 'Building a Web App',
-        description: 'Video Tutorial building a web app with GitHub Copilot',
+        description: 'Build a web app with Copilot',
         duration: '20 min',
         difficulty: 'Advanced',
-        url: 'https://www.youtube.com/watch?v=Nw4y5XQyugc&list=PL0lo9MOBetEFcp4SCWinBdpml9B2U25-f&index=3'
+        url: 'https://www.youtube.com/watch?v=Nw4y5XQyugc'
       }
     ]
   },
   {
     id: 'cursor',
     name: 'Cursor',
-    description: 'Cursor is an AI-first code editor that helps you write, edit, and debug code faster. While not strictly no-code, it makes coding accessible to everyone with AI assistance.',
+    description: 'Cursor is an AI-first code editor that helps you write, edit, and debug code faster.',
     logo: cursorLogo,
-    website: 'https://cursor.sh',
+    website: 'https://cursor.com',
+    docsUrl: 'https://docs.cursor.com/en/get-started/installation',
     features: ['AI Code Assistant', 'Code Generation', 'Debugging', 'Multi-language Support'],
     difficulty: 'Advanced',
     category: 'Web Development',
@@ -306,7 +338,7 @@ const platforms: Platform[] = [
       {
         id: 'cursor-1',
         title: 'Installation',
-        description: 'Get Cursor installed on your computer in just a few minutes',
+        description: 'Install Cursor quickly',
         duration: '10 min',
         difficulty: 'Intermediate',
         url: 'https://docs.cursor.com/en/get-started/installation'
@@ -314,7 +346,7 @@ const platforms: Platform[] = [
       {
         id: 'cursor-2',
         title: 'Introduction to Cursor',
-        description: 'Video Tutorial by Volo Builds on Cursor basics',
+        description: 'Cursor basics',
         duration: '30 min',
         difficulty: 'Intermediate',
         url: 'https://www.youtube.com/watch?v=3289vhOUdKA'
@@ -322,7 +354,7 @@ const platforms: Platform[] = [
       {
         id: 'cursor-3',
         title: 'Advanced Cursor Rules',
-        description: 'Video Tutorial by Neel about how to setup advanced Cursor rules',
+        description: 'Set up advanced Cursor rules',
         duration: '25 min',
         difficulty: 'Advanced',
         url: 'https://www.youtube.com/watch?v=TrcyAWGC1k4'
@@ -332,9 +364,10 @@ const platforms: Platform[] = [
   {
     id: 'claude-code',
     name: 'Claude Code',
-    description: 'Claude Code is an AI-powered code assistant that helps you write, debug, and optimize code. It\'s designed to be your personal assistant for all your coding needs.',
+    description: 'Claude Code is an AI-powered code assistant that helps you write, debug, and optimize code.',
     logo: claudeCodeLogo,
-    website: 'https://claude.com/code',
+    website: 'https://claude.ai',
+    docsUrl: 'https://docs.anthropic.com/en/docs/claude-code/setup',
     features: ['AI Code Assistant', 'Code Generation', 'Debugging', 'Multi-language Support'],
     difficulty: 'Advanced',
     category: 'Web Development',
@@ -342,7 +375,7 @@ const platforms: Platform[] = [
       {
         id: 'claude-code-1',
         title: 'Setup',
-        description: 'Guide to setup Claude Code',
+        description: 'Set up Claude Code',
         duration: '10 min',
         difficulty: 'Intermediate',
         url: 'https://docs.anthropic.com/en/docs/claude-code/setup'
@@ -350,7 +383,7 @@ const platforms: Platform[] = [
       {
         id: 'claude-code-2',
         title: 'Claude Code Basics',
-        description: 'Video Tutorial by Tyler AI on Claude Code basics',
+        description: 'Claude Code basics',
         duration: '10 min',
         difficulty: 'Intermediate',
         url: 'https://www.youtube.com/watch?v=P_pTypZZL4c'
@@ -358,7 +391,7 @@ const platforms: Platform[] = [
       {
         id: 'claude-code-3',
         title: 'Build a Full Stack Web App',
-        description: 'Video Tutorial by Rob Shocks on how to build a full stack web app with Claude Code',
+        description: 'Full stack build with Claude',
         duration: '30 min',
         difficulty: 'Advanced',
         url: 'https://www.youtube.com/watch?v=cYIxhL6pxL4'
@@ -368,9 +401,10 @@ const platforms: Platform[] = [
   {
     id: 'gemini-cli',
     name: 'Gemini CLI',
-    description: 'Gemini CLI is an open-source AI agent that brings the power of Gemini directly into your terminal. It can query and edit large codebases, generate apps from PDFs or sketches, and automate operational tasks.',
+    description: 'Gemini CLI brings Gemini into your terminal to help query, refactor, and automate developer tasks.',
     logo: geminiLogo,
     website: 'https://github.com/google-gemini/gemini-cli',
+    docsUrl: 'https://github.com/google-gemini/gemini-cli',
     features: ['Terminal AI Agent', 'Code Analysis', 'Multimodal Generation', 'Tool Integration'],
     difficulty: 'Advanced',
     category: 'Web Development',
@@ -378,7 +412,7 @@ const platforms: Platform[] = [
       {
         id: 'gemini-cli-1',
         title: 'Installation',
-        description: 'Video Tutorial on installing and configuring Gemini CLI for your development workflow',
+        description: 'Install and configure Gemini CLI',
         duration: '10 min',
         difficulty: 'Intermediate',
         url: 'https://www.youtube.com/watch?v=we2HwLyKYEg'
@@ -386,7 +420,7 @@ const platforms: Platform[] = [
       {
         id: 'gemini-cli-2',
         title: 'Crash Course',
-        description: 'Video Tutorial by Sam Witteveen on how to use Gemini CLI',
+        description: 'How to use Gemini CLI',
         duration: '15 min',
         difficulty: 'Intermediate',
         url: 'https://www.youtube.com/watch?v=KUCZe1xBKFM'
@@ -461,79 +495,55 @@ const platforms: Platform[] = [
     description: 'A collaborative interface design tool — learn UI fundamentals, prototyping, design systems, and handoff workflows.',
     logo: figmaLogo,
     website: 'https://www.figma.com',
+    docsUrl: 'https://help.figma.com/hc/en-us',
     features: ['Design Systems', 'Prototyping', 'Collaboration', 'Plugins'],
     difficulty: 'Beginner',
     category: 'Visual Builder',
     tutorials: [
       {
-        id: 'figma-basics-2025',
-        title: 'Figma: Interface & Frames',
-        description: 'Understand the workspace, frames, constraints, and basic layout principles.',
+        id: 'figma-1',
+        title: 'Figma Basics',
+        description: 'Workspace, frames, constraints, and layout principles',
         duration: '15 min',
         difficulty: 'Beginner',
-        url: 'https://www.youtube.com/watch?v=FigmaBasicsExample'
-      },
-      {
-        id: 'figma-components-variants',
-        title: 'Components, Variants & Tokens',
-        description: 'Create reusable components, use variants and design tokens for consistent systems.',
-        duration: '25 min',
-        difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=FigmaComponentsExample'
-      },
-      {
-        id: 'figma-proto-handoff',
-        title: 'Prototyping & Handoff',
-        description: 'Build interactive prototypes and prepare files for developer handoff.',
-        duration: '20 min',
-        difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=FigmaProtoHandoffExample'
-      },
-      {
-        id: 'figma-plugins-automation',
-        title: 'Plugins & Automation for Designers',
-        description: 'Use key plugins and automations that speed up design-to-no-code workflows.',
-        duration: '18 min',
-        difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=FigmaPluginsExample'
+        url: 'https://help.figma.com/hc/en-us'
       }
     ]
   },
+
+  // ✅ Webflow (marked NEW)
   {
-    id: 'gemini-3',
-    name: 'Gemini 3',
-    description: 'Gemini 3 is Google’s advanced multimodal AI model designed to understand and generate text, images, and code with improved speed, accuracy, and reasoning capabilities.',
-    logo: geminiLogo,
-    website: 'https://deepmind.google/models/gemini/',
-    features: ['Multimodal Understanding', 'Advanced Reasoning', 'Large Context Window', 'Generative UI'],
-    difficulty: 'Intermediate',
-    category: 'AI-Powered',
+    id: 'webflow',
+    name: 'Webflow',
+    description:
+      'Webflow is a visual no-code website builder that lets you design and publish responsive websites with a powerful CMS—ideal for landing pages and fast MVP websites.',
+    logo: webflowLogo,
+    website: 'https://webflow.com',
+    docsUrl: 'https://university.webflow.com',
+    features: ['Visual Builder', 'Responsive Design', 'CMS', 'Hosting'],
+    difficulty: 'Beginner',
+    category: 'Visual Builder',
+    isNew: true,
     tutorials: [
       {
-        id: 'gemini-3-1',
-        title: 'Introduction',
-        description: 'Introduction of Gemini 3 along with some use cases',
-        duration: '18 min',
-        difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=sXXbySqIguA'
-      },
-      {
-        id: 'gemini-3-2',
-        title: 'Crash Course',
-        description: 'Video Tutorial by Riley Brown on how to use Gemini 3',
-        duration: '25 min',
-        difficulty: 'Advanced',
-        url: 'https://www.youtube.com/watch?v=dzFUOQUSiEI'
+        id: 'webflow-1',
+        title: 'Webflow University (Start Here)',
+        description: 'Official learning hub with beginner-friendly lessons',
+        duration: 'Self-paced',
+        difficulty: 'Beginner',
+        url: 'https://university.webflow.com'
       }
     ]
   },
+
   {
     id: 'emergent',
     name: 'Emergent',
     description:
       'Emergent is an AI-assisted builder that helps you spin up working app prototypes quickly. This tutorial track links straight to concise YouTube videos so you can learn the workflow fast.',
     logo: emergentLogo,
-    website: '#',
+    website: 'https://emergent.dev',
+    docsUrl: 'https://emergent.dev/docs',
     features: ['AI-Assisted', 'Rapid Prototyping', 'Web App Scaffolding', 'Iteration Friendly'],
     difficulty: 'Beginner',
     category: 'AI-Powered',
@@ -553,23 +563,17 @@ const platforms: Platform[] = [
         duration: '13 min',
         difficulty: 'Beginner',
         url: 'https://www.youtube.com/watch?v=atnYF5wll74'
-      },
-      {
-        id: 'emergent-3',
-        title: 'Building a SaaS with No Coding Knowledge',
-        description: 'Build an AI Sitcom Generator.',
-        duration: '32 min',
-        difficulty: 'Intermediate',
-        url: 'https://www.youtube.com/watch?v=ZZZZZZZZZZZ'
       }
     ]
   },
   {
     id: 'grok',
     name: 'Grok',
-    description: 'Grok is an AI-powered chatbot developed by xAI that provides real-time, context-aware responses with access to current information. It offers advanced reasoning capabilities and can assist with coding, problem-solving, and creative tasks.',
+    description:
+      'Grok is an AI-powered chatbot developed by xAI that provides real-time, context-aware responses with access to current information.',
     logo: grokLogo,
     website: 'https://grok.com',
+    docsUrl: 'https://docs.x.ai/docs/overview',
     features: ['AI Chatbot', 'Real-time Data', 'Code Generation', 'Advanced Reasoning'],
     difficulty: 'Beginner',
     category: 'AI-Powered',
@@ -581,26 +585,21 @@ const platforms: Platform[] = [
         duration: '15 min',
         difficulty: 'Beginner',
         url: 'https://docs.x.ai/docs/overview'
-      },
-      {
-        id: 'grok-2',
-        title: 'Building App With Grok',
-        description: 'How to use Grok for building apps by Alex Finn',
-        duration: '13 min',
-        difficulty: 'Beginner',
-        url: 'https://www.youtube.com/watch?v=vipfb9FnKtg'
       }
     ]
   },
   {
     id: 'v0',
     name: 'v0',
-    description: 'v0 is Vercel’s AI-powered development platform that turns natural-language prompts into production-ready web apps and UI, generating React code styled with Tailwind',
+    description:
+      'v0 is Vercel’s AI-powered development platform that turns natural-language prompts into production-ready web apps and UI, generating React code styled with Tailwind.',
     logo: v0Logo,
     website: 'https://v0.app',
+    docsUrl: 'https://v0.dev/docs',
     features: ['AI UI Generation', 'React Components', 'Tailwind CSS', 'Instant Prototyping'],
     difficulty: 'Beginner',
     category: 'AI-Powered',
+    isNew: true,
     tutorials: [
       {
         id: 'v0-1',
@@ -648,500 +647,830 @@ const platforms: Platform[] = [
       }
     ]
   }
-
 ];
-// Attach pricing arrays from platformPricing to the platforms by id.
-// Using @ts-ignore to avoid duplicate type-name issues if any.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore
-platforms.forEach((p) => {
-  // use the platform id to lookup pricing; default to [] if missing
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  p.pricing = platformPricing[p.id] ?? [];
-});
+
+function difficultyRank(d: Difficulty) {
+  if (d === 'Beginner') return 1;
+  if (d === 'Intermediate') return 2;
+  return 3;
+}
 
 export function LearnPage() {
-  const [selectedPlatform, setSelectedPlatform] = useState<string>('lovable');
-  const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [showFilters, setShowFilters] = useState(false);
-  const [aiChatOpen, setAiChatOpen] = useState(false);
-  const platformRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const navigate = useNavigate();
 
-  const filteredPlatforms = useMemo(() => {
-    return platforms.filter((platform) => {
-      const matchesDifficulty = difficultyFilter === 'all' || platform.difficulty === difficultyFilter;
-      const matchesCategory = categoryFilter === 'all' || platform.category === categoryFilter;
-      return matchesDifficulty && matchesCategory;
-    });
-  }, [difficultyFilter, categoryFilter]);
+  // ✅ Attach pricing without mutating the original array
+  const platforms = useMemo<Platform[]>(
+    () => platformsRaw.map((p) => ({ ...p, pricing: platformPricing[p.id] ?? [] })),
+    []
+  );
+
+  const [selectedPlatform, setSelectedPlatform] = useState<string>(platforms[0]?.id ?? 'lovable');
+
+  const [filtersMode, setFiltersMode] = useState<'on' | 'off'>(() => {
+    try {
+      // New key
+      const saved = typeof window !== 'undefined' ? window.localStorage.getItem('learn:filtersMode') : null;
+      if (saved === 'on' || saved === 'off') return saved;
+
+      // Back-compat: older toggle naming
+      const legacy = typeof window !== 'undefined' ? window.localStorage.getItem('learn:viewMode') : null;
+      // User expectation: "Filters on" == Explorer, "Filters off" == Classic
+      if (legacy === 'Classic') return 'off';
+      if (legacy === 'Explorer') return 'on';
+    } catch {
+      // ignore
+    }
+    // Default to the old experience (Classic).
+    return 'off';
+  });
+
+  const [goal, setGoal] = useState<'Build fast' | 'Learn UI' | 'Code with AI' | 'Ship a web app'>('Build fast');
+  const [skill, setSkill] = useState<Difficulty>('Beginner');
+  const [budget, setBudget] = useState<'Free' | 'Free/Paid' | 'Paid'>('Free');
+  const [query, setQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'Recommended' | 'Name' | 'Difficulty' | 'Category'>('Recommended');
+
+  // Classic (main) filters
+  const [difficultyFilter, setDifficultyFilter] = useState<'all' | Difficulty>('all');
+  const [categoryFilter, setCategoryFilter] = useState<'all' | Category>('all');
+  const [showFilters, setShowFilters] = useState(false);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
+
+  const platformRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   useEffect(() => {
-    if (!filteredPlatforms.some((platform) => platform.id === selectedPlatform)) {
-      setSelectedPlatform(filteredPlatforms[0]?.id ?? '');
+    try {
+      window.localStorage.setItem('learn:filtersMode', filtersMode);
+      // Clean up legacy key if present so it doesn't confuse future reads
+      window.localStorage.removeItem('learn:viewMode');
+    } catch {
+      // ignore
     }
-  }, [filteredPlatforms, selectedPlatform]);
+  }, [filtersMode]);
 
   const scrollToPlatform = (platformId: string) => {
     setSelectedPlatform(platformId);
     setTimeout(() => {
       const element = platformRefs.current[platformId];
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }, 100);
+      if (element) element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 80);
   };
 
-  const getDifficultyColor = (difficulty: string) => {
+  const getDifficultyColor = (difficulty: Difficulty) => {
     switch (difficulty) {
-      case 'Beginner': return 'bg-green-100 text-green-800';
-      case 'Intermediate': return 'bg-yellow-100 text-yellow-800';
-      case 'Advanced': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Beginner':
+        return 'bg-emerald-500/15 text-emerald-200 border border-emerald-500/20';
+      case 'Intermediate':
+        return 'bg-amber-500/15 text-amber-200 border border-amber-500/20';
+      case 'Advanced':
+        return 'bg-rose-500/15 text-rose-200 border border-rose-500/20';
+      default:
+        return 'bg-zinc-500/15 text-zinc-200 border border-zinc-500/20';
     }
   };
 
-  const getCategoryIcon = (category: string) => {
+  const getCategoryIcon = (category: Category) => {
     switch (category) {
-      case 'Visual Builder': return <Palette className="w-4 h-4" />;
-      case 'Database': return <Database className="w-4 h-4" />;
-      case 'AI-Powered': return <Zap className="w-4 h-4" />;
-      case 'Web Development': return <Code className="w-4 h-4" />;
-      default: return <Globe className="w-4 h-4" />;
+      case 'Visual Builder':
+        return <Palette className="w-4 h-4" />;
+      case 'Database':
+        return <Database className="w-4 h-4" />;
+      case 'AI-Powered':
+        return <Zap className="w-4 h-4" />;
+      case 'Web Development':
+        return <Code className="w-4 h-4" />;
+      default:
+        return <Globe className="w-4 h-4" />;
+    }
+  };
+
+  const recommendedIds = useMemo(() => {
+    const rec = new Set<string>();
+
+    if (goal === 'Build fast') ['lovable', 'windsurf', 'bolt', 'replit', 'webflow', 'figma', 'v0'].forEach((id) => rec.add(id));
+    if (goal === 'Learn UI') ['figma', 'webflow', 'lovable'].forEach((id) => rec.add(id));
+    if (goal === 'Code with AI') ['github-copilot', 'cursor', 'claude-code', 'gemini-cli', 'v0'].forEach((id) => rec.add(id));
+    if (goal === 'Ship a web app') ['replit', 'lovable', 'webflow', 'windsurf', 'v0'].forEach((id) => rec.add(id));
+
+    if (skill === 'Beginner') ['lovable', 'windsurf', 'replit', 'webflow', 'figma', 'base44', 'emergent', 'v0'].forEach((id) => rec.add(id));
+    if (skill === 'Advanced') ['cursor', 'claude-code', 'gemini-cli'].forEach((id) => rec.add(id));
+
+    if (budget === 'Free') ['replit', 'figma', 'gemini-cli'].forEach((id) => rec.add(id));
+
+    return rec;
+  }, [goal, skill, budget]);
+
+  const normalizedQuery = query.trim().toLowerCase();
+
+  const classicFiltered = useMemo(() => {
+    return platforms.filter((p) => {
+      const matchesDifficulty = difficultyFilter === 'all' || p.difficulty === difficultyFilter;
+      const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
+      return matchesDifficulty && matchesCategory;
+    });
+  }, [platforms, difficultyFilter, categoryFilter]);
+
+  useEffect(() => {
+    // Classic selection behavior only applies in Classic mode ("filters off")
+    if (filtersMode !== 'off') return;
+    if (!classicFiltered.some((p) => p.id === selectedPlatform)) {
+      setSelectedPlatform(classicFiltered[0]?.id ?? platforms[0]?.id ?? 'lovable');
+    }
+  }, [filtersMode, classicFiltered, selectedPlatform, platforms]);
+
+  const filtered = useMemo(() => {
+    const base = platforms.filter((p) => {
+      if (!normalizedQuery) return true;
+      const haystack = `${p.name} ${p.description} ${p.category} ${p.difficulty} ${p.features.join(' ')}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+
+    const sorted = [...base].sort((a, b) => {
+      if (sortBy === 'Recommended') {
+        const ar = recommendedIds.has(a.id) ? 0 : 1;
+        const br = recommendedIds.has(b.id) ? 0 : 1;
+        if (ar !== br) return ar - br;
+        return a.name.localeCompare(b.name);
+      }
+      if (sortBy === 'Name') return a.name.localeCompare(b.name);
+      if (sortBy === 'Difficulty') return difficultyRank(a.difficulty) - difficultyRank(b.difficulty);
+      if (sortBy === 'Category') return a.category.localeCompare(b.category);
+      return 0;
+    });
+
+    // ✅ Force Webflow to always be present
+    if (!sorted.some((p) => p.id === 'webflow')) {
+      const webflow = platforms.find((p) => p.id === 'webflow');
+      if (webflow) sorted.unshift(webflow);
+    }
+
+    return sorted;
+  }, [platforms, normalizedQuery, sortBy, recommendedIds]);
+
+  const selected = useMemo(() => {
+    return platforms.find((p) => p.id === selectedPlatform) ?? filtered[0] ?? platforms[0];
+  }, [platforms, selectedPlatform, filtered]);
+
+  const docsUrlFor = (p: Platform) => {
+    // Prefer explicit docsUrl when available.
+    if (p.docsUrl) return p.docsUrl;
+    // Fallback mapping for platforms without docsUrl in data.
+    switch (p.id) {
+      case 'windsurf':
+        return 'https://docs.windsurf.com/windsurf/getting-started';
+      case 'bolt':
+        return 'https://support.bolt.new/';
+      case 'lovable':
+        return 'https://docs.lovable.dev/introduction/welcome';
+      case 'replit':
+        return 'https://docs.replit.com/';
+      case 'github-copilot':
+        return 'https://docs.github.com/en/copilot';
+      case 'claude-code':
+        return 'https://docs.anthropic.com/claude';
+      case 'gemini-cli':
+        return 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli';
+      case 'figma':
+        return 'https://help.figma.com/hc/en-us';
+      case 'gemini-3':
+        return 'https://ai.google.dev/gemini-api/docs/gemini-3';
+      case 'base44':
+        return 'https://docs.base44.com/';
+      case 'emergent':
+        return 'https://emergent.dev/docs';
+      case 'grok':
+        return 'https://docs.x.ai/docs/overview';
+      case 'v0':
+        return 'https://v0.app/docs/introduction';
+      case 'abacus-ai':
+        return 'https://abacus.ai/help';
+      case 'anything':
+        return 'https://www.createanything.com/docs/welcome';
+      case 'perplexity':
+        return 'https://docs.perplexity.ai/getting-started/overview';
+      case 'zapier':
+        return 'https://zapier.com/learn';
+      default:
+        return `${p.website}/docs`;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black relative">
+    <div className="min-h-screen bg-[#070A12] text-white">
       <AILearnChat open={aiChatOpen} onOpenChange={setAiChatOpen} />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">
-            🎓 Explore No-Code Platforms for Fast Prototyping
-          </h1>
+      {/* Background glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute left-1/2 top-[-140px] h-[420px] w-[900px] -translate-x-1/2 rounded-full bg-purple-600/10 blur-[120px]" />
+        <div className="absolute left-[10%] top-[260px] h-[280px] w-[280px] rounded-full bg-cyan-500/10 blur-[90px]" />
+        <div className="absolute right-[8%] top-[540px] h-[320px] w-[320px] rounded-full bg-indigo-500/10 blur-[100px]" />
+      </div>
 
-          <p className="text-gray-300 max-w-2xl mx-auto">
-            Discover the best no-code platforms and learn how to build amazing applications without writing a single line of code.
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
+            <span className="mr-2">🎓</span>Explore No-Code Platforms for Fast Prototyping
+          </h1>
+          <p className="mt-3 text-sm sm:text-base text-white/70 max-w-3xl mx-auto">
+            Discover no-code + AI tools, compare features, and follow guided learning paths to build faster.
           </p>
+          <p className="mt-1 text-xs text-white/40">Total platforms available: {platforms.length}</p>
         </div>
 
-        {/* Filters */}
-        <div className="mb-6 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <Button variant="outline" className="border-gray-600 text-gray-200" onClick={() => setShowFilters((prev) => !prev)}>
-                {showFilters ? 'Hide Filters' : 'Filter'}
-              </Button>
-              <Button
-                variant="outline"
-                className="border-gray-600 text-gray-200"
-                onClick={() => setAiChatOpen(true)}
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                AI Assist
-              </Button>
-              <Button
-                className="bg-gradient-to-r from-purple-600 to-blue-600 text-white hover:from-purple-700 hover:to-blue-700 shadow-lg"
-                onClick={() => navigate('/pathways')}
-              >
-                <BookOpen className="w-4 h-4 mr-2" />
-                Learning Pathways
-              </Button>
-              {(difficultyFilter !== 'all' || categoryFilter !== 'all') && (
-                <Button variant="ghost" className="text-gray-300" onClick={() => { setDifficultyFilter('all'); setCategoryFilter('all'); }}>
-                  Clear
-                </Button>
+        {/* View mode toggle */}
+        <div className="flex justify-center mb-8">
+          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+            <button
+              type="button"
+              onClick={() => setFiltersMode('on')}
+              className={[
+                'px-4 py-2 rounded-full text-sm transition',
+                filtersMode === 'on' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+              ].join(' ')}
+            >
+              Filters on
+            </button>
+            <button
+              type="button"
+              onClick={() => setFiltersMode('off')}
+              className={[
+                'px-4 py-2 rounded-full text-sm transition',
+                filtersMode === 'off' ? 'bg-white/10 text-white' : 'text-white/70 hover:text-white'
+              ].join(' ')}
+            >
+              Filters off
+            </button>
+          </div>
+        </div>
+
+        {filtersMode === 'off' ? (
+          <>
+            {/* Classic controls (from old main) */}
+            <div className="mb-6 space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    variant="outline"
+                    className="border-white/15 text-black/80 hover:bg-white/10"
+                    onClick={() => setShowFilters((prev) => !prev)}
+                  >
+                    {showFilters ? 'Hide Filters' : 'Filter'}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="border-white/15 text-black/80 hover:bg-white/10"
+                    onClick={() => setAiChatOpen(true)}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    AI Assist
+                  </Button>
+
+                  <Button onClick={() => navigate('/pathways')} className="bg-white/10 hover:bg-white/15 border border-white/10">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Learning Pathways
+                  </Button>
+
+                  {(difficultyFilter !== 'all' || categoryFilter !== 'all') && (
+                    <Button
+                      variant="ghost"
+                      className="text-white/70 hover:text-white"
+                      onClick={() => {
+                        setDifficultyFilter('all');
+                        setCategoryFilter('all');
+                      }}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {showFilters && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <label htmlFor="learn-difficulty-filter" className="text-xs font-medium text-white/70">
+                      Difficulty
+                    </label>
+                    <select
+                      id="learn-difficulty-filter"
+                      value={difficultyFilter}
+                      onChange={(e) => setDifficultyFilter(e.target.value as any)}
+                      className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
+                                 focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                    >
+                      <option value="all">All</option>
+                      <option value="Beginner">Beginner</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Advanced">Advanced</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label htmlFor="learn-category-filter" className="text-xs font-medium text-white/70">
+                      Category
+                    </label>
+                    <select
+                      id="learn-category-filter"
+                      value={categoryFilter}
+                      onChange={(e) => setCategoryFilter(e.target.value as any)}
+                      className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
+                                 focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                    >
+                      <option value="all">All</option>
+                      <option value="Visual Builder">Visual Builder</option>
+                      <option value="AI-Powered">AI-Powered</option>
+                      <option value="Web Development">Web Development</option>
+                      <option value="Database">Database</option>
+                    </select>
+                  </div>
+                </div>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-300">
-              <span className="px-3 py-1 rounded-full bg-gray-800 border border-gray-700">
-                Difficulty: {difficultyFilter === 'all' ? 'All' : difficultyFilter}
-              </span>
-              <span className="px-3 py-1 rounded-full bg-gray-800 border border-gray-700">
-                Category: {categoryFilter === 'all' ? 'All' : categoryFilter}
-              </span>
-            </div>
-          </div>
 
-          {showFilters && (
-            <div className="grid sm:grid-cols-2 gap-4 bg-gray-800 border border-gray-700 p-4 rounded-lg">
-              <div className="space-y-2">
-                <label htmlFor="difficulty-select" className="block text-sm text-gray-300">Difficulty</label>
-                <select
-                  id="difficulty-select"
-                  name="difficulty"
-                  title="Difficulty"
-                  aria-label="Difficulty"
-                  value={difficultyFilter}
-                  onChange={(e) => setDifficultyFilter(e.target.value)}
-                  className="w-full rounded-md bg-gray-900 border border-gray-700 text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
+            {/* Classic platform grid */}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {classicFiltered.map((p) => (
+                <Card
+                  key={p.id}
+                  className={[
+                    'cursor-pointer transition-all bg-white/[0.03] border-white/10 hover:bg-white/[0.05]',
+                    selectedPlatform === p.id ? 'ring-2 ring-purple-500/60' : ''
+                  ].join(' ')}
+                  onClick={() => scrollToPlatform(p.id)}
                 >
-                  <option value="all">All</option>
-                  <option value="Beginner">Beginner</option>
-                  <option value="Intermediate">Intermediate</option>
-                  <option value="Advanced">Advanced</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="category-select" className="block text-sm text-gray-300">Category</label>
-                <select
-                  id="category-select"
-                  name="category"
-                  title="Category"
-                  aria-label="Category"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="w-full rounded-md bg-gray-900 border border-gray-700 text-gray-200 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
-                >
-                  <option value="all">All</option>
-                  <option value="Visual Builder">Visual Builder</option>
-                  <option value="AI-Powered">AI-Powered</option>
-                  <option value="Database">Database</option>
-                  <option value="Web Development">Web Development</option>
-                </select>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Platform Overview Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-6 mb-8">
-          {filteredPlatforms.map((platform) => (
-            <Card
-              key={platform.id}
-              className={`cursor-pointer transition-all duration-200 hover:shadow-lg bg-gray-800 border-gray-700 ${selectedPlatform === platform.id ? 'ring-2 ring-purple-500' : ''
-                }`}
-              onClick={() => scrollToPlatform(platform.id)}
-            >
-              <CardContent className="p-6 text-center">
-                <div className="w-full h-16 mb-4 flex items-center justify-center p-2">
-                  <img
-                    src={platform.logo}
-                    alt={platform.name}
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                <h3 className="font-semibold text-lg mb-2 text-white">{platform.name}</h3>
-                <div className="flex items-center justify-center space-x-2 mb-3">
-                  {getCategoryIcon(platform.category)}
-                  <Badge className={getDifficultyColor(platform.difficulty)}>
-                    {platform.difficulty}
-                  </Badge>
-                </div>
-                <div className="mt-3">
-                  <PricingPill pricing={platform.pricing} />
-                </div>
-                <p className="text-sm text-gray-300 line-clamp-3 pt-3">
-                  {platform.description}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-          {filteredPlatforms.length === 0 && (
-            <div className="col-span-full text-center text-gray-300 border border-dashed border-gray-600 rounded-lg p-6">
-              No platforms match the selected filters.
-            </div>
-          )}
-        </div>
-
-        {/* Detailed Platform Information */}
-        <div className="space-y-6">
-          {filteredPlatforms.map((platform) => (
-            <div
-              key={platform.id}
-              className={`space-y-6 ${selectedPlatform === platform.id ? 'block' : 'hidden'}`}
-            >
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader ref={(el) => (platformRefs.current[platform.id] = el)}>
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-12 p-1">
+                  <CardContent className="p-5 text-center">
+                    <div className="w-full h-16 mb-3 flex items-center justify-center p-2">
                       <img
-                        src={platform.logo}
-                        alt={platform.name}
+                        src={p.logo}
+                        alt={p.name}
+                        onError={(e) => {
+                          (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                        }}
                         className="w-full h-full object-contain"
                       />
                     </div>
-                    <div>
-                      <CardTitle className="text-2xl text-white">{platform.name}</CardTitle>
-                      <CardDescription className="text-base text-gray-300">
-                        {platform.description}
-                      </CardDescription>
+
+                    <h3 className="font-semibold text-base text-white">{p.name}</h3>
+                    <div className="mt-2 flex items-center justify-center gap-2 text-xs text-white/75">
+                      <span className="inline-flex items-center gap-1">
+                        {getCategoryIcon(p.category)}
+                        {p.category}
+                      </span>
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full ${getDifficultyColor(p.difficulty)}`}>
+                        {p.difficulty}
+                      </span>
                     </div>
+
+                    <div className="mt-3">
+                      <PricingPill pricing={p.pricing} />
+                    </div>
+
+                    <p className="text-sm text-white/65 line-clamp-3 pt-3">{p.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
+
+              {classicFiltered.length === 0 && (
+                <div className="col-span-full text-center text-white/70 border border-dashed border-white/10 rounded-lg p-6">
+                  No platforms match the selected filters.
+                </div>
+              )}
+            </div>
+
+            {/* Classic details */}
+            {selected && (
+              <div className="mt-10" ref={(el) => (platformRefs.current[selected.id] = el)}>
+                <Card className="bg-white/[0.03] border-white/10 backdrop-blur-md">
+                  <CardHeader>
+                    <div className="flex items-center gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-black/30 border border-white/10 p-2 flex items-center justify-center">
+                        <img
+                          src={selected.logo}
+                          alt={selected.name}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                          }}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <CardTitle className="text-2xl">{selected.name}</CardTitle>
+                        <CardDescription className="text-white/65">{selected.description}</CardDescription>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-6">
+                    <div>
+                      <div className="text-sm font-semibold text-white mb-2">Key Features</div>
+                      <div className="flex flex-wrap gap-2">
+                        {selected.features.map((f) => (
+                          <span key={f} className="text-[11px] px-2 py-1 rounded-full bg-black/25 border border-white/10 text-white/70">
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-4 text-sm text-white/75">
+                      <div className="flex items-center gap-2">
+                        <Globe className="w-4 h-4 text-white/50" />
+                        <span>Category: {selected.category}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-white/50" />
+                        <span>Difficulty: {selected.difficulty}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-white/50" />
+                        <span>{selected.tutorials.length} Tutorials</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Button asChild className="flex-1">
+                        <a href={selected.website} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-4 h-4 mr-2" />
+                          Visit {selected.name}
+                        </a>
+                      </Button>
+
+                      <Button variant="outline" asChild className="flex-1 border-white/15 text-black/80 hover:bg-white/10">
+                        <a href={docsUrlFor(selected)} target="_blank" rel="noopener noreferrer">
+                          <BookOpen className="w-4 h-4 mr-2" />
+                          Documentation
+                        </a>
+                      </Button>
+                    </div>
+
+                    <div>
+                      <PricingPill pricing={selected.pricing} />
+                    </div>
+
+                    <div>
+                      <h3 className="text-white font-semibold mb-3">Learning Path</h3>
+                      <div className="space-y-3">
+                        {selected.tutorials.map((t) => (
+                          <div
+                            key={t.id}
+                            className="rounded-lg border border-white/10 bg-black/25 px-4 py-4 flex items-center justify-between gap-4"
+                          >
+                            <div className="min-w-0">
+                              <div className="text-sm font-medium text-white">{t.title}</div>
+                              <div className="text-xs text-white/65 mt-1">{t.description}</div>
+                              <div className="mt-2 flex items-center gap-2">
+                                <span className={`text-[11px] px-2 py-1 rounded-full ${getDifficultyColor(t.difficulty)}`}>
+                                  {t.difficulty}
+                                </span>
+                                <span className="text-xs text-white/45">{t.duration}</span>
+                              </div>
+                            </div>
+
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              asChild
+                              className="border-white/15 text-black/80 hover:bg-white/10 shrink-0"
+                            >
+                              <a href={t.url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Start
+                              </a>
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Quick category buttons */}
+            <div className="flex flex-wrap justify-center gap-3 mb-8">
+              {['All', 'Visual Builder', 'AI-Powered', 'Web Development', 'Database'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setQuery(cat === 'All' ? '' : cat)}
+                  className="px-4 py-2 rounded-full bg-white/10 hover:bg-purple-500/20 text-sm border border-white/10"
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+        {/* Control Panel */}
+        <Card className="bg-white/[0.03] border-white/10 backdrop-blur-md shadow-xl">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Zap className="w-5 h-5 text-purple-300" />
+              Learn Controls
+            </CardTitle>
+            <CardDescription className="text-white/60">
+              Pick a goal + skill + budget to highlight recommended tools, then search and sort the grid.
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="space-y-6">
+            {/* Picker row */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label htmlFor="learn-goal" className="text-xs font-medium text-white/70">
+                  Goal
+                </label>
+                <select
+                  id="learn-goal"
+                  value={goal}
+                  onChange={(e) => setGoal(e.target.value as any)}
+                  className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
+                             focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                >
+                  <option>Build fast</option>
+                  <option>Learn UI</option>
+                  <option>Code with AI</option>
+                  <option>Ship a web app</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="learn-skill" className="text-xs font-medium text-white/70">
+                  Skill level
+                </label>
+                <select
+                  id="learn-skill"
+                  value={skill}
+                  onChange={(e) => setSkill(e.target.value as Difficulty)}
+                  className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
+                             focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                >
+                  <option>Beginner</option>
+                  <option>Intermediate</option>
+                  <option>Advanced</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="learn-budget" className="text-xs font-medium text-white/70">
+                  Budget
+                </label>
+                <select
+                  id="learn-budget"
+                  value={budget}
+                  onChange={(e) => setBudget(e.target.value as any)}
+                  className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
+                             focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                >
+                  <option>Free</option>
+                  <option>Free/Paid</option>
+                  <option>Paid</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Recommended line */}
+            <div className="rounded-lg border border-white/10 bg-black/25 px-4 py-3">
+              <div className="text-xs text-white/60">Recommended now</div>
+              <div className="mt-1 text-sm text-white/90">
+                {filtered
+                  .filter((p) => recommendedIds.has(p.id))
+                  .slice(0, 8)
+                  .map((p, idx, arr) => (
+                    <span key={p.id}>
+                      <button
+                        onClick={() => scrollToPlatform(p.id)}
+                        className="text-purple-300 hover:text-purple-200 underline underline-offset-4"
+                      >
+                        {p.name}
+                      </button>
+                      {idx < arr.length - 1 ? <span className="text-white/40">, </span> : null}
+                    </span>
+                  ))}
+                {filtered.filter((p) => recommendedIds.has(p.id)).length === 0 && (
+                  <span className="text-white/50">No strong match — try changing filters.</span>
+                )}
+              </div>
+            </div>
+
+            {/* Search + Sort */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-xs font-medium text-white/70">Search tools</label>
+                <div className="relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">
+                    <Globe className="w-4 h-4" />
                   </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Platform Features */}
-                  <div>
-                    <h3 className="font-semibold text-lg mb-3 text-white">Key Features</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                      {platform.features.map((feature) => (
-                        <Badge key={feature} variant="secondary" className="justify-center bg-gray-700 text-gray-200">
+                  <input
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Search by name, feature, difficulty, category…"
+                    className="w-full h-11 rounded-lg bg-black/30 border border-white/10 pl-10 pr-3 text-sm outline-none
+                               focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                  />
+                </div>
+                <div className="text-xs text-white/45">Showing {filtered.length} tools</div>
+              </div>
+
+              <div className="space-y-2">
+                <label htmlFor="learn-sort-by" className="text-xs font-medium text-white/70">
+                  Sort by
+                </label>
+                <select
+                  id="learn-sort-by"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  className="w-full h-11 rounded-lg bg-black/30 border border-white/10 px-3 text-sm outline-none
+                             focus:ring-2 focus:ring-purple-500/60 focus:border-purple-500/40"
+                >
+                  <option>Recommended</option>
+                  <option>Name</option>
+                  <option>Difficulty</option>
+                  <option>Category</option>
+                </select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tool Grid */}
+        <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((platform) => {
+            const isSelected = selected?.id === platform.id;
+            const isRecommended = recommendedIds.has(platform.id);
+
+            return (
+              <Card
+                key={platform.id}
+                className={[
+                  'bg-white/[0.03] border-white/10 backdrop-blur-md transition-all',
+                  'hover:bg-white/[0.05] hover:-translate-y-0.5 hover:shadow-xl',
+                  isSelected ? 'ring-2 ring-purple-500/60' : '',
+                  isRecommended ? 'shadow-[0_0_0_1px_rgba(168,85,247,0.25)]' : ''
+                ].join(' ')}
+              >
+                <CardContent className="p-6">
+                  <button onClick={() => scrollToPlatform(platform.id)} className="w-full text-left">
+                    <div className="flex items-start gap-4">
+                      <div className="w-14 h-14 rounded-xl bg-black/30 border border-white/10 p-2 flex items-center justify-center">
+                        <img
+                          src={platform.logo}
+                          alt={platform.name}
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                          }}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-lg font-semibold">{platform.name}</h3>
+                            {platform.isNew && (
+                              <span className="text-[10px] px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30">
+                                NEW
+                              </span>
+                            )}
+                          </div>
+
+                          {isRecommended && (
+                            <span className="text-[11px] px-2 py-1 rounded-full bg-purple-500/15 border border-purple-500/20 text-purple-200">
+                              Recommended
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mt-2 flex items-center gap-2 text-white/70 text-xs">
+                          <span className="inline-flex items-center gap-1">
+                            {getCategoryIcon(platform.category)}
+                            {platform.category}
+                          </span>
+
+                          <span className="text-white/30">•</span>
+
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full ${getDifficultyColor(platform.difficulty)}`}>
+                            {platform.difficulty}
+                          </span>
+                        </div>
+
+                        <div className="mt-3">
+                          <PricingPill pricing={platform.pricing} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <p className="mt-4 text-sm text-white/70 line-clamp-3">{platform.description}</p>
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {platform.features.slice(0, 4).map((feature) => (
+                        <span
+                          key={feature}
+                          className="text-[11px] px-2 py-1 rounded-full bg-black/25 border border-white/10 text-white/70"
+                        >
                           {feature}
-                        </Badge>
+                        </span>
                       ))}
                     </div>
-                  </div>
-
-                  {/* Platform Info */}
-                  <div className="grid md:grid-cols-3 gap-4">
-                    <div className="flex items-center space-x-2">
-                      <Globe className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-300">Category: {platform.category}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Zap className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-300">Difficulty: {platform.difficulty}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <BookOpen className="w-4 h-4 text-gray-400" />
-                      <span className="text-sm text-gray-300">{platform.tutorials.length} Tutorials</span>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <Button asChild className="flex-1">
-                      <a href={platform.website} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="w-4 h-4 mr-2" />
-                        Visit {platform.name}
-                      </a>
-                    </Button>
-                    <Button variant="outline" asChild className="flex-1">
-                      <a href={
-                        platform.id === 'windsurf' ? 'https://docs.windsurf.com/windsurf/getting-started' :
-                        platform.id === 'bolt' ? 'https://support.bolt.new/' :
-                        platform.id === 'lovable' ? 'https://docs.lovable.dev/introduction/welcome' :
-                        platform.id === 'replit' ? 'https://docs.replit.com/' :
-                        platform.id === 'github-copilot' ? 'https://docs.github.com/en/copilot' :
-                        platform.id === 'claude-code' ? 'https://docs.anthropic.com/claude' :
-                        platform.id === 'gemini-cli' ? 'https://cloud.google.com/gemini/docs/codeassist/gemini-cli' :
-                        platform.id === 'figma' ? 'https://help.figma.com/hc/en-us' :
-                        platform.id === 'gemini-3' ? 'https://ai.google.dev/gemini-api/docs/gemini-3' :
-                        platform.id === 'base44' ? 'https://docs.base44.com/' :
-                        platform.id === 'emergent' ? 'https://emergent.dev/docs' :
-                        platform.id === 'grok' ? 'https://docs.x.ai/docs/overview' :
-                        platform.id === 'v0' ? 'https://v0.app/docs/introduction' :
-                        platform.id === 'abacus-ai' ? 'https://abacus.ai/help' :
-                        platform.id === 'anything' ? 'https://www.createanything.com/docs/welcome' :
-                        platform.id === 'perplexity' ? 'https://docs.perplexity.ai/getting-started/overview' :
-                        platform.id === 'zapier' ? 'https://zapier.com/learn' :
-                        `${platform.website}/docs`
-                      } target="_blank" rel="noopener noreferrer">
-                        <BookOpen className="w-4 h-4 mr-2" />
-                        Documentation
-                      </a>
-                    </Button>
-                  </div>
-                  <div className="sm:mr-4 mb-3 sm:mb-0">
-                    <PricingPill pricing={platform.pricing} />
-                  </div>
+                  </button>
                 </CardContent>
               </Card>
+            );
+          })}
+        </div>
 
-              {/* Tutorials Section */}
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="flex items-center space-x-2 text-white">
-                    <Play className="w-5 h-5" />
-                    <span>Learning Path</span>
-                  </CardTitle>
-                  <CardDescription className="text-gray-300">
-                    Follow these tutorials to master {platform.name}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {platform.tutorials.map((tutorial) => (
-                      <div key={tutorial.id} className="flex items-center justify-between p-4 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-white">{tutorial.title}</h4>
-                          <p className="text-sm text-gray-300 mt-1">{tutorial.description}</p>
-                          <div className="flex items-center space-x-4 mt-2">
-                            <Badge className={getDifficultyColor(tutorial.difficulty)}>
-                              {tutorial.difficulty}
-                            </Badge>
-                            <span className="text-xs text-gray-400">{tutorial.duration}</span>
+        {/* Selected tool details */}
+        {selected && (
+          <div className="mt-10" ref={(el) => (platformRefs.current[selected.id] = el)}>
+            <Card className="bg-white/[0.03] border-white/10 backdrop-blur-md">
+              <CardHeader>
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-black/30 border border-white/10 p-2 flex items-center justify-center">
+                    <img
+                      src={selected.logo}
+                      alt={selected.name}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = fallbackLogo;
+                      }}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-2xl">{selected.name}</CardTitle>
+                      {selected.isNew && (
+                        <span className="text-[10px] px-2 py-1 rounded-full bg-green-500/20 text-green-300 border border-green-500/30">
+                          NEW
+                        </span>
+                      )}
+                    </div>
+                    <CardDescription className="text-white/65">{selected.description}</CardDescription>
+                    <div className="mt-3">
+                      <PricingPill pricing={selected.pricing} />
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="space-y-6">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button asChild className="flex-1">
+                    <a href={selected.website} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Visit
+                    </a>
+                  </Button>
+
+                  <Button variant="outline" asChild className="flex-1 border-white/15 text-black/80 hover:bg-white/10">
+                    <a href={docsUrlFor(selected)} target="_blank" rel="noopener noreferrer">
+                      <BookOpen className="w-4 h-4 mr-2" />
+                      Docs
+                    </a>
+                  </Button>
+                </div>
+
+                <div>
+                  <h3 className="text-white font-semibold mb-3">Learning Path</h3>
+                  <div className="space-y-3">
+                    {selected.tutorials.map((t) => (
+                      <div
+                        key={t.id}
+                        className="rounded-lg border border-white/10 bg-black/25 px-4 py-4 flex items-center justify-between gap-4"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-white">{t.title}</div>
+                          <div className="text-xs text-white/65 mt-1">{t.description}</div>
+                          <div className="mt-2 flex items-center gap-2">
+                            <span className={`text-[11px] px-2 py-1 rounded-full ${getDifficultyColor(t.difficulty)}`}>
+                              {t.difficulty}
+                            </span>
+                            <span className="text-xs text-white/45">{t.duration}</span>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" asChild className="border-gray-600 text-gray-300 hover:bg-gray-700">
-                          <a href={tutorial.url} target="_blank" rel="noopener noreferrer">
-                            <ExternalLink className="w-4 h-4 mr-1" />
+
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          asChild
+                          className="border-white/15 text-black/80 hover:bg-white/10 shrink-0"
+                        >
+                          <a href={t.url} target="_blank" rel="noopener noreferrer">
+                            <ExternalLink className="w-4 h-4 mr-2" />
                             Start
                           </a>
                         </Button>
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          ))}
-        </div>
-
-        {/* Getting Started Guide */}
-        <Card className="mt-8 bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-white">
-              <Zap className="w-5 h-5" />
-              <span>Getting Started Guide</span>
-            </CardTitle>
-            <CardDescription className="text-gray-300">
-              New to no-code development? Follow this step-by-step guide
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-white font-bold">1</span>
                 </div>
-                <h3 className="font-semibold mb-2 text-white">Choose Your Platform</h3>
-                <p className="text-sm text-gray-300">
-                  Start with Lovable for visual building or Windsurf for AI-powered development
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-white font-bold">2</span>
-                </div>
-                <h3 className="font-semibold mb-2 text-white">Follow Tutorials</h3>
-                <p className="text-sm text-gray-300">
-                  Complete the beginner tutorials to understand the platform basics
-                </p>
-              </div>
-              <div className="text-center">
-                <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <span className="text-white font-bold">3</span>
-                </div>
-                <h3 className="font-semibold mb-2 text-white">Build & Practice</h3>
-                <p className="text-sm text-gray-300">
-                  Create your first project and practice with our challenges
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* InnovAIte Section */}
-        <Card className="mt-8 bg-gray-800 border-gray-700">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2 text-2xl text-white">
-              <img src={innovAIteLogo} alt="InnovAIte Logo" className="w-8 h-8" />
-              <span>About InnovAIte</span>
-            </CardTitle>
-            <CardDescription className="text-lg text-gray-300">
-              Meet the team behind NoCodeJam and learn about our mission
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="prose max-w-none">
-              <p className="text-gray-300 mb-4">
-                <strong>InnovAIte</strong> is focused on testing and validating two key programs that will make up SPARK when it launches in 2026 - the AI Generalist Program and the AI Prototyping Lab.
-              </p>
-
-              <p className="text-gray-300 mb-4">
-                Our mission is to understand how AI tools and platforms can dramatically compress startup development cycles from months to days, making entrepreneurship more accessible to everyone regardless of technical background.
-              </p>
-
-              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600 mb-4">
-                <h4 className="font-semibold text-purple-400 mb-2">Our Structure</h4>
-                <p className="text-gray-300 mb-3">
-                  At InnovAIte, we operate with a collaborative structure that encourages team leadership and contributions. While Jesse McMeikan serves as our Product Owner, Dr Leon Yang as the Acting Academic Company Director, and Scott West as our Industry Mentor, we focus on contributions made by students to our validation projects.
-                </p>
-              </div>
-
-              <div className="bg-gray-700 p-4 rounded-lg border border-gray-600 mb-4">
-                <h4 className="font-semibold text-blue-400 mb-2">Our Operations: "The Three C's"</h4>
-                <div className="space-y-3">
-                  <div>
-                    <h5 className="font-medium text-white">Code</h5>
-                    <p className="text-gray-300 text-sm">
-                      We use GitLab as our code repository with Code Integration Leads who help manage AI coding tools, establish best practices, and manage the handoff between AI-generated code and human refinement.
-                    </p>
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-white">Communication</h5>
-                    <p className="text-gray-300 text-sm">
-                      We use MS Teams for direct communication with students and for updates about events, managed by Comms Leads who also make Company-wide OnTrack submissions.
-                    </p>
-                  </div>
-                  <div>
-                    <h5 className="font-medium text-white">Coordination</h5>
-                    <p className="text-gray-300 text-sm">
-                      We use Microsoft Planner as our main source of truth for all activities. Sprint Leads manage the challenge of adapting traditional agile frameworks to AI-accelerated development cycles.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <Card className="bg-gradient-to-r from-purple-600 to-blue-600 text-white border-0">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <Play className="w-5 h-5 mr-2" />
-                    Company Handover Video
-                  </CardTitle>
-                  <CardDescription className="text-purple-100">
-                    Watch our Trimester 1 handover presentation
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    variant="secondary"
-                    className="bg-white text-purple-600 hover:bg-gray-100"
-                    onClick={() => window.open('https://www.youtube.com/watch?v=WPt6f4-sM4s', '_blank')}
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Watch Video
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-0">
-                <CardHeader>
-                  <CardTitle className="flex items-center text-lg">
-                    <Play className="w-5 h-5 mr-2" />
-                    YouTube Channel
-                  </CardTitle>
-                  <CardDescription className="text-blue-100">
-                    Subscribe to our channel for the latest tutorials and updates
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button
-                    variant="secondary"
-                    className="bg-white text-blue-600 hover:bg-gray-100"
-                    onClick={() => window.open('https://www.youtube.com/@innovAIteDeakin', '_blank')}
-                  >
-                    <Play className="w-4 h-4 mr-2" />
-                    Visit Channel
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="bg-gray-700 p-4 rounded-lg border border-gray-600">
-              <h4 className="font-semibold text-green-400 mb-2">Get Involved</h4>
-              <p className="text-gray-300 mb-3">
-                Deakin students can access our GitLab repository and contribute to our validation projects. Look for the SSO sign-in button.
-              </p>
-              <Button
-                variant="outline"
-                className="border-green-400 text-green-400 hover:bg-green-400 hover:text-white"
-                onClick={() => window.open('https://gitlab.deakin.edu.au/innovaite-lab', '_blank')}
-              >
-                <ExternalLink className="w-4 h-4 mr-2" />
-                Visit GitLab Repository
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+          </>
+        )}
       </div>
     </div>
   );
