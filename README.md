@@ -36,25 +36,50 @@ NoCodeJam is a hackathon-style platform where developers can:
 
 2. Configure environment variables (frontend):
 
-   Create a `.env.local` in the project root with:
+   **Important**: The `.env.local` file is not tracked in GitHub for security reasons. You need to obtain this file from **Scott** or **Jesse** to run the project locally.
+
+   Place the `.env.local` file in the project root. It should contain:
 
    ```bash
    VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
    VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
    ```
 
-   You can find these in Supabase Dashboard → Project Settings → API.
+   Alternatively, you can create your own by getting these values from Supabase Dashboard → Project Settings → API.
 
-2. Start the development server:
+3. Start the development server:
    ```bash
    npm run dev
    ```
 
-3. Open [http://localhost:5173](http://localhost:5173) in your browser
+4. Open [http://localhost:5173](http://localhost:5173) in your browser
 
 ## Live Demo
 
 🌐 **Live Site**: https://nocodejam2.vercel.app/
+
+## Production Deployment
+
+The live site is automatically deployed via Vercel when changes are merged to the `prod` branch.
+
+### Deployment Process
+
+1. **Merge to Production**: Merge your changes from `main` to `prod`
+   ```bash
+   git checkout prod
+   git merge main
+   git push origin prod
+   ```
+
+2. **Automatic Deployment**: Vercel automatically detects the push to `prod` and triggers the deployment pipeline
+   - Builds the application
+   - Runs any configured tests
+   - Deploys to production
+   - Updates the live site at https://nocodejam2.vercel.app/
+
+3. **Monitor Deployment**: Check the Vercel dashboard for deployment status and logs
+
+**Note**: Always ensure your code is tested and reviewed before merging to `prod`. The deployment happens automatically and will update the live site immediately.
 
 ## Key Pages
 
