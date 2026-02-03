@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Nice-to-have meta -->
+    <meta name="theme-color" content="#0b0f1a" />
+    <meta name="color-scheme" content="dark light" />
+    <meta name="description" content="NoCodeJam" />
+
+    <!-- Fonts (optional): swap with your preferred font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/src/loader.css" />
+
+    <title>NoCodeJam</title>
+  </head>
+
+  <body class="bg-blobs">
+    <div id="app-loader" role="status" aria-live="polite">
+      <div class="loader-card">
+        <div class="loader-top">
+          <div class="spinner" aria-hidden="true"></div>
+          <div class="loader-title">Loading NoCodeJam</div>
+        </div>
+        <div class="loader-sub">
+          Getting things ready…
+        </div>
+        <div class="loader-bar" aria-hidden="true"><i></i></div>
+      </div>
+    </div>
+
+    <div id="root"></div>
+    <noscript style="display:block;padding:16px;color:white;">
+      This app needs JavaScript enabled to run.
+    </noscript>
+
+    <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      // Hide loader when the app signals it's ready.
+      window.addEventListener("app:ready", () => {
+        const el = document.getElementById("app-loader");
+        if (!el) return;
+        el.dataset.hide = "true";
+        setTimeout(() => el.remove(), 450);
+      });
+
+      // Safety fallback (in case JS errors out)
+      setTimeout(() => {
+        const el = document.getElementById("app-loader");
+        if (!el) return;
+        el.dataset.hide = "true";
+        setTimeout(() => el.remove(), 450);
+      }, 8000);
+    </script>
+  </body>
+</html>

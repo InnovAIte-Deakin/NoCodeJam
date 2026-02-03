@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <!-- Simple, original multi-circle badge inspired by UI tool icons -->
+  <rect width="120" height="120" rx="16" fill="#0f172a"/>
+  <g transform="translate(20,18)">
+    <circle cx="18" cy="18" r="16" fill="#FF7262"/>
+    <circle cx="42" cy="18" r="16" fill="#FFCF5C"/>
+    <circle cx="66" cy="18" r="16" fill="#6CE4B8"/>
+    <rect x="18" y="36" width="32" height="32" rx="8" fill="#7AD1FF"/>
+  </g>
+</svg>
