@@ -4,13 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, BookOpen } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { chatWithLearningArchitect, type AIMessage } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/errorHandling';
 
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-}
+const INITIAL_MESSAGE: AIMessage = {
+    role: 'assistant',
+    content: "Hello! I'm your Learning Guide. What skills or tools would you like to learn today? Tell me your goals, and I'll recommend a pathway for you."
+};
 
 interface AILearnChatProps {
     open: boolean;
@@ -18,12 +19,7 @@ interface AILearnChatProps {
 }
 
 export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            role: 'assistant',
-            content: "Hello! I'm your Learning Guide. What skills or tools would you like to learn today? Tell me your goals, and I'll recommend a pathway for you."
-        }
-    ]);
+    const [messages, setMessages] = useState<AIMessage[]>([INITIAL_MESSAGE]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -46,32 +42,24 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
         setIsLoading(true);
 
         // UI update: Add user message immediately
-        const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
+        const newMessages: AIMessage[] = [...messages, { role: 'user', content: userMessage }];
         setMessages(newMessages);
 
         try {
-            const { data, error } = await supabase.functions.invoke('generate-challenge', {
-                body: {
-                    action: 'chat-learn',
-                    messages: newMessages
-                }
-            });
+            const { message, fallback } = await chatWithLearningArchitect(newMessages);
+            setMessages([...newMessages, { role: 'assistant', content: message }]);
 
-            if (error) throw error;
-            if (data?.error) throw new Error(data.error);
-
-            // Add assistant response
-            if (data?.message) {
-                setMessages([...newMessages, { role: 'assistant', content: data.message }]);
-            } else {
-                throw new Error("No response message received");
+            if (fallback.fallbackUsed) {
+                toast({
+                    title: "Fallback Response",
+                    description: fallback.fallbackReason ?? "The AI service was unavailable, so a fallback learning response was used.",
+                });
             }
-
         } catch (err) {
             console.error('Chat error:', err);
             toast({
                 title: "Chat Error",
-                description: err instanceof Error ? err.message : "Failed to get response",
+                description: getErrorMessage(err),
                 variant: "destructive"
             });
         } finally {
