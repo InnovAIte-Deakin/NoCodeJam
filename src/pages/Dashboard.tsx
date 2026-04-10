@@ -5,34 +5,53 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/lib/supabaseClient';
+import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
-import { Trophy, Star, Calendar, ExternalLink, Github } from 'lucide-react';
+import { Trophy, Star, Calendar, ExternalLink, Github, BookOpen } from 'lucide-react';
+import {
+  getDashboardAnalyticsData,
+  type DashboardAnalyticsData,
+} from '@/services/analyticsService';
 
 export function Dashboard() {
   const { user } = useAuth();
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [challenges, setChallenges] = useState<any[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      if (user) {
-        const { data: submissionsData } = await supabase
-          .from('submissions')
-          .select('*')
-          .eq('user_id', user.id);
-        setSubmissions(submissionsData || []);
-      } else {
-        setSubmissions([]);
+      if (!user) {
+        setDashboardData(null);
+        setLoading(false);
+        return;
       }
-      const { data: challengesData } = await supabase
-        .from('challenges')
-        .select('*');
-      setChallenges(challengesData || []);
+
+      try {
+        const data = await getDashboardAnalyticsData(user.id);
+        setDashboardData(data);
+      } catch (error) {
+        console.error('Error loading dashboard analytics:', error);
+        toast({
+          title: 'Failed to load dashboard',
+          description: error instanceof Error ? error.message : 'Unable to load dashboard analytics.',
+          variant: 'destructive',
+        });
+        setDashboardData({
+          summary: {
+            current_xp: user.xp,
+            xp_progress_percent: (user.xp % 1000) / 10,
+            xp_to_next_milestone: Math.max(1000 - (user.xp % 1000), 0),
+            completed_challenges: 0,
+            badge_count: user.badges.length,
+          },
+          recent_submissions: [],
+          pathways: [],
+        });
+      }
       setLoading(false);
     };
+
     fetchData();
   }, [user]);
 
@@ -41,9 +60,15 @@ export function Dashboard() {
     return <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">Loading dashboard...</div>;
   }
 
-  const completedChallenges = submissions.filter(s => s.status === 'approved').length;
-  const nextLevelXP = Math.ceil(user.xp / 1000) * 1000;
-  const progressToNextLevel = (user.xp % 1000) / 10;
+  const summary = dashboardData?.summary ?? {
+    current_xp: user.xp,
+    xp_progress_percent: (user.xp % 1000) / 10,
+    xp_to_next_milestone: Math.max(1000 - (user.xp % 1000), 0),
+    completed_challenges: 0,
+    badge_count: user.badges.length,
+  };
+  const recentSubmissions = dashboardData?.recent_submissions ?? [];
+  const pathways = dashboardData?.pathways ?? [];
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
@@ -73,22 +98,22 @@ export function Dashboard() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-xs sm:text-sm font-medium text-gray-300">Current XP</span>
-                    <span className="text-xl sm:text-2xl font-bold text-purple-400">{user.xp}</span>
+                    <span className="text-xl sm:text-2xl font-bold text-purple-400">{summary.current_xp}</span>
                   </div>
                   <div>
                     <div className="flex justify-between text-xs sm:text-sm text-gray-300 mb-2">
                       <span>Progress to next milestone</span>
-                      <span>{nextLevelXP - (user?.xp ?? 0)} XP remaining</span> 
+                      <span>{summary.xp_to_next_milestone} XP remaining</span>
                     </div>
-                    <Progress value={progressToNextLevel} className="h-3" />
+                    <Progress value={summary.xp_progress_percent} className="h-3" />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4">
                     <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-purple-400">{completedChallenges}</div>
+                      <div className="text-xl sm:text-2xl font-bold text-purple-400">{summary.completed_challenges}</div>
                       <div className="text-xs sm:text-sm text-gray-300">Challenges Completed</div>
                     </div>
                     <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{(user?.badges ?? []).length}</div>
+                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{summary.badge_count}</div>
                       <div className="text-xs sm:text-sm text-gray-300">Badges Earned</div>
                     </div>
                   </div>
@@ -105,14 +130,13 @@ export function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                {submissions.length > 0 ? (
+                {recentSubmissions.length > 0 ? (
                   <div className="space-y-4">
-                    {submissions.slice(0, 3).map((submission) => {
-                      const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
+                    {recentSubmissions.slice(0, 3).map((submission) => {
                       return (
                         <div key={submission.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-700 rounded-lg space-y-2 sm:space-y-0">
                           <div className="flex-1">
-                            <h4 className="font-medium text-sm sm:text-base text-white">{challenge?.title}</h4>
+                            <h4 className="font-medium text-sm sm:text-base text-white">{submission.challenge_title}</h4>
                             <p className="text-xs sm:text-sm text-gray-300">
                               Submitted {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
                             </p>
@@ -128,11 +152,13 @@ export function Dashboard() {
                             >
                               {submission.status}
                             </Badge>
-                            <Button variant="ghost" size="sm" asChild>
-                              <a href={submission.submission_url} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="w-4 h-4" />
-                              </a>
-                            </Button>
+                            {submission.submission_url && (
+                              <Button variant="ghost" size="sm" asChild>
+                                <a href={submission.submission_url} target="_blank" rel="noopener noreferrer">
+                                  <ExternalLink className="w-4 h-4" />
+                                </a>
+                              </Button>
+                            )}
                           </div>
                         </div>
                       );
@@ -144,6 +170,52 @@ export function Dashboard() {
                     <p className="text-sm sm:text-base text-gray-300 mb-3 sm:mb-4">No submissions yet</p>
                     <Button asChild>
                       <Link to="/challenges">Start Your First Challenge</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800 border-gray-700">
+              <CardHeader>
+                <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl text-white">
+                  <BookOpen className="w-5 h-5 text-cyan-400" />
+                  <span>Pathway Progress</span>
+                </CardTitle>
+                <CardDescription className="text-gray-300">
+                  Your active learning pathways and completion progress
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                {pathways.length > 0 ? (
+                  <div className="space-y-4">
+                    {pathways.map((pathway) => (
+                      <div key={pathway.pathway_id} className="rounded-lg bg-gray-700 p-4">
+                        <div className="mb-3 flex items-start justify-between gap-3">
+                          <div>
+                            <h4 className="font-medium text-sm sm:text-base text-white">{pathway.pathway_title}</h4>
+                            <p className="text-xs sm:text-sm text-gray-300">
+                              {pathway.completed_challenges}/{pathway.total_challenges} challenges completed
+                            </p>
+                          </div>
+                          <span className="text-xs sm:text-sm font-medium text-cyan-300">
+                            {pathway.total_xp} XP
+                          </span>
+                        </div>
+                        <Progress value={pathway.progress_percent} className="mb-2 h-3" />
+                        <div className="flex items-center justify-between text-xs sm:text-sm text-gray-300">
+                          <span>{pathway.progress_percent}% complete</span>
+                          <span className="capitalize">{pathway.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 sm:py-8">
+                    <BookOpen className="mx-auto mb-3 h-10 w-10 text-gray-400 sm:h-12 sm:w-12" />
+                    <p className="text-sm sm:text-base text-gray-300 mb-3 sm:mb-4">No pathways in progress yet</p>
+                    <Button asChild>
+                      <Link to="/pathways">Browse Pathways</Link>
                     </Button>
                   </div>
                 )}
