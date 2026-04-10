@@ -1,5 +1,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import {
+  buildFallbackChallenge,
+  buildFallbackChatMessage,
+  buildFallbackLearningMessage,
+  extractAnthropicText,
+  getPromptLength,
+  hasUserMessage,
+  isValidAction,
+  normalizeChallenge,
+  parseGeneratedChallenge,
+  sanitizeMessages,
+} from "./shared.js";
 
 type ChallengeAction = 'chat' | 'chat-learn' | 'generate';
 
@@ -116,208 +128,12 @@ CRITICAL RULES:
 
 const MODEL = "claude-sonnet-4-5-20250929";
 const MAX_MESSAGE_LENGTH = 10000;
-const RESTRICTED_TERMS = ["must use", "required", "mandatory", "have to use"];
 
 function jsonResponse(payload: unknown, status = 200) {
   return new Response(JSON.stringify(payload), {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
-}
-
-function isValidAction(value: unknown): value is ChallengeAction {
-  return value === 'chat' || value === 'chat-learn' || value === 'generate';
-}
-
-function sanitizeMessages(input: unknown): AIMessage[] {
-  if (!Array.isArray(input)) return [];
-
-  return input
-    .map((message) => {
-      if (!message || typeof message !== 'object') return null;
-
-      const role = (message as Record<string, unknown>).role;
-      const content = (message as Record<string, unknown>).content;
-
-      if ((role !== 'user' && role !== 'assistant') || typeof content !== 'string') {
-        return null;
-      }
-
-      const trimmedContent = content.trim();
-      if (!trimmedContent) return null;
-
-      return {
-        role,
-        content: trimmedContent,
-      };
-    })
-    .filter((message): message is AIMessage => message !== null)
-    .slice(-20);
-}
-
-function getPromptLength(messages: AIMessage[]) {
-  return JSON.stringify(messages).length;
-}
-
-function extractAnthropicText(payload: unknown): string {
-  if (!payload || typeof payload !== 'object') {
-    throw new Error("Invalid AI response payload");
-  }
-
-  const content = (payload as { content?: Array<{ type?: string; text?: string }> }).content;
-  if (!Array.isArray(content)) {
-    throw new Error("AI response content missing");
-  }
-
-  const text = content
-    .filter((block) => block?.type === 'text' && typeof block.text === 'string')
-    .map((block) => block.text?.trim() ?? '')
-    .filter(Boolean)
-    .join('\n\n');
-
-  if (!text) {
-    throw new Error("AI response text missing");
-  }
-
-  return text;
-}
-
-function getLastUserMessage(messages: AIMessage[]): string {
-  const userMessages = messages.filter((message) => message.role === 'user');
-  return userMessages[userMessages.length - 1]?.content ?? "";
-}
-
-function toTitleCase(value: string) {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 6)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-}
-
-function buildFallbackChatMessage(messages: AIMessage[]): string {
-  const latestPrompt = getLastUserMessage(messages);
-
-  if (!latestPrompt) {
-    return "I'm having trouble reaching the AI service. For now, tell me three things: what the learner should build, the difficulty level, and the estimated time.";
-  }
-
-  return `I'm having trouble reaching the AI service right now, but we can keep going. Based on "${latestPrompt}", tell me the learner outcome, target difficulty, and time estimate, and I'll help you shape the challenge manually.`;
-}
-
-function buildFallbackLearningMessage(messages: AIMessage[]): string {
-  const latestPrompt = getLastUserMessage(messages);
-
-  if (!latestPrompt) {
-    return "I'm having trouble reaching the AI service. For now, tell me what you want to learn, your current experience level, and how much time you have.";
-  }
-
-  return `I'm having trouble reaching the AI service right now, but we can still narrow it down. Based on "${latestPrompt}", reply with your experience level and available time, and we can outline a practical next step manually.`;
-}
-
-function buildFallbackChallenge(messages: AIMessage[]) {
-  const latestPrompt = getLastUserMessage(messages);
-  const titleSeed = latestPrompt || "Custom NoCode Challenge";
-  const title = toTitleCase(titleSeed) || "Custom NoCode Challenge";
-  const safeTitle = title.endsWith("Challenge") ? title : `${title} Challenge`;
-
-  return normalizeChallenge({
-    title: safeTitle,
-    difficulty: "Beginner",
-    estimatedTime: 60,
-    challengeType: "Build",
-    recommendedTools: ["Supabase", "Vite"],
-    xp: "(calculated by system)",
-    coverImageDescription: "A clean product mockup showing a no-code workflow in progress.",
-    versionNumber: "1.0",
-    fullDescription: `# ${safeTitle}
-
-**Difficulty:** Beginner
-**Time Estimate:** 60 minutes
-**XP:** (calculated by system)
-
-## Challenge Description
-Create a first draft of this challenge based on the request below, then refine it manually before submission.
-
-### User Request
-${latestPrompt || "No detailed request was provided."}
-
-## Suggested Approach
-- Define the main user outcome
-- Build a small working prototype
-- Review the result and document what was learned
-`,
-    requirements: [
-      "Create a working first version of the requested challenge",
-      "Document the expected learner outcome",
-      "Review the generated draft before submitting",
-    ],
-  });
-}
-
-function stripMarkdownCodeFence(value: string) {
-  const jsonMatch = value.match(/```json\s*([\s\S]*?)\s*```/) ?? value.match(/```\s*([\s\S]*?)\s*```/);
-  const raw = jsonMatch ? jsonMatch[1] : value;
-  return raw.trim().replace(/^```/, '').replace(/```$/, '').trim();
-}
-
-function parseGeneratedChallenge(text: string): GeneratedChallenge {
-  const cleanedText = stripMarkdownCodeFence(text);
-  const parsed = JSON.parse(cleanedText);
-
-  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-    throw new Error("AI returned an invalid challenge payload");
-  }
-
-  return parsed as GeneratedChallenge;
-}
-
-function normalizeChallenge(challenge: GeneratedChallenge) {
-  const validationWarnings: string[] = [];
-
-  const normalizedChallenge = {
-    title: typeof challenge.title === 'string' ? challenge.title.trim() : "",
-    challengeId: typeof challenge.challengeId === 'string' ? challenge.challengeId : "",
-    associatedPathway: typeof challenge.associatedPathway === 'string' ? challenge.associatedPathway : "",
-    associatedModule: typeof challenge.associatedModule === 'string' ? challenge.associatedModule : "",
-    difficulty: typeof challenge.difficulty === 'string' ? challenge.difficulty : "",
-    estimatedTime: typeof challenge.estimatedTime === 'number'
-      ? challenge.estimatedTime
-      : parseInt(String(challenge.estimatedTime ?? ""), 10) || 60,
-    challengeType: typeof challenge.challengeType === 'string' ? challenge.challengeType : "",
-    recommendedTools: Array.isArray(challenge.recommendedTools)
-      ? challenge.recommendedTools.filter((tool): tool is string => typeof tool === 'string' && tool.trim().length > 0)
-      : [],
-    xp: typeof challenge.xp === 'string' ? challenge.xp : "(calculated by system)",
-    coverImageDescription: typeof challenge.coverImageDescription === 'string' ? challenge.coverImageDescription : "",
-    versionNumber: typeof challenge.versionNumber === 'string' ? challenge.versionNumber : "1.0",
-    fullDescription: typeof challenge.fullDescription === 'string' ? challenge.fullDescription : "",
-    requirements: Array.isArray(challenge.requirements)
-      ? challenge.requirements.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-      : [],
-  };
-
-  if (normalizedChallenge.xp !== "(calculated by system)") {
-    normalizedChallenge.xp = "(calculated by system)";
-    validationWarnings.push("AI generated specific XP. Reset to system-calculated.");
-  }
-
-  const textToCheck = `${normalizedChallenge.recommendedTools.join(" ")} ${normalizedChallenge.fullDescription}`.toLowerCase();
-  for (const term of RESTRICTED_TERMS) {
-    if (textToCheck.includes(term)) {
-      validationWarnings.push(`Content contains restrictive language ('${term}'). Tools should be 'recommended'.`);
-    }
-  }
-
-  const requiredFields = ['title', 'difficulty', 'estimatedTime', 'challengeType'] as const;
-  for (const field of requiredFields) {
-    if (!normalizedChallenge[field]) {
-      validationWarnings.push(`Missing required field: ${field}`);
-    }
-  }
-
-  return { challenge: normalizedChallenge, validationWarnings };
 }
 
 async function callAnthropic(apiKey: string, system: string, messages: AIMessage[], maxTokens: number) {
@@ -393,6 +209,10 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: "At least one non-empty message is required." }, 400);
     }
 
+    if (!hasUserMessage(messages)) {
+      return jsonResponse({ error: "At least one user message is required." }, 400);
+    }
+
     // 3. Rate Limiting Check (20 requests / hour)
     const ONE_HOUR_AGO = new Date(Date.now() - 60 * 60 * 1000).toISOString();
 
@@ -454,7 +274,9 @@ Deno.serve(async (req: Request) => {
       if (action === 'chat') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         const payload: ChatSuccessPayload = {
-          message: "This is a mock response (API Key missing). I'm your Challenge Assistant. Tell me about your challenge idea!"
+          message: "This is a mock response (API Key missing). I'm your Challenge Assistant. Tell me about your challenge idea!",
+          fallbackUsed: true,
+          fallbackReason: "ANTHROPIC_API_KEY is not configured.",
         };
         return jsonResponse(payload);
       }
@@ -462,7 +284,9 @@ Deno.serve(async (req: Request) => {
       if (action === 'chat-learn') {
         await new Promise(resolve => setTimeout(resolve, 1000));
         const payload: ChatSuccessPayload = {
-          message: "This is a mock response (API Key missing). I'm your Learning Architect. I can help design a learning pathway for you. What do you want to learn?"
+          message: "This is a mock response (API Key missing). I'm your Learning Architect. I can help design a learning pathway for you. What do you want to learn?",
+          fallbackUsed: true,
+          fallbackReason: "ANTHROPIC_API_KEY is not configured.",
         };
         return jsonResponse(payload);
       }
@@ -548,10 +372,9 @@ Deno.serve(async (req: Request) => {
         ];
 
         const generatedText = await callAnthropic(apiKey!, GENERATE_SYSTEM_PROMPT, generationMessages, 4096);
-        await logUsage('success', MODEL, generatedText.length);
-
         const challenge = parseGeneratedChallenge(generatedText);
         const normalizedResult = normalizeChallenge(challenge);
+        await logUsage('success', MODEL, generatedText.length);
         const payload: GenerateSuccessPayload = {
           challenge: normalizedResult.challenge,
           validationWarnings: normalizedResult.validationWarnings,
