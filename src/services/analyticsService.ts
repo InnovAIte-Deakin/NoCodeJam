@@ -84,7 +84,7 @@ function getNextMilestone(currentXp: number): number {
     return 1000;
   }
 
-  return Math.ceil(currentXp / 1000) * 1000;
+  return (Math.floor(currentXp / 1000) + 1) * 1000;
 }
 
 function buildDashboardSummary(
@@ -293,19 +293,23 @@ export async function getUserPathwayProgress(
     const completedChallenges = pathwayChallenges.filter((challenge) =>
       completedChallengeIds.has(challenge.id)
     ).length;
+    const progressPercent =
+      totalChallenges > 0
+        ? Math.round((completedChallenges / totalChallenges) * 100)
+        : enrollment.progress ?? 0;
 
-    return [
-      {
-        pathway_id: pathway.id,
-        pathway_title: pathway.title,
-        progress_percent: enrollment.progress ?? 0,
-        completed_challenges: completedChallenges,
-        total_challenges: totalChallenges,
-        total_xp: pathway.total_xp,
-        status: enrollment.status,
-      },
-    ];
-  });
+      return [
+        {
+          pathway_id: pathway.id,
+          pathway_title: pathway.title,
+          progress_percent: progressPercent,
+          completed_challenges: completedChallenges,
+          total_challenges: totalChallenges,
+          total_xp: pathway.total_xp,
+          status: enrollment.status,
+        },
+      ];
+    });
 }
 
 export async function getDashboardAnalyticsData(
