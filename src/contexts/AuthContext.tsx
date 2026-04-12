@@ -110,18 +110,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<AuthResult> => {
-    setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setIsLoading(false);
+  setIsLoading(true);
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  setIsLoading(false);
 
-    if (error) {
-      // eslint-disable-next-line no-console
-      console.error("login error:", error);
-      return { ok: false, error: error.message };
+  if (error) {
+    console.error("login error:", error);
+
+    let message = error.message;
+
+    if (
+      message.toLowerCase().includes("invalid") ||
+      message.toLowerCase().includes("credentials")
+    ) {
+      message = "Invalid email or password.";
     }
 
-    return { ok: true };
-  };
+    return { ok: false, error: message };
+  }
+
+  return { ok: true };
+};
 
   const register = async (
     email: string,
