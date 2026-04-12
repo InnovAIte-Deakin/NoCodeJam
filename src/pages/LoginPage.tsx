@@ -27,7 +27,7 @@ export function LoginPage() {
     if (!res.ok) {
       toast({
         title: "Sign in failed",
-        description: res.error,
+        description: res.error || "Invalid email or password",
         variant: "destructive",
       });
       return;
