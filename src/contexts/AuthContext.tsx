@@ -138,11 +138,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     setIsLoading(false);
 
-    if (error) {
-      // eslint-disable-next-line no-console
-      console.error("register error:", error);
-      return { ok: false, error: error.message };
-    }
+   if (error) {
+  console.error("register error:", error);
+
+  let message = error.message;
+
+  if (
+    message.toLowerCase().includes("already") ||
+    message.toLowerCase().includes("exists") ||
+    message.toLowerCase().includes("registered")
+  ) {
+    message = "An account with this email already exists. Please sign in instead.";
+  }
+
+  return { ok: false, error: message };
+}
 
     // If email confirmations are enabled, user may be created but no session exists yet.
     // We treat this as success and let UI instruct user.
