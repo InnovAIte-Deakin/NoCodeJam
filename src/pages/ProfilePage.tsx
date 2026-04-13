@@ -119,31 +119,29 @@ export function ProfilePage() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      if (id && id !== currentUser?.id) {
-        const { data, error } = await supabase
-          .from('users')
-          .select('*')
-          .eq('id', id)
-          .single();
-        if (!error && data) {
-          setProfileUser(data);
-          setFormData({
-            username: data.username || '',
-            bio: data.bio || '',
-            githubUsername: data.githubUsername || '',
-            avatar: data.avatar || ''
-          });
-        }
-      } else {
-        setProfileUser(currentUser);
+      const targetUserId = id || currentUser?.id;
+
+      if (!targetUserId) return;
+
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', targetUserId)
+        .maybeSingle();
+      
+      
+
+      if (!error && data) {
+        setProfileUser(data);
         setFormData({
-          username: currentUser?.username || '',
-          bio: currentUser?.bio || '',
-          githubUsername: currentUser?.githubUsername || '',
-          avatar: currentUser?.avatar || ''
+          username: data.username || '',
+          bio: data.bio || '',
+          githubUsername: data.github_username || '',
+          avatar: data.avatar || ''
         });
       }
     };
+
     fetchUser();
   }, [id, currentUser]);
 
@@ -182,6 +180,7 @@ export function ProfilePage() {
         // Upload the new avatar
         newAvatarUrl = await uploadAvatar(croppedFile);
         
+        
         // Delete the old avatar if it exists and is different
         if (oldAvatarUrl && oldAvatarUrl !== newAvatarUrl) {
           await deleteOldAvatar(oldAvatarUrl);
@@ -190,15 +189,17 @@ export function ProfilePage() {
       
       const { error } = await supabase
         .from('users')
-        .update({
+        .upsert({
+          id: user.id,
+          email: currentUser?.email || user.email,
           username: formData.username,
           bio: formData.bio,
           github_username: formData.githubUsername,
           avatar: newAvatarUrl
-        })
-        .eq('id', user.id);
+        });
 
       if (error) {
+        console.log("UPDATE ERROR:", error);
         toast({
           title: "Update failed",
           description: error.message,
