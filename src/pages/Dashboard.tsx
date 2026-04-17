@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
-import { Trophy, Star, Calendar, ExternalLink, Github, BookOpen } from 'lucide-react';
+import { Trophy, Star, Calendar, ExternalLink, Github, BookOpen, Flame } from 'lucide-react';
 import {
   getDashboardAnalyticsData,
   type DashboardAnalyticsData,
@@ -69,6 +69,7 @@ export function Dashboard() {
   };
   const recentSubmissions = dashboardData?.recent_submissions ?? [];
   const pathways = dashboardData?.pathways ?? [];
+  const learningStreak = 7;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
@@ -146,8 +147,8 @@ export function Dashboard() {
                           </div>
                           <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-center">
                             <Badge
-                              variant={submission.status === 'approved' ? 'default' : 
-                                     submission.status === 'pending' ? 'secondary' : 'destructive'}
+                              variant={submission.status === 'approved' ? 'default' :
+                                submission.status === 'pending' ? 'secondary' : 'destructive'}
                               className="text-xs"
                             >
                               {submission.status}
@@ -231,33 +232,46 @@ export function Dashboard() {
                 <CardTitle className="text-lg sm:text-xl text-white">Profile</CardTitle>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
-                <div className="flex flex-col items-center text-center space-y-3">
-                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20">
-                    <AvatarImage src={user.avatar} alt={user.username} />
-                    <AvatarFallback className="text-lg sm:text-xl">
-                      {user.username.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="space-y-1">
-                    <h3 className="font-bold text-base sm:text-lg text-white">{user.username}</h3>
-                    <p className="text-sm sm:text-base text-gray-300">{user.email}</p>
-                    {user.bio && (
-                      <p className="text-xs sm:text-sm text-gray-400 mt-1">{user.bio}</p>
-                    )}
-                    {user.githubUsername && (
-                      <div className="flex items-center justify-center space-x-1 mt-1 text-xs sm:text-sm text-gray-300">
-                        <Github className="w-4 h-4" />
-                        <span>{user.githubUsername}</span>
+                <div className="space-y-4">
+                  <div className="flex items-start gap-4">
+                    <Avatar className="w-16 h-16 sm:w-20 sm:h-20 border-2 border-purple-500">
+                      <AvatarImage src={user.avatar} alt={user.username} />
+                      <AvatarFallback className="text-lg sm:text-xl">
+                        {user.username.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="text-left">
+                      <h3 className="font-bold text-lg sm:text-xl text-white">
+                        {user.username}
+                      </h3>
+                      <p className="text-sm sm:text-base text-gray-300">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm text-gray-400">
+
+                    <div className="flex items-center justify-between">
+                      <span>Joined since</span>
+                      <span className="text-white">
+                        {user.joinedAt.toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <span>Learning streak</span>
+                      <div className="flex items-center gap-1 text-white">
+                        <span>{learningStreak} days</span>
+                        <Flame className="w-4 h-4 text-orange-400 fill-orange-400" />
                       </div>
-                    )}
+                    </div>
+
                   </div>
-                  <div className="flex items-center space-x-1 text-xs sm:text-sm text-gray-400">
-                    <Calendar className="w-4 h-4" />
-                    <span>Joined {user.joinedAt.toLocaleDateString()}</span>
-                  </div>
+                  <div className="pt-3">
                   <Button variant="outline" size="sm" asChild>
                     <Link to="/profile">Edit Profile</Link>
                   </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
