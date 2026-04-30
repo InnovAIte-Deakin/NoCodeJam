@@ -7,13 +7,16 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
-import { Trophy, Star, Calendar, ExternalLink, Github } from 'lucide-react';
+import { Trophy, Star, Calendar, ExternalLink, Github, Sparkles } from 'lucide-react';
+import { RecommendedChallengeCard } from '@/components/RecommendedChallengeCard';
 
 export function Dashboard() {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recsLoading, setRecsLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,8 +27,21 @@ export function Dashboard() {
           .select('*')
           .eq('user_id', user.id);
         setSubmissions(submissionsData || []);
+
+        // Fetch recommendations
+        try {
+          setRecsLoading(true);
+          const { data: recsData } = await supabase.functions.invoke('get-recommendations')
+          setRecommendations(recsData?.recommendations || [])
+        } catch (error) {
+          console.error('Failed to fetch recommendations:', error)
+          setRecommendations([])
+        } finally {
+          setRecsLoading(false)
+        }
       } else {
         setSubmissions([]);
+        setRecommendations([]);
       }
       const { data: challengesData } = await supabase
         .from('challenges')
@@ -95,6 +111,21 @@ export function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Recommended for You */}
+            {recommendations.length > 0 && (
+              <div>
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="h-6 w-6 text-yellow-500" />
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">Recommended for You</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {recommendations.map((challenge) => (
+                    <RecommendedChallengeCard key={challenge.id} challenge={challenge} />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Recent Submissions */}
             <Card className="bg-gray-800 border-gray-700">
