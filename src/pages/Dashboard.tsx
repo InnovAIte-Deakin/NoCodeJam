@@ -31,13 +31,22 @@ export function Dashboard() {
         // Fetch recommendations
         try {
           setRecsLoading(true);
-          const { data: recsData } = await supabase.functions.invoke('get-recommendations')
-          setRecommendations(recsData?.recommendations || [])
+          console.log('Calling get-recommendations for user:', user.id);
+
+          const { data, error } = await supabase.functions.invoke('get-recommendations');
+
+          if (error) {
+            console.error('Failed to fetch recommendations:', error);
+            setRecommendations([]);
+          } else {
+            console.log('Recommendations response:', data);
+            setRecommendations(data?.recommendations || []);
+          }
         } catch (error) {
-          console.error('Failed to fetch recommendations:', error)
-          setRecommendations([])
+          console.error('Unexpected recommendation error:', error);
+          setRecommendations([]);
         } finally {
-          setRecsLoading(false)
+          setRecsLoading(false);
         }
       } else {
         setSubmissions([]);
