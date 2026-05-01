@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
 import { Trophy, Star, Calendar, ExternalLink, Github } from 'lucide-react';
+import { OnboardingTooltip } from '@/components/ui/OnboardingTooltip';
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -48,7 +49,6 @@ export function Dashboard() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="container-responsive py-6 sm:py-8">
-        {/* Welcome Header */}
         <header className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Welcome back, {user.username}! 👋
@@ -59,8 +59,8 @@ export function Dashboard() {
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-          {/* Left Column - Stats & Progress */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+
             {/* XP and Level Progress */}
             <Card className="card-gradient-bar bg-gray-800 border-gray-700">
               <CardHeader>
@@ -73,24 +73,61 @@ export function Dashboard() {
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-xs sm:text-sm font-medium text-gray-300">Current XP</span>
-                    <span className="text-xl sm:text-2xl font-bold text-purple-400">{user.xp}</span>
+                    {/* Priority 1 — shows first */}
+                    <OnboardingTooltip
+                      id="dashboard-xp"
+                      priority={1}
+                      content="XP is earned by completing challenges. The more you complete, the higher you rank!"
+                      position="left"
+                    >
+                      <span className="text-xl sm:text-2xl font-bold text-purple-400 cursor-help">
+                        {user.xp}
+                      </span>
+                    </OnboardingTooltip>
                   </div>
+
                   <div>
                     <div className="flex justify-between text-xs sm:text-sm text-gray-300 mb-2">
                       <span>Progress to next milestone</span>
-                      <span>{nextLevelXP - (user?.xp ?? 0)} XP remaining</span> 
+                      <span>{nextLevelXP - (user?.xp ?? 0)} XP remaining</span>
                     </div>
-                    <Progress value={progressToNextLevel} className="h-3" />
+                    {/* Priority 2 */}
+                    <OnboardingTooltip
+                      id="dashboard-progress-bar"
+                      priority={2}
+                      content="This bar shows your progress to the next XP milestone. Complete more challenges to fill it up!"
+                      position="bottom"
+                    >
+                      <Progress value={progressToNextLevel} className="h-3 cursor-help" />
+                    </OnboardingTooltip>
                   </div>
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4">
-                    <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-purple-400">{completedChallenges}</div>
-                      <div className="text-xs sm:text-sm text-gray-300">Challenges Completed</div>
-                    </div>
-                    <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{(user?.badges ?? []).length}</div>
-                      <div className="text-xs sm:text-sm text-gray-300">Badges Earned</div>
-                    </div>
+                    {/* Priority 3 */}
+                    <OnboardingTooltip
+                      id="dashboard-challenges-count"
+                      priority={3}
+                      content="Counts challenges where your submission was approved by an admin."
+                      position="top"
+                    >
+                      <div className="text-center p-3 sm:p-4 card-contrast rounded-lg cursor-help">
+                        <div className="text-xl sm:text-2xl font-bold text-purple-400">{completedChallenges}</div>
+                        <div className="text-xs sm:text-sm text-gray-300">Challenges Completed</div>
+                      </div>
+                    </OnboardingTooltip>
+
+                    {/* Priority 4 */}
+                    <OnboardingTooltip
+                      id="dashboard-badges-count"
+                      priority={4}
+                      content="Badges are achievements unlocked by reaching milestones. Complete challenges to earn your first one!"
+                      position="top"
+                    >
+                      <div className="text-center p-3 sm:p-4 card-contrast rounded-lg cursor-help">
+                        <div className="text-xl sm:text-2xl font-bold text-orange-400">{(user?.badges ?? []).length}</div>
+                        <div className="text-xs sm:text-sm text-gray-300">Badges Earned</div>
+                      </div>
+                    </OnboardingTooltip>
                   </div>
                 </div>
               </CardContent>
@@ -99,7 +136,17 @@ export function Dashboard() {
             {/* Recent Submissions */}
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle className="text-lg sm:text-xl text-white">Recent Submissions</CardTitle>
+                {/* Priority 5 */}
+                <OnboardingTooltip
+                  id="dashboard-submissions"
+                  priority={5}
+                  content="Track your submissions here — pending means under review, approved means XP earned!"
+                  position="right"
+                >
+                  <CardTitle className="text-lg sm:text-xl text-white cursor-help">
+                    Recent Submissions
+                  </CardTitle>
+                </OnboardingTooltip>
                 <CardDescription className="text-gray-300">
                   Your latest challenge submissions and their status
                 </CardDescription>
@@ -122,7 +169,7 @@ export function Dashboard() {
                           </div>
                           <div className="flex items-center space-x-2 sm:space-x-3 self-start sm:self-center">
                             <Badge
-                              variant={submission.status === 'approved' ? 'default' : 
+                              variant={submission.status === 'approved' ? 'default' :
                                      submission.status === 'pending' ? 'secondary' : 'destructive'}
                               className="text-xs"
                             >
@@ -151,9 +198,8 @@ export function Dashboard() {
             </Card>
           </div>
 
-          {/* Right Column - Profile & Badges */}
+          {/* Right Column */}
           <div className="space-y-4 sm:space-y-6">
-            {/* Profile Card */}
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg sm:text-xl text-white">Profile</CardTitle>
@@ -190,7 +236,6 @@ export function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Badges */}
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl text-white">Badges</CardTitle>

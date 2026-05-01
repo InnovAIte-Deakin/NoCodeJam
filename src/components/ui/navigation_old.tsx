@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { LogOut, User, Trophy, Home, List, Shield, Menu, GraduationCap, HelpCircle } from 'lucide-react';
+import { LogOut, User, Trophy, Home, List, Shield, Menu, GraduationCap } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,24 +99,6 @@ export function Navigation() {
       >
         <Trophy className="w-4 h-4" />
         <span>Leaderboard</span>
-      </Link>
-
-      {/* ── FAQ Link (Goal 5) ── */}
-      <Link
-        to="/faq"
-        onClick={onLinkClick}
-        className={`flex items-center space-x-2 ${
-          mobile
-            ? 'px-4 py-3 rounded-md text-base font-medium'
-            : `px-2 lg:px-3 py-2 rounded-md text-xs lg:text-sm font-medium ${desktopHoverGrow}`
-        } responsive-transition ${
-          isActive('/faq')
-            ? 'bg-gradient-to-r from-purple-700 to-blue-700 text-white'
-            : 'text-gray-200 hover:text-white hover:bg-[#23272e]'
-        }`}
-      >
-        <HelpCircle className="w-4 h-4" />
-        <span>FAQ</span>
       </Link>
 
       {user?.role === 'admin' && (
