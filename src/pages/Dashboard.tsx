@@ -122,19 +122,44 @@ export function Dashboard() {
             </Card>
 
             {/* Recommended for You */}
-            {recommendations.length > 0 && (
-              <div>
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="h-6 w-6 text-yellow-500" />
-                  <h2 className="text-xl sm:text-2xl font-bold text-white">Recommended for You</h2>
+            <Card className="bg-slate-900 border border-slate-700">
+              <CardHeader className="pb-2">
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="h-5 w-5 text-yellow-400" />
+                      <h2 className="text-xl sm:text-2xl font-bold text-white">Recommended for You</h2>
+                    </div>
+                    <p className="text-sm text-gray-400 max-w-2xl">
+                      Based on your recent progress and completed challenges.
+                    </p>
+                  </div>
+                  <Badge className="bg-emerald-100 text-emerald-800">Personalized</Badge>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {recommendations.map((challenge) => (
-                    <RecommendedChallengeCard key={challenge.id} challenge={challenge} />
-                  ))}
-                </div>
-              </div>
-            )}
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                {recsLoading ? (
+                  <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-950/50 p-6 text-center text-sm text-slate-300">
+                    Finding the best challenges for you...
+                  </div>
+                ) : recommendations.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {recommendations.map((challenge) => (
+                      <RecommendedChallengeCard key={challenge.id} challenge={challenge} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-950/50 p-6 text-center space-y-4">
+                    <p className="text-sm text-gray-300">
+                      We’re still learning your style. Complete one more challenge to unlock personalized picks.
+                    </p>
+                    <Button asChild>
+                      <Link to="/challenges">Browse challenges</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Recent Submissions */}
             <Card className="bg-gray-800 border-gray-700">

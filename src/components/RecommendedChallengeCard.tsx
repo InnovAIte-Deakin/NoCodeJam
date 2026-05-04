@@ -19,15 +19,19 @@ export function RecommendedChallengeCard({ challenge }: RecommendedChallengeCard
   }
 
   return (
-    <Card className="hover:shadow-lg transition-shadow overflow-hidden">
+    <Card className="hover:shadow-xl transition-shadow duration-200 ease-out overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1">
-            <CardTitle className="text-lg line-clamp-2">{challenge.title}</CardTitle>
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <CardTitle className="text-lg line-clamp-2">{challenge.title}</CardTitle>
+              <Badge variant="secondary" className="text-[10px] uppercase tracking-[0.16em] py-1 px-2">
+                Personalized
+              </Badge>
+            </div>
             {challenge.reason && (
-              <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                <Sparkles className="h-3 w-3" />
-                {challenge.reason}
+              <p className="text-sm text-gray-300 mt-1 max-w-xs">
+                Recommended because {challenge.reason.toLowerCase()}.
               </p>
             )}
           </div>
@@ -49,7 +53,7 @@ export function RecommendedChallengeCard({ challenge }: RecommendedChallengeCard
         </div>
         <Link to={`/challenges/${challenge.id}`} className="block">
           <Button className="w-full">
-            Start Challenge
+            Try this next
           </Button>
         </Link>
       </CardContent>
