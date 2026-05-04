@@ -60,7 +60,7 @@ export function AvatarUploadCropper({ onCropComplete: onCropCompleteCallback, in
 
   return (
     <div className="space-y-4">
-      <Input type="file" accept="image/*" onChange={onFileChange} />
+      <Input type="file" accept="image/*" onChange={onFileChange} className="block w-full text-sm text-white file:mr-4 file:rounded-md file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-purple-700"/>
       {error && <div className="text-red-500 text-sm">{error}</div>}
       
       {imageSrc && (
