@@ -26,6 +26,7 @@ import v0Logo from '@/images/v0-icon.png';
 import webflowLogo from '@/images/webflow-logo.webp';
 import anythingLogo from '@/images/Anything Logo.png';
 import perplexityLogo from '@/images/perplexity.jpg.avif';
+import visionAILogo from '@/images/visionAI.webp';
 
 type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 type Category = 'Visual Builder' | 'AI-Powered' | 'Database' | 'Web Development';
@@ -646,7 +647,49 @@ const platformsRaw: Platform[] = [
         url: 'https://www.youtube.com/watch?v=6RSSDFEWbm8'
       }
     ]
-  }
+  },
+  {
+    id: 'visionAI',
+    name: 'visionAI',
+    description:
+      'visionAI',
+    logo: visionAILogo,
+    website: 'https://www.perplexity.ai',
+    features: [
+      'Web-grounded answers with citations',
+      'Fast Pro search across the web',
+      'Labs for advanced experimentation',
+      'APIs for search and grounded LLMs'
+    ],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'visionAI-docs-overview',
+        title: 'Perplexity Docs: Getting Started',
+        description: 'Official documentation overview for building with Perplexity APIs and models.',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://docs.perplexity.ai/getting-started/overview'
+      },
+      {
+        id: 'visionAI-guide-1',
+        title: 'How To Use Perplexity',
+        description: 'YouTube walkthrough on using Perplexity for everyday research and Q&A.',
+        duration: '12 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=bOHfJZ4DVqE'
+      },
+      {
+        id: 'visionAI-guide-2',
+        title: 'Every Perplexity Feature Explained',
+        description: 'YouTube guide to using Perplexity for more complex research and projects.',
+        duration: '19 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=LnURCxwsB34'
+      }
+    ]
+  }  
 ];
 
 function difficultyRank(d: Difficulty) {
