@@ -295,6 +295,26 @@ export function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+            <Card className="bg-gray-800 border-gray-700">
+  <CardHeader>
+    <CardTitle className="text-white">Weekly XP</CardTitle>
+    <CardDescription className="text-gray-300">
+      Your activity this week
+    </CardDescription>
+  </CardHeader>
+  <CardContent className="p-4 sm:p-6">
+    <div style={{ width: "100%", height: 250 }}>
+      <ResponsiveContainer>
+        <BarChart data={xpChartData}>
+          <XAxis dataKey="day" stroke="#ccc" />
+          <YAxis stroke="#ccc" />
+          <Tooltip />
+          <Bar dataKey="xp" fill="#8b5cf6" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </CardContent>
+</Card>
 
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
