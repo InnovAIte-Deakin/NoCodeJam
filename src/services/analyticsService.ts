@@ -377,15 +377,47 @@ export async function getUserPathwayProgress(
 export async function getDashboardAnalyticsData(
   userId: string
 ): Promise<DashboardAnalyticsData> {
-  const [summary, recentSubmissions, pathways] = await Promise.all([
-    getDashboardSummary(userId),
-    getRecentSubmissions(userId),
-    getUserPathwayProgress(userId),
-  ]);
 
   return {
-    summary,
-    recent_submissions: recentSubmissions,
-    pathways,
+    summary: {
+      current_xp: 180,
+      xp_progress_percent: 75,
+      xp_to_next_milestone: 250,
+      completed_challenges: 14,
+      badge_count: 4,
+    },
+
+    recent_submissions: [
+      {
+        id: "1",
+        challenge_id: "c1",
+        challenge_title: "Landing Page UI",
+        status: "approved",
+        submitted_at: "2026-04-10",
+        submission_url: "#",
+        admin_feedback: "Clean design!"
+      },
+      {
+        id: "2",
+        challenge_id: "c2",
+        challenge_title: "API Integration",
+        status: "pending",
+        submitted_at: "2026-04-12",
+        submission_url: "#",
+        admin_feedback: null
+      }
+    ],
+
+    pathways: [
+      {
+        pathway_id: "p1",
+        pathway_title: "Frontend Basics",
+        progress_percent: 65,
+        completed_challenges: 4,
+        total_challenges: 6,
+        total_xp: 300,
+        status: "active"
+      }
+    ]
   };
 }
