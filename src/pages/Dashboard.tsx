@@ -12,11 +12,28 @@ import {
   getDashboardAnalyticsData,
   type DashboardAnalyticsData,
 } from '@/services/analyticsService';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
 
 export function Dashboard() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const xpChartData = [
+  { day: "Mon", xp: 20 },
+  { day: "Tue", xp: 35 },
+  { day: "Wed", xp: 28 },
+  { day: "Thu", xp: 50 },
+  { day: "Fri", xp: 45 },
+  { day: "Sat", xp: 15 },
+  { day: "Sun", xp: 32 }
+];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -120,6 +137,26 @@ export function Dashboard() {
                 </div>
               </CardContent>
             </Card>
+            <Card className="bg-gray-800 border-gray-700">
+  <CardHeader>
+    <CardTitle className="text-white">Weekly XP</CardTitle>
+    <CardDescription className="text-gray-300">
+      Your activity this week
+    </CardDescription>
+  </CardHeader>
+  <CardContent className="p-4 sm:p-6">
+    <div style={{ width: "100%", height: 250 }}>
+      <ResponsiveContainer>
+        <BarChart data={xpChartData}>
+          <XAxis dataKey="day" stroke="#ccc" />
+          <YAxis stroke="#ccc" />
+          <Tooltip />
+          <Bar dataKey="xp" fill="#8b5cf6" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  </CardContent>
+</Card>
 
             {/* Recent Submissions */}
             <Card className="bg-gray-800 border-gray-700">
