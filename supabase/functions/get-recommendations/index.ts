@@ -1,109 +1,134 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
       {
         global: {
-          headers: { Authorization: req.headers.get('Authorization')! },
+          headers: { Authorization: req.headers.get("Authorization")! },
         },
       }
-    )
+    );
 
-    const { data: { user } } = await supabaseClient.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) throw new Error("Unauthorized");
 
-    // Get user's recent interaction history (last 50)
-    const { data: interactions } = await supabaseClient
-      .from('user_interactions')
-      .select('challenge_id, action, difficulty, challenge_type')
-      .eq('user_id', user.id)
-      .order('timestamp', { ascending: false })
-      .limit(50)
+    const { data: interactions, error: interactionsError } = await supabaseClient
+      .from("user_interactions")
+      .select("challenge_id, action, difficulty, challenge_type")
+      .eq("user_id", user.id)
+      .order("timestamp", { ascending: false })
+      .limit(50);
 
-    // Get user's completed challenges
-    const { data: completed } = await supabaseClient
-      .from('submissions')
-      .select('challenge_id')
-      .eq('user_id', user.id)
-      .eq('status', 'approved')
+    if (interactionsError) throw interactionsError;
 
-    const completedIds = completed?.map(c => c.challenge_id) || []
+    const { data: completed, error: completedError } = await supabaseClient
+      .from("submissions")
+      .select("challenge_id")
+      .eq("user_id", user.id)
+      .eq("status", "approved");
 
-    // Calculate user's average difficulty level
-    const userDifficulties = interactions?.map(i => i.difficulty) || []
-    const difficultyMap = { 'Beginner': 1, 'Intermediate': 2, 'Advanced': 3, 'Expert': 4 }
-    
-    let avgDifficulty = 2
+    if (completedError) throw completedError;
+
+    const interactedIds = [...new Set((interactions || []).map(i => i.challenge_id))];
+    const completedIds = [...new Set((completed || []).map(c => c.challenge_id))];
+    const excludedIds = [...new Set([...interactedIds, ...completedIds])];
+
+    const difficultyMap: Record<string, number> = {
+      Beginner: 1,
+      Intermediate: 2,
+      Expert: 3,
+    };
+
+    const reverseDifficultyMap: Record<number, string> = {
+      1: "Beginner",
+      2: "Intermediate",
+      3: "Expert",
+    };
+
+    const userDifficulties = (interactions || [])
+      .map(i => difficultyMap[i.difficulty])
+      .filter(Boolean);
+
+    let avgDifficulty = 2;
     if (userDifficulties.length > 0) {
-      const sum = userDifficulties.reduce((acc, d) => acc + (difficultyMap[d as keyof typeof difficultyMap] || 2), 0)
-      avgDifficulty = sum / userDifficulties.length
+      avgDifficulty =
+        userDifficulties.reduce((acc, n) => acc + n, 0) / userDifficulties.length;
     }
 
-    // Determine target difficulty (one level above average)
-    let targetDifficulty = 'Intermediate'
-    if (avgDifficulty < 1.5) targetDifficulty = 'Beginner'
-    else if (avgDifficulty < 2.5) targetDifficulty = 'Intermediate'
-    else if (avgDifficulty < 3.5) targetDifficulty = 'Advanced'
-    else targetDifficulty = 'Expert'
+    const roundedDifficulty = Math.min(3, Math.max(1, Math.round(avgDifficulty)));
+    const targetDifficulty = reverseDifficultyMap[roundedDifficulty] || "Intermediate";
 
-    // Get challenges matching criteria
-    const { data: challenges } = await supabaseClient
-      .from('challenges')
-      .select('*')
-      .eq('status', 'published')
-      .eq('difficulty', targetDifficulty)
-      .not('id', 'in', `(${completedIds.length > 0 ? completedIds.map(id => `'${id}'`).join(',') : "''"})`)
-      .limit(10)
+    let query = supabaseClient
+      .from("challenges")
+      .select("*")
+      .eq("status", "published")
+      .eq("difficulty", targetDifficulty);
 
-    // Score and rank recommendations
-    const userTypes = interactions?.map(i => i.challenge_type) || []
+    if (excludedIds.length > 0) {
+      query = query.filter("id", "not.in", `(${excludedIds.map(id => `"${id}"`).join(",")})`);
+    }
+
+    const { data: challenges, error: challengesError } = await query.limit(10);
+
+    if (challengesError) throw challengesError;
+
+    const userTypes = (interactions || []).map(i => i.challenge_type).filter(Boolean);
+
     const recommendedChallenges = (challenges || [])
-      .map(challenge => {
-        let score = 50 // Base score
-        let reason = `Recommended for your level`
+      .map((challenge) => {
+        let score = 50;
+        let reason = "Recommended for your level";
 
-        // Boost score for similar challenge types
         if (userTypes.includes(challenge.challenge_type)) {
-          score += 30
-          reason = `Similar to your recent ${challenge.challenge_type.toLowerCase()} challenges`
+          score += 30;
+          reason = `Similar to your recent ${challenge.challenge_type.toLowerCase()} challenges`;
         }
 
-        // Boost popular challenges
         if (challenge.xp_reward > 100) {
-          score += 10
-          reason = `High-value challenge matching your level`
+          score += 10;
+          reason = "High-value challenge matching your level";
         }
 
-        return { ...challenge, score, reason }
+        return { ...challenge, score, reason };
       })
       .sort((a, b) => b.score - a.score)
-      .slice(0, 5)
+      .slice(0, 5);
 
     return new Response(
-      JSON.stringify({ recommendations: recommendedChallenges }),
+      JSON.stringify({
+        debug: {
+          userId: user.id,
+          avgDifficulty,
+          targetDifficulty,
+          interactedIds,
+          completedIds,
+          excludedIds,
+          fetchedChallenges: challenges?.length || 0,
+        },
+        recommendations: recommendedChallenges,
+      }),
       {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      },
-    )
+      }
+    );
   } catch (error) {
-    console.error('Error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 400,
-    })
+    });
   }
-})
+});
