@@ -58,20 +58,41 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
             });
 
             if (error) throw error;
-            if (data?.error) throw new Error(data.error);
+            if (data?.error || data?.fallback) throw new Error(data.error || "AI service unavailable");
 
             // Add assistant response
+            // Add assistant response
             if (data?.message) {
-                setMessages([...newMessages, { role: 'assistant', content: data.message }]);
+                const isMockResponse = data.message.includes('This is a mock response (API Key missing)');
+                
+                setMessages([...newMessages, { 
+                    role: 'assistant', 
+                    content: isMockResponse
+                        ? "⚠️ The AI assistant is currently unavailable. Please try again later or contact your team admin."
+                        : data.message
+                }]);
             } else {
                 throw new Error("No response message received");
             }
 
         } catch (err) {
             console.error('Chat error:', err);
+            
+            // Check if it's an API key / mock mode issue
+            const errMsg = err instanceof Error ? err.message : "Failed to get response";
+            const isApiMissing = errMsg.toLowerCase().includes('api key') || errMsg.toLowerCase().includes('mock');
+            
+            // Add a fallback message in the chat instead of just a toast
+            setMessages([...newMessages, {
+                role: 'assistant',
+                content: isApiMissing
+                    ? "⚠️ The AI assistant is currently unavailable (service not configured). Please try again later or contact your team admin."
+                    : "⚠️ Something went wrong getting a response. Please try again in a moment."
+            }]);
+
             toast({
-                title: "Chat Error",
-                description: err instanceof Error ? err.message : "Failed to get response",
+                title: isApiMissing ? "AI Unavailable" : "Chat Error",
+                description: isApiMissing ? "AI service is not configured yet." : errMsg,
                 variant: "destructive"
             });
         } finally {
@@ -109,10 +130,15 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
                                 <div
                                     className={`max-w-[80%] rounded-lg px-4 py-3 ${message.role === 'user'
                                         ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-700 text-gray-100'
+                                        : message.content.startsWith('⚠️')
+                                            ? 'bg-red-900/40 border border-red-500/40 text-red-200'
+                                            : 'bg-gray-700 text-gray-100'
                                         }`}
                                 >
-                                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                                    {message.role === 'assistant' && !message.content.startsWith('⚠️') && (
+                                        <p className="text-[10px] text-gray-400 mt-2 text-right">AI Learning Guide</p>
+                                    )}
                                 </div>
                             </div>
                         ))}

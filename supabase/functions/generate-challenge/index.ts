@@ -181,12 +181,13 @@ Deno.serve(async (req: Request) => {
       }
 
       if (action === 'chat-learn') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
         return new Response(
           JSON.stringify({
-            message: "This is a mock response (API Key missing). I'm your Learning Architect. I can help design a learning pathway for you. What do you want to learn?"
+            error: "AI service unavailable",
+            fallback: true,
+            message: "The AI learning assistant is currently unavailable. Please try again later."
           }),
-          { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
 
