@@ -204,11 +204,11 @@ export function FAQPage() {
             {filteredCategories.map((category) => (
               <section key={category.title}>
                 {/* Category Header */}
-                <div className="flex items-center space-x-3 mb-4">
-                  <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center text-white flex-shrink-0">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+                  <div style={{ width: '32px', height: '32px', background: 'linear-gradient(to right, #7c3aed, #2563eb)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
                     {category.icon}
                   </div>
-                  <h2 className="text-lg sm:text-xl font-semibold text-gray-100">
+                  <h2 style={{ fontSize: '1.125rem', fontWeight: 600, color: '#f3f4f6', margin: 0, padding: 0, lineHeight: '32px' }}>
                     {category.title}
                   </h2>
                 </div>
