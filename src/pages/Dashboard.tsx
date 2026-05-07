@@ -149,9 +149,10 @@ export function Dashboard() {
                     ))}
                   </div>
                 ) : (
-                  <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-950/50 p-6 text-center space-y-4">
+                  <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-950/50 p-6 text-center space-y-3">
+                    <h3 className="text-sm font-medium text-white">No personalized picks just yet</h3>
                     <p className="text-sm text-gray-300">
-                      We’re still learning your style. Complete one more challenge to unlock personalized picks.
+                      Explore a few more challenges and we’ll suggest better matches here.
                     </p>
                     <Button asChild>
                       <Link to="/challenges">Browse challenges</Link>
