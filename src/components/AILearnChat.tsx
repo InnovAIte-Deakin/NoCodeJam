@@ -50,32 +50,43 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
             const { message, fallback } = await chatWithLearningArchitect(newMessages);
             setMessages([...newMessages, { role: 'assistant', content: message }]);
 
-            if (fallback.fallbackUsed) {
-                toast({
-                    title: "Fallback Response",
-                    description: fallback.fallbackReason ?? "The AI service was unavailable, so a fallback learning response was used.",
-                });
+            if (error) throw error;
+            if (data?.error || data?.fallback) throw new Error(data.error || "AI service unavailable");
+
+            // Add assistant response
+            // Add assistant response
+            if (data?.message) {
+                const isMockResponse = data.message.includes('This is a mock response (API Key missing)');
+                
+                setMessages([...newMessages, { 
+                    role: 'assistant', 
+                    content: isMockResponse
+                        ? "⚠️ The AI assistant is currently unavailable. Please try again later or contact your team admin."
+                        : data.message
+                }]);
+            } else {
+                throw new Error("No response message received");
             }
         } catch (err) {
             console.error('Chat error:', err);
-            const errorMsg = getErrorMessage(err);
-            const isRateLimit = errorMsg.includes('429') || 
-                errorMsg.toLowerCase().includes('rate limit') ||
-                errorMsg.toLowerCase().includes('too many') ||
-                errorMsg.toLowerCase().includes('non-2xx');
             
-            if (isRateLimit) {
-                setMessages([...newMessages, {
-                    role: 'assistant',
-                    content: "⚠️ You have reached the maximum number of AI requests for this hour (20 requests). Please wait a while before trying again. In the meantime, feel free to browse the challenges and learning pathways available on the platform! You can also visit our FAQ page for answers to common questions."
-                }]);
-            } else {
-                toast({
-                    title: "Chat Error",
-                    description: errorMsg,
-                    variant: "destructive"
-                });
-            }
+            // Check if it's an API key / mock mode issue
+            const errMsg = err instanceof Error ? err.message : "Failed to get response";
+            const isApiMissing = errMsg.toLowerCase().includes('api key') || errMsg.toLowerCase().includes('mock');
+            
+            // Add a fallback message in the chat instead of just a toast
+            setMessages([...newMessages, {
+                role: 'assistant',
+                content: isApiMissing
+                    ? "⚠️ The AI assistant is currently unavailable (service not configured). Please try again later or contact your team admin."
+                    : "⚠️ Something went wrong getting a response. Please try again in a moment."
+            }]);
+
+            toast({
+                title: isApiMissing ? "AI Unavailable" : "Chat Error",
+                description: isApiMissing ? "AI service is not configured yet." : errMsg,
+                variant: "destructive"
+            });
         } finally {
             setIsLoading(false);
         }
@@ -111,10 +122,12 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
                                 <div
                                     className={`max-w-[80%] rounded-lg px-4 py-3 ${message.role === 'user'
                                         ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-700 text-gray-100'
+                                        : message.content.startsWith('⚠️')
+                                            ? 'bg-red-900/40 border border-red-500/40 text-red-200'
+                                            : 'bg-gray-700 text-gray-100'
                                         }`}
                                 >
-                                    <p className="text-sm whitespace-pre-wrap"
+                                    <p className="text-sm whitespace-pre-wrap leading-relaxed"
                                         dangerouslySetInnerHTML={{
                                             __html: message.content
                                                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -122,6 +135,9 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
                                                 .replace(/#{1,3} (.*?)(\n|$)/g, '<strong>$1</strong>$2')
                                         }}
                                     />
+                                    {message.role === 'assistant' && !message.content.startsWith('⚠️') && (
+                                        <p className="text-[10px] text-gray-400 mt-2 text-right">AI Learning Guide</p>
+                                    )}
                                 </div>
                             </div>
                         ))}

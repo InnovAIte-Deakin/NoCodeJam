@@ -284,13 +284,14 @@ Deno.serve(async (req: Request) => {
       }
 
       if (action === 'chat-learn') {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        const payload: ChatSuccessPayload = {
-          message: "This is a mock response (API Key missing). I'm your Learning Architect. I can help design a learning pathway for you. What do you want to learn?",
-          fallbackUsed: true,
-          fallbackReason: "ANTHROPIC_API_KEY is not configured.",
-        };
-        return jsonResponse(payload);
+        return new Response(
+          JSON.stringify({
+            error: "AI service unavailable",
+            fallback: true,
+            message: "The AI learning assistant is currently unavailable. Please try again later."
+          }),
+          { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
       }
 
       if (action === 'generate') {
