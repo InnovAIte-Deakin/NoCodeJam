@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
-import { Trophy, Star, Calendar, ExternalLink, Github, BookOpen, Flame } from 'lucide-react';
+import { Trophy, Star, Calendar, ExternalLink, Github, BookOpen, Flame, Mountain, Award, Map, Sparkles } from 'lucide-react';
 import {
   getDashboardAnalyticsData,
   type DashboardAnalyticsData,
@@ -44,6 +44,7 @@ export function Dashboard() {
             xp_to_next_milestone: Math.max(1000 - (user.xp % 1000), 0),
             completed_challenges: 0,
             badge_count: user.badges.length,
+            learning_streak: 0,
           },
           recent_submissions: [],
           pathways: [],
@@ -66,10 +67,12 @@ export function Dashboard() {
     xp_to_next_milestone: Math.max(1000 - (user.xp % 1000), 0),
     completed_challenges: 0,
     badge_count: user.badges.length,
+    learning_streak: 0,
   };
   const recentSubmissions = dashboardData?.recent_submissions ?? [];
   const pathways = dashboardData?.pathways ?? [];
-  const learningStreak = 7;
+  
+  const learningStreak = summary.learning_streak;
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
@@ -83,6 +86,60 @@ export function Dashboard() {
             Ready to take on some new challenges today?
           </p>
         </header>
+
+        <Card className="bg-gray-800 border-gray-700 mb-6 sm:mb-8">
+          <CardContent className="p-5 sm:p-6">
+            <div className="space-y-5">
+              <div>
+                <h2 className="text-xl sm:text-2xl font-semibold text-white">
+                  Explore Learning Content
+                </h2>
+                <p className="text-sm sm:text-base text-gray-400 mt-1">
+                  Browse featured pathways, trending challenges, and newly added learning materials.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Featured Pathways */}
+                <Link to="/learn" className="block">
+                  <div className="rounded-xl p-5 bg-gradient-to-br from-blue-900/40 to-purple-900/30 border border-gray-700 transition-all duration-200 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-1 cursor-pointer">
+                    <div className="bg-blue-500/20 w-10 h-10 rounded-lg flex items-center justify-center mb-4">
+                      <Map className="w-5 h-5 text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2">Featured Pathways</h3>
+                    <p className="text-sm text-gray-300">
+                      Explore curated learning journeys designed to level up your skills.
+                    </p>
+                  </div>
+                </Link>
+                {/* Top Challenges */}
+                <Link to="/challenges" className="block">
+                  <div className="rounded-xl p-5 bg-gradient-to-br from-purple-900/40 to-pink-900/30 border border-gray-700 transition-all duration-200 hover:border-purple-400 hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-1 cursor-pointer">
+                    <div className="bg-purple-500/20 w-10 h-10 rounded-lg flex items-center justify-center mb-4">
+                      <Trophy className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2">Top Challenges</h3>
+                    <p className="text-sm text-gray-300">
+                      Tackle the most popular coding challenges and compete with peers.
+                    </p>
+                  </div>
+                </Link>
+                {/* New Content */}
+                <Link to="/learn" className="block">
+                  <div className="rounded-xl p-5 bg-gradient-to-br from-cyan-900/40 to-blue-900/30 border border-gray-700 transition-all duration-200 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/20 hover:-translate-y-1 cursor-pointer">
+                    <div className="bg-cyan-500/20 w-10 h-10 rounded-lg flex items-center justify-center mb-4">
+                      <Sparkles className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white mb-2">New Content</h3>
+                    <p className="text-sm text-gray-300">
+                      Discover the latest learning materials and courses added this week.
+                    </p>
+                  </div>
+                </Link>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
           {/* Left Column - Stats & Progress */}
@@ -109,13 +166,27 @@ export function Dashboard() {
                     <Progress value={summary.xp_progress_percent} className="h-3" />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4">
-                    <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-purple-400">{summary.completed_challenges}</div>
-                      <div className="text-xs sm:text-sm text-gray-300">Challenges Completed</div>
+                    <div className="p-3 sm:p-4 card-contrast rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-blue-900/30 p-2 rounded-lg">
+                          <Mountain className="w-5 h-5 text-blue-400" />
+                        </div>
+                        <div>
+                          <div className="text-xs sm:text-sm text-gray-300">Challenges Completed</div>
+                          <div className="text-xl sm:text-2xl font-bold text-purple-400">{summary.completed_challenges}</div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-center p-3 sm:p-4 card-contrast rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-orange-400">{summary.badge_count}</div>
-                      <div className="text-xs sm:text-sm text-gray-300">Badges Earned</div>
+                    <div className="p-3 sm:p-4 card-contrast rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="bg-yellow-900/30 p-2 rounded-lg">
+                          <Award className="w-5 h-5 text-yellow-400" />
+                        </div>
+                        <div>
+                          <div className="text-xs sm:text-sm text-gray-300">Badges Earned</div>
+                          <div className="text-xl sm:text-2xl font-bold text-orange-400">{summary.badge_count}</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -268,9 +339,9 @@ export function Dashboard() {
 
                   </div>
                   <div className="pt-3">
-                  <Button variant="outline" size="sm" asChild>
-                    <Link to="/profile">Edit Profile</Link>
-                  </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link to="/profile">Edit Profile</Link>
+                    </Button>
                   </div>
                 </div>
               </CardContent>
