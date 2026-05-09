@@ -73,7 +73,7 @@ export function AdminDashboard() {
       const { data: submissions, error: subError } = await supabase
         .from('submissions')
         .select('*')
-        .eq('status', 'pending');
+        .in('status', ['pending', 'pending_review']);
       
       // Add debugging
       console.log('Admin Dashboard - Submissions query result:', { submissions, subError });
@@ -126,31 +126,64 @@ export function AdminDashboard() {
   }, []);
 
   const handleApproveSubmission = async (submissionId: string) => {
-    // Find the submission and its challenge
     const submission = pendingSubmissions.find((s: any) => s.id === submissionId);
     if (!submission) return;
+
     const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
     if (!challenge) return;
-    // Update submission status to approved
-    const { error: updateError } = await supabase
-      .from('submissions')
-      .update({ status: 'approved' })
-      .eq('id', submissionId);
-    if (updateError) {
+
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user?.id) {
       toast({
         title: "Failed to approve submission",
-        description: updateError.message,
+        description: authError?.message || 'Admin session not found',
         variant: "destructive",
       });
       return;
     }
-    // Add XP to user (two-step process)
-    // 1. Fetch user
+
+    const { data: latestSubmission, error: submissionFetchError } = await supabase
+      .from('submissions')
+      .select('id, user_id, challenge_id, status, xp_earned')
+      .eq('id', submissionId)
+      .single();
+
+    if (submissionFetchError || !latestSubmission) {
+      toast({
+        title: "Failed to approve submission",
+        description: submissionFetchError?.message || 'Submission not found',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (latestSubmission.status === 'approved') {
+      toast({
+        title: "Submission already approved",
+        description: "This submission has already been reviewed and awarded XP.",
+      });
+      refreshPendingSubmissions();
+      return;
+    }
+
+    if (!['pending', 'pending_review'].includes(latestSubmission.status)) {
+      toast({
+        title: "Submission is no longer pending",
+        description: `Current status is ${latestSubmission.status}. Refreshing the review list.`,
+      });
+      refreshPendingSubmissions();
+      return;
+    }
+
+    const xpAward = latestSubmission.xp_earned ?? challenge.xp_reward ?? 0;
+    const reviewedAt = new Date().toISOString();
+
     const { data: userData, error: userFetchError } = await supabase
       .from('users')
       .select('total_xp')
-      .eq('id', submission.user_id)
+      .eq('id', latestSubmission.user_id)
       .single();
+
     if (userFetchError || !userData) {
       toast({
         title: "Failed to fetch user XP",
@@ -159,13 +192,44 @@ export function AdminDashboard() {
       });
       return;
     }
-    // 2. Update total_xp = user.total_xp + challenge.xp_reward
-    const newXP = (userData.total_xp || 0) + (challenge.xp_reward || 0);
+
+    const { error: updateError } = await supabase
+      .from('submissions')
+      .update({
+        status: 'approved',
+        xp_earned: xpAward,
+        reviewed_at: reviewedAt,
+        reviewed_by: authData.user.id,
+      })
+      .eq('id', submissionId)
+      .in('status', ['pending', 'pending_review']);
+
+    if (updateError) {
+      toast({
+        title: "Failed to approve submission",
+        description: updateError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newXP = (userData.total_xp || 0) + xpAward;
     const { error: xpError } = await supabase
       .from('users')
       .update({ total_xp: newXP })
-      .eq('id', submission.user_id);
+      .eq('id', latestSubmission.user_id);
+
     if (xpError) {
+      await supabase
+        .from('submissions')
+        .update({
+          status: latestSubmission.status,
+          xp_earned: latestSubmission.xp_earned,
+          reviewed_at: null,
+          reviewed_by: null,
+        })
+        .eq('id', submissionId);
+
       toast({
         title: "Failed to award XP",
         description: xpError.message,
@@ -173,19 +237,37 @@ export function AdminDashboard() {
       });
       return;
     }
+
     toast({
       title: "Submission approved",
-      description: "The submission has been approved and the user has been awarded XP.",
+      description: `The submission has been approved and the user has been awarded ${xpAward} XP.`,
     });
-    // Refresh pending submissions
+
     refreshPendingSubmissions();
   };
 
   const handleRejectSubmission = async (submissionId: string) => {
+    const { data: authData } = await supabase.auth.getUser();
+    const submission = pendingSubmissions.find((s: any) => s.id === submissionId);
+
+    if (submission && !['pending', 'pending_review'].includes(submission.status)) {
+      toast({
+        title: "Submission is no longer pending",
+        description: `Current status is ${submission.status}. Refreshing the review list.`,
+      });
+      refreshPendingSubmissions();
+      return;
+    }
+
     const { error } = await supabase
       .from('submissions')
-      .update({ status: 'denied' })
-      .eq('id', submissionId);
+      .update({
+        status: 'rejected',
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: authData.user?.id ?? null,
+      })
+      .eq('id', submissionId)
+      .in('status', ['pending', 'pending_review']);
     if (error) {
       toast({
         title: "Failed to reject submission",
@@ -215,7 +297,7 @@ export function AdminDashboard() {
           username
         )
       `)
-      .eq('status', 'pending');
+      .in('status', ['pending', 'pending_review']);
     if (!subError && submissions) {
       setPendingSubmissions(submissions);
     }
