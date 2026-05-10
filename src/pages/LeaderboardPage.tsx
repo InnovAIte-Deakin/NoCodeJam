@@ -6,7 +6,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Trophy, Medal, Award, Crown, Star, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
-import { OnboardingTooltip } from '@/components/ui/OnboardingTooltip';
 
 interface LeaderboardUser {
   id: string;
@@ -228,16 +227,10 @@ export function LeaderboardPage() {
             {user && currentUserRank > 10 && (
               <Card className="mb-6 border-purple-500 shadow-lg bg-gray-800">
                 <CardHeader>
-                  <OnboardingTooltip
-                    id="leaderboard-rank-change"
-                    content="The arrow next to your rank shows if you moved up ↑ or down ↓ since the leaderboard last updated."
-                    position="right"
-                  >
-                    <CardTitle className="flex items-center space-x-2 text-white cursor-help">
-                      <Star className="w-5 h-5 text-purple-400" />
-                      <span>Your Rank</span>
-                    </CardTitle>
-                  </OnboardingTooltip>
+                  <CardTitle className="flex items-center space-x-2 text-white">
+                    <Star className="w-5 h-5 text-purple-400" />
+                    <span>Your Rank</span>
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center space-x-4">
@@ -279,16 +272,10 @@ export function LeaderboardPage() {
             {/* Top 10 Leaderboard */}
             <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <OnboardingTooltip
-                  id="leaderboard-ranking"
-                  content="Rankings are based on total XP earned. Complete and get more challenges approved to climb the leaderboard!"
-                  position="right"
-                >
-                  <CardTitle className="flex items-center space-x-2 text-white cursor-help">
-                    <Trophy className="w-6 h-6 text-yellow-500" />
-                    <span>Top 10 Developers</span>
-                  </CardTitle>
-                </OnboardingTooltip>
+                <CardTitle className="flex items-center space-x-2 text-white">
+                  <Trophy className="w-6 h-6 text-yellow-500" />
+                  <span>Top 10 Developers</span>
+                </CardTitle>
                 <CardDescription className="text-gray-300">
                   The highest-ranking no-code developers in our community
                 </CardDescription>

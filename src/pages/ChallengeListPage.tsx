@@ -10,9 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { OnboardingChallengeCard } from '@/components/OnboardingChallengeCard';
 import { ChallengeRequestModal } from '@/components/ChallengeRequestModal';
 import { ChallengeCardSkeleton } from '@/components/skeletons/ChallengeCardSkeleton';
-import { OnboardingTooltip } from '@/components/ui/OnboardingTooltip';
-import { AILearnChat } from '@/components/AILearnChat';
-import { Search, Filter, Star, Clock, CheckCircle, Circle, Eye, Plus, Sparkles } from 'lucide-react';
+import { Search, Filter, Star, Clock, CheckCircle, Circle, Eye, Plus } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -30,33 +28,55 @@ export function ChallengeListPage() {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [isOnboardingHidden, setIsOnboardingHidden] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [aiHelpOpen, setAiHelpOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
+
       try {
+        // Fetch all challenges
         const { data: challengesData, error } = await supabase
           .from('challenges')
           .select('*');
-        if (error) { console.error('Error fetching challenges:', error); setLoading(false); return; }
+
+        if (error) {
+          console.error('Error fetching challenges:', error);
+          setLoading(false);
+          return;
+        }
+
         if (challengesData) {
+          // Separate onboarding challenge from regular challenges
           const onboarding = challengesData.find(c => c.challenge_type === 'onboarding');
           const regularChallenges = challengesData.filter(c => c.challenge_type !== 'onboarding');
+
           setOnboardingChallenge(onboarding);
           setChallenges(regularChallenges);
         }
       } catch (error) {
         console.error('Unexpected error fetching challenges:', error);
       }
+
+      // Fetch user-specific data
       if (user) {
         try {
+          // Fetch submissions
           const { data: submissionsData } = await supabase
-            .from('submissions').select('*').eq('user_id', user.id);
+            .from('submissions')
+            .select('*')
+            .eq('user_id', user.id);
           setSubmissions(submissionsData || []);
+
+          // Fetch user's onboarding visibility preference
           const { data: userData } = await supabase
-            .from('users').select('onboarding_hidden').eq('id', user.id).single();
-          if (userData) setIsOnboardingHidden(userData.onboarding_hidden || false);
+            .from('users')
+            .select('onboarding_hidden')
+            .eq('id', user.id)
+            .single();
+
+          if (userData) {
+            setIsOnboardingHidden(userData.onboarding_hidden || false);
+          }
         } catch (error) {
           console.error('Error fetching user data:', error);
         }
@@ -74,19 +94,32 @@ export function ChallengeListPage() {
     return submission?.status || 'not-attempted';
   };
 
-  const handleHideOnboarding = async () => setIsOnboardingHidden(true);
+  const handleHideOnboarding = async () => {
+    setIsOnboardingHidden(true);
+  };
 
   const handleShowOnboarding = async () => {
     if (!user) return;
+    
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      
+      if (!session) {
+        return;
+      }
+
       const response = await fetch(`${supabaseUrl}/functions/v1/set-onboarding-visibility`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({ isHidden: false }),
       });
-      if (response.ok) setIsOnboardingHidden(false);
+
+      if (response.ok) {
+        setIsOnboardingHidden(false);
+      }
     } catch (error) {
       console.error('Error showing onboarding:', error);
     }
@@ -101,7 +134,7 @@ export function ChallengeListPage() {
   });
 
   const getDifficultyColor = (difficulty: string) => {
-    switch (difficulty?.toLowerCase()) {
+    switch (difficulty.toLowerCase()) {
       case 'beginner': return 'bg-green-100 text-green-800';
       case 'intermediate': return 'bg-yellow-100 text-yellow-800';
       case 'expert': return 'bg-red-100 text-red-800';
@@ -118,6 +151,7 @@ export function ChallengeListPage() {
   };
 
   const getShortDescription = (description: string) => {
+    // Extract just the first paragraph, removing markdown headers
     if (!description) return '';
     const lines = description.split('\n').filter(line => line.trim());
     const firstParagraph = lines.find(line => !line.startsWith('#') && line.trim().length > 0);
@@ -126,12 +160,7 @@ export function ChallengeListPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
-
-      {/* AI Help Chat Dialog */}
-      <AILearnChat open={aiHelpOpen} onOpenChange={setAiHelpOpen} />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         {/* Header */}
         <div className="mb-8">
           <div className="flex justify-between items-start mb-4">
@@ -141,39 +170,12 @@ export function ChallengeListPage() {
                 Explore and complete no-code development challenges to earn XP and badges
               </p>
             </div>
-            <div className="flex items-center gap-3">
-              {/* ── AI Help Button ── */}
-              <OnboardingTooltip
-                id="challenges-ai-help"
-                priority={1}
-                content="Not sure which challenge to pick? Ask our AI Learning Guide for personalised recommendations!"
-                position="left"
-              >
-                <Button
-                  variant="outline"
-                  className="border-purple-500/50 text-purple-300 hover:bg-purple-500/10 hover:text-purple-200"
-                  onClick={() => setAiHelpOpen(true)}
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  AI Help
-                </Button>
-              </OnboardingTooltip>
-
-              {/* ── Request Challenge Button ── */}
-              <OnboardingTooltip
-                id="challenges-request"
-                priority={2}
-                content="Don't see a challenge you want? Request a new one and the admin team will review it!"
-                position="left"
-              >
-                <ChallengeRequestModal>
-                  <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Request Challenge
-                  </Button>
-                </ChallengeRequestModal>
-              </OnboardingTooltip>
-            </div>
+            <ChallengeRequestModal>
+              <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                <Plus className="w-4 h-4 mr-2" />
+                Request Challenge
+              </Button>
+            </ChallengeRequestModal>
           </div>
         </div>
 
@@ -181,44 +183,27 @@ export function ChallengeListPage() {
         <Card className="mb-8">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4">
-              {/* Priority 3 */}
-              <OnboardingTooltip
-                id="challenges-search"
-                priority={3}
-                content="Search by title or description to quickly find a challenge."
-                position="bottom"
-              >
-                <div className="flex-1 relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    placeholder="Search challenges..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </OnboardingTooltip>
-
-              {/* Priority 4 */}
-              <OnboardingTooltip
-                id="challenges-difficulty-filter"
-                priority={4}
-                content="New to no-code? Filter by Beginner to find the easiest starting challenges!"
-                position="bottom"
-              >
-                <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <Filter className="w-4 h-4 mr-2" />
-                    <SelectValue placeholder="Filter by difficulty" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Difficulties</SelectItem>
-                    <SelectItem value="Beginner">Beginner</SelectItem>
-                    <SelectItem value="Intermediate">Intermediate</SelectItem>
-                    <SelectItem value="Expert">Expert</SelectItem>
-                  </SelectContent>
-                </Select>
-              </OnboardingTooltip>
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search challenges..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Select value={difficultyFilter} onValueChange={setDifficultyFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <Filter className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Filter by difficulty" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Difficulties</SelectItem>
+                  <SelectItem value="Beginner">Beginner</SelectItem>
+                  <SelectItem value="Intermediate">Intermediate</SelectItem>
+                  <SelectItem value="Expert">Expert</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -226,126 +211,104 @@ export function ChallengeListPage() {
         {/* Challenge Grid */}
         {loading ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => <ChallengeCardSkeleton key={i} />)}
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <ChallengeCardSkeleton key={i} />
+            ))}
           </div>
         ) : (
-          <>
-            {onboardingChallenge && !isOnboardingHidden && (
-              <div className="mb-8">
-                <OnboardingChallengeCard
-                  title={onboardingChallenge.title}
-                  description={onboardingChallenge.description}
-                  onHide={handleHideOnboarding}
-                />
-              </div>
-            )}
-            {onboardingChallenge && isOnboardingHidden && (
-              <div className="mb-8">
-                <Button onClick={handleShowOnboarding} variant="outline" className="w-full sm:w-auto">
-                  <Eye className="w-4 h-4 mr-2" />
-                  Show Onboarding Tutorial
-                </Button>
-              </div>
-            )}
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredChallenges.map((challenge, index) => {
-                const status = getChallengeStatus(challenge.id);
-                const requirementsArr = normalizeRequirements(challenge.requirements);
-                return (
-                  <Card key={challenge.id} className="hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-                    <div className="relative">
-                      <img
-                        src={challenge.image || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800'}
-                        alt={challenge.title}
-                        className="w-full h-48 object-cover"
-                      />
-                      <div className="absolute top-4 left-4">
-                        {index === 0 ? (
-                          <OnboardingTooltip
-                            id="challenges-difficulty-badge"
-                            priority={5}
-                            content="Green = Beginner · Yellow = Intermediate · Red = Expert"
-                            position="bottom"
-                          >
-                            <Badge className={getDifficultyColor(challenge.difficulty)}>
-                              {challenge.difficulty?.charAt(0).toUpperCase() + challenge.difficulty?.slice(1) || 'Unknown'}
-                            </Badge>
-                          </OnboardingTooltip>
-                        ) : (
-                          <Badge className={getDifficultyColor(challenge.difficulty)}>
-                            {challenge.difficulty?.charAt(0).toUpperCase() + challenge.difficulty?.slice(1) || 'Unknown'}
-                          </Badge>
-                        )}
-                      </div>
-                      <div className="absolute top-4 right-4">
-                        {index === 0 ? (
-                          <OnboardingTooltip
-                            id="challenges-status-icon"
-                            priority={6}
-                            content="○ Not started · ⏳ Pending review · ✓ Approved!"
-                            position="bottom"
-                          >
-                            <span>{getStatusIcon(status)}</span>
-                          </OnboardingTooltip>
-                        ) : (
-                          getStatusIcon(status)
-                        )}
-                      </div>
-                    </div>
-                    <CardHeader>
-                      <CardTitle className="line-clamp-2">{challenge.title}</CardTitle>
-                      <CardDescription className="line-clamp-3">
-                        {getShortDescription(challenge.description)}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between mb-4">
-                        {index === 0 ? (
-                          <OnboardingTooltip
-                            id="challenges-xp-reward"
-                            priority={7}
-                            content="XP earned when your submission is approved. Higher difficulty = more XP!"
-                            position="top"
-                          >
-                            <div className="flex items-center space-x-1 text-purple-600">
-                              <Star className="w-4 h-4" />
-                              <span className="font-medium">{challenge.xp_reward || challenge.xp || 0} XP</span>
-                            </div>
-                          </OnboardingTooltip>
-                        ) : (
-                          <div className="flex items-center space-x-1 text-purple-600">
-                            <Star className="w-4 h-4" />
-                            <span className="font-medium">{challenge.xp_reward || challenge.xp || 0} XP</span>
-                          </div>
-                        )}
-                        <span className="text-sm text-gray-500">{requirementsArr.length} requirements</span>
-                      </div>
-                      <div className="flex gap-2">
-                        {status === 'approved' ? (
-                          <Button asChild className="flex-1" variant="secondary">
-                            <Link to={`/challenges/${challenge.id}`}>View Details</Link>
-                          </Button>
-                        ) : (
-                          <Button asChild className="flex-1">
-                            <Link to={`/challenges/${challenge.id}`}>Start Challenge</Link>
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+        <>
+          {/* Onboarding Challenge Card or Show Button */}
+          {onboardingChallenge && !isOnboardingHidden && (
+            <div className="mb-8">
+              <OnboardingChallengeCard 
+                title={onboardingChallenge.title}
+                description={onboardingChallenge.description}
+                onHide={handleHideOnboarding}
+              />
             </div>
-
-            {filteredChallenges.length === 0 && !loading && (
-              <div className="text-center py-12">
-                <div className="text-gray-400 mb-4"><Filter className="w-12 h-12 mx-auto" /></div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No challenges found</h3>
-                <p className="text-gray-600">Try adjusting your search terms or filters</p>
+          )}
+          
+          {/* Show Onboarding Button */}
+          {onboardingChallenge && isOnboardingHidden && (
+            <div className="mb-8">
+              <Button 
+                onClick={handleShowOnboarding}
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                <Eye className="w-4 h-4 mr-2" />
+                Show Onboarding Tutorial
+              </Button>
+            </div>
+          )}
+          
+          {/* Regular Challenges Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredChallenges.map((challenge) => {
+            const status = getChallengeStatus(challenge.id);
+            const requirementsArr = normalizeRequirements(challenge.requirements);
+            return (
+              <Card key={challenge.id} className="hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+                <div className="relative">
+                  <img
+                    src={challenge.image || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800'}
+                    alt={challenge.title}
+                    className="w-full h-48 object-cover"
+                  />
+                  <div className="absolute top-4 left-4">
+                    <Badge className={getDifficultyColor(challenge.difficulty)}>
+                      {challenge.difficulty ? challenge.difficulty.charAt(0).toUpperCase() + challenge.difficulty.slice(1) : 'Unknown'}
+                    </Badge>
+                  </div>
+                  <div className="absolute top-4 right-4">
+                    {getStatusIcon(status)}
+                  </div>
+                </div>
+                <CardHeader>
+                  <CardTitle className="line-clamp-2">{challenge.title}</CardTitle>
+                  <CardDescription className="line-clamp-3">
+                    {getShortDescription(challenge.description)}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-1 text-purple-600">
+                      <Star className="w-4 h-4" />
+                      <span className="font-medium">{challenge.xp_reward || challenge.xp || 0} XP</span>
+                    </div>
+                    <span className="text-sm text-gray-500">
+                      {requirementsArr.length} requirements
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    {status === 'approved' ? (
+                      <Button asChild className="flex-1" variant="secondary">
+                        <Link to={`/challenges/${challenge.id}`}>View Details</Link>
+                      </Button>
+                    ) : (
+                      <Button asChild className="flex-1">
+                        <Link to={`/challenges/${challenge.id}`}>Start Challenge</Link>
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+          </div>
+          
+          {filteredChallenges.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <div className="text-gray-400 mb-4">
+                <Filter className="w-12 h-12 mx-auto" />
               </div>
-            )}
-          </>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No challenges found</h3>
+              <p className="text-gray-600">
+                Try adjusting your search terms or filters
+              </p>
+            </div>
+          )}
+        </>
         )}
       </div>
     </div>

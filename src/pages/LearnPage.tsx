@@ -8,7 +8,6 @@ import { platformPricing } from '@/data/platformPricing';
 
 import { ExternalLink, BookOpen, Code, Zap, Palette, Database, Globe, Sparkles } from 'lucide-react';
 import { AILearnChat } from '@/components/AILearnChat';
-import { OnboardingTooltip } from '@/components/ui/OnboardingTooltip';
 
 // ✅ Logos (make sure these exist in /src/images)
 import lovableLogo from '@/images/logoblack.svg';
@@ -918,31 +917,19 @@ export function LearnPage() {
                     {showFilters ? 'Hide Filters' : 'Filter'}
                   </Button>
 
-                  <OnboardingTooltip
-                    id="learn-ai-assist"
-                    content="Not sure which tool to use? Click AI Assist to chat with an AI that will recommend the best no-code platform for your goal!"
-                    position="bottom"
+                  <Button
+                    variant="outline"
+                    className="border-white/15 text-black/80 hover:bg-white/10"
+                    onClick={() => setAiChatOpen(true)}
                   >
-                    <Button
-                      variant="outline"
-                      className="border-white/15 text-black/80 hover:bg-white/10"
-                      onClick={() => setAiChatOpen(true)}
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      AI Assist
-                    </Button>
-                  </OnboardingTooltip>
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    AI Assist
+                  </Button>
 
-                  <OnboardingTooltip
-                    id="learn-pathways"
-                    content="Learning Pathways guide you through a structured series of challenges step by step — great for beginners!"
-                    position="bottom"
-                  >
-                    <Button onClick={() => navigate('/pathways')} className="bg-white/10 hover:bg-white/15 border border-white/10">
-                      <BookOpen className="w-4 h-4 mr-2" />
-                      Learning Pathways
-                    </Button>
-                  </OnboardingTooltip>
+                  <Button onClick={() => navigate('/pathways')} className="bg-white/10 hover:bg-white/15 border border-white/10">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Learning Pathways
+                  </Button>
 
                   {(difficultyFilter !== 'all' || categoryFilter !== 'all') && (
                     <Button
