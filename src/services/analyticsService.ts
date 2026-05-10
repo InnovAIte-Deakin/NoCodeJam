@@ -13,6 +13,7 @@ export interface RecentSubmission {
   id: string;
   challenge_id: string;
   challenge_title: string;
+  challenge_xp: number;
   status: "pending" | "approved" | "rejected" | string;
   submitted_at: string | null;
   submission_url: string | null;
@@ -47,6 +48,8 @@ type SubmissionRow = {
 type ChallengeTitleRow = {
   id: string;
   title: string;
+  xp: number | null;
+  xp_reward: number | null;
 };
 
 type UserXpRow = {
@@ -212,12 +215,12 @@ export async function getRecentSubmissions(
     )
   );
 
-  let challengeTitles = new Map<string, string>();
+  let challengeTitles = new Map<string, { title: string; xp: number }>();
 
   if (challengeIds.length > 0) {
     const { data: challengesData, error: challengesError } = await supabase
       .from("challenges")
-      .select("id, title")
+      .select("id, title, xp, xp_reward")
       .in("id", challengeIds);
 
     if (challengesError) {
@@ -227,15 +230,23 @@ export async function getRecentSubmissions(
     challengeTitles = new Map(
       ((challengesData as ChallengeTitleRow[] | null) ?? []).map((challenge) => [
         challenge.id,
-        challenge.title,
+        {
+          title: challenge.title,
+          xp: challenge.xp_reward ?? challenge.xp ?? 0,
+        },
       ])
     );
   }
 
-  return submissions.map((submission) => ({
-    ...submission,
-    challenge_title: challengeTitles.get(submission.challenge_id) ?? "Untitled challenge",
-  }));
+  return submissions.map((submission) => {
+    const challengeInfo = challengeTitles.get(submission.challenge_id);
+
+    return {
+      ...submission,
+      challenge_title: challengeInfo?.title ?? "Untitled challenge",
+      challenge_xp: challengeInfo?.xp ?? 0,
+    };
+  });
 }
 
 export async function getUserPathwayProgress(
