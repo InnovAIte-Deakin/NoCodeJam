@@ -511,3 +511,60 @@ html, body, #root {
 .animate-success-pulse {
   animation: success-pulse 0.6s ease-in-out;
 }
+
+.onboarding-overlay {
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-bg) 86%, transparent),
+      color-mix(in srgb, var(--gradient-purple) 34%, transparent)
+    );
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+.onboarding-spotlight {
+  background: transparent;
+  border: 2px solid var(--color-accent);
+  box-shadow:
+    0 0 0 1px var(--color-bg),
+    0 0 28px color-mix(in srgb, var(--color-accent) 54%, transparent);
+  pointer-events: none;
+  transition: top 240ms ease, left 240ms ease, width 240ms ease, height 240ms ease;
+}
+
+.onboarding-tooltip {
+  max-height: calc(100vh - 2rem);
+  overflow-y: auto;
+}
+
+.animate-onboarding-slide-down {
+  animation: onboarding-slide-down 220ms ease-out;
+}
+
+.animate-onboarding-slide-up {
+  animation: onboarding-slide-up 220ms ease-out;
+}
+
+@keyframes onboarding-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes onboarding-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
