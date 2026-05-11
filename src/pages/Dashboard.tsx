@@ -80,13 +80,20 @@ export function Dashboard() {
     xp: 0,
   }));
 
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
   recentSubmissions.forEach((submission) => {
     if (!submission.submitted_at) return;
 
-    const date = new Date(submission.submitted_at);
-    const day = date.toLocaleDateString("en-US", { weekday: "short" });
+    const submissionDate = new Date(submission.submitted_at);
+
+    if (submissionDate < oneWeekAgo) return;
+
+    const day = submissionDate.toLocaleDateString("en-US", { weekday: "short" });
 
     const item = xpChartData.find((d) => d.day === day);
+
     if (item && submission.status === "approved") {
       item.xp += Number(submission.challenge_xp);
     }
@@ -183,7 +190,7 @@ export function Dashboard() {
                       <span>Progress to next milestone</span>
                       <span>{summary.xp_to_next_milestone} XP remaining</span>
                     </div>
-                    <Progress value={summary.xp_progress_percent} className="h-3" />
+                    <Progress value={summary.xp_progress_percent} className="h-3 [&>div]:bg-gradient-to-r [&>div]:from-cyan-400 [&>div]:to-pink-500" />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-4">
                     <div className="p-3 sm:p-4 card-contrast rounded-lg">
@@ -217,7 +224,7 @@ export function Dashboard() {
               <CardHeader>
                 <CardTitle className="text-white">XP Earned This Week</CardTitle>
                 <CardDescription className="text-gray-300">
-                  XP earned from approved challenge submissions
+                  XP earned from approved challenge submissions in the last 7 days
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-6">
