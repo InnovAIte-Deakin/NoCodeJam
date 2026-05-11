@@ -304,6 +304,16 @@ export function AdminDashboard() {
       return;
     }
 
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData.user?.id) {
+      toast({
+        title: "Not signed in",
+        description: "Please sign in again and retry.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Auto-generate slug from title if not provided
     const slug = newPathway.slug || newPathway.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
@@ -316,7 +326,8 @@ export function AdminDashboard() {
         estimated_time: newPathway.estimated_time,
         total_xp: newPathway.total_xp,
         cover_image: newPathway.cover_image,
-        status: newPathway.status
+        status: newPathway.status,
+        created_by: userData.user.id
       }
     ]);
 
@@ -382,6 +393,67 @@ export function AdminDashboard() {
     refreshPathways();
   };
 
+  const handleEditPathway = (pathway: any) => {
+    setEditingPathway({
+      ...pathway,
+      slug: pathway.slug || '',
+      description: pathway.description || '',
+      difficulty: pathway.difficulty || 'Beginner',
+      estimated_time: pathway.estimated_time || 0,
+      total_xp: pathway.total_xp || 0,
+      cover_image: pathway.cover_image || '',
+      status: pathway.status || 'draft'
+    });
+    setIsEditPathwayDialogOpen(true);
+  };
+
+  const handleUpdatePathway = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPathway?.title || !editingPathway?.description) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in title and description.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const slug = editingPathway.slug || editingPathway.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+    const { error } = await supabase
+      .from('pathways')
+      .update({
+        title: editingPathway.title,
+        slug,
+        description: editingPathway.description,
+        difficulty: editingPathway.difficulty,
+        estimated_time: editingPathway.estimated_time,
+        total_xp: editingPathway.total_xp,
+        cover_image: editingPathway.cover_image,
+        status: editingPathway.status
+      })
+      .eq('id', editingPathway.id);
+
+    if (error) {
+      console.error('Update pathway error:', error);
+      toast({
+        title: "Failed to update pathway",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Pathway updated",
+      description: "The pathway has been successfully updated.",
+    });
+
+    setIsEditPathwayDialogOpen(false);
+    setEditingPathway(null);
+    refreshPathways();
+  };
+
   const addRequirement = () => {
     setNewChallenge({
       ...newChallenge,
@@ -418,6 +490,10 @@ export function AdminDashboard() {
   const [deletingChallengeId, setDeletingChallengeId] = useState<string | null>(null);
   const [editingChallenge, setEditingChallenge] = useState<any>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+
+  // Pathway edit state
+  const [editingPathway, setEditingPathway] = useState<any>(null);
+  const [isEditPathwayDialogOpen, setIsEditPathwayDialogOpen] = useState(false);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -1158,6 +1234,145 @@ export function AdminDashboard() {
             </DialogContent>
           </Dialog>
 
+          <Dialog open={isEditPathwayDialogOpen} onOpenChange={setIsEditPathwayDialogOpen}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Edit Pathway</DialogTitle>
+                <DialogDescription>
+                  Update the pathway details below.
+                </DialogDescription>
+              </DialogHeader>
+              {editingPathway && (
+                <form onSubmit={handleUpdatePathway} className="space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="edit-pathway-title">Pathway Title</Label>
+                      <Input
+                        id="edit-pathway-title"
+                        value={editingPathway.title}
+                        onChange={(e) => setEditingPathway({...editingPathway, title: e.target.value})}
+                        placeholder="Evidence-Based Care Prototyping"
+                        required
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-pathway-slug">Slug (URL)</Label>
+                      <Input
+                        id="edit-pathway-slug"
+                        value={editingPathway.slug}
+                        onChange={(e) => setEditingPathway({...editingPathway, slug: e.target.value})}
+                        placeholder="evidence-based-care-prototyping"
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-pathway-description">Description (Markdown)</Label>
+                    <Textarea
+                      id="edit-pathway-description"
+                      value={editingPathway.description}
+                      onChange={(e) => setEditingPathway({...editingPathway, description: e.target.value})}
+                      rows={8}
+                      required
+                      className="mt-1 font-mono text-sm"
+                    />
+                  </div>
+
+                  <div className="grid md:grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="edit-pathway-difficulty">Difficulty</Label>
+                      <Select
+                        value={editingPathway.difficulty}
+                        onValueChange={(value) => setEditingPathway({...editingPathway, difficulty: value as any})}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Beginner">Beginner</SelectItem>
+                          <SelectItem value="Intermediate">Intermediate</SelectItem>
+                          <SelectItem value="Advanced">Advanced</SelectItem>
+                          <SelectItem value="Expert">Expert</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-pathway-time">Estimated Time (minutes)</Label>
+                      <Input
+                        id="edit-pathway-time"
+                        type="number"
+                        value={editingPathway.estimated_time}
+                        onChange={(e) => setEditingPathway({...editingPathway, estimated_time: parseInt(e.target.value)})}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="edit-pathway-xp">Total XP</Label>
+                      <Input
+                        id="edit-pathway-xp"
+                        type="number"
+                        value={editingPathway.total_xp}
+                        onChange={(e) => setEditingPathway({...editingPathway, total_xp: parseInt(e.target.value)})}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-pathway-image">Cover Image URL</Label>
+                    <Input
+                      id="edit-pathway-image"
+                      type="url"
+                      value={editingPathway.cover_image}
+                      onChange={(e) => setEditingPathway({...editingPathway, cover_image: e.target.value})}
+                      placeholder="https://images.unsplash.com/photo-xyz?w=800"
+                      className="mt-1"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="edit-pathway-status">Status</Label>
+                    <Select
+                      value={editingPathway.status}
+                      onValueChange={(value) => setEditingPathway({...editingPathway, status: value as any})}
+                    >
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Draft</SelectItem>
+                        <SelectItem value="published">Published</SelectItem>
+                        <SelectItem value="archived">Archived</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex justify-end space-x-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => {
+                        setIsEditPathwayDialogOpen(false);
+                        setEditingPathway(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="submit"
+                      className="bg-gradient-to-r from-purple-700 to-blue-700 text-white shadow-md hover:from-purple-600 hover:to-blue-600"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      Update Pathway
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+
           {/* Manage Users */}
           {/* Challenge Requests */}
           <TabsContent value="challenge-requests">
@@ -1484,6 +1699,14 @@ export function AdminDashboard() {
                             )}
                           </div>
                           <div className="flex gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditPathway(pathway)}
+                            >
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
                             <Button
                               variant="destructive"
                               size="sm"
