@@ -21,6 +21,7 @@ import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import OnboardingStepPage from '@/pages/onboarding/[step]';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
+import { FAQPage } from '@/pages/FAQPage';
 import './App.css';
 
 function AppRoutes() {
@@ -34,7 +35,10 @@ function AppRoutes() {
       <Route path="/register" element={!user ? <RegisterPage /> : <Navigate to="/dashboard" replace />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
-      {/* Redirect logged-in users from public pages */}
+
+      {/* FAQ route — public so anyone can access help */}
+      <Route path="/faq" element={<FAQPage />} />
+
       {/* Protected routes */}
       <Route path="/dashboard" element={
         <ProtectedRoute>
@@ -75,13 +79,13 @@ function AppRoutes() {
           <OnboardingStepPage />
         </ProtectedRoute>
       } />
-      
+
       <Route path="/onboarding/complete" element={
         <ProtectedRoute>
           <OnboardingCompleteScreen />
         </ProtectedRoute>
       } />
-      
+
       <Route path="/leaderboard" element={
         <ProtectedRoute>
           <LeaderboardPage />
@@ -97,7 +101,7 @@ function AppRoutes() {
           <ProfilePage />
         </ProtectedRoute>
       } />
-      
+
       {/* Admin only routes */}
       <Route path="/admin" element={
         <ProtectedRoute adminOnly>
@@ -109,7 +113,7 @@ function AppRoutes() {
           <ReviewDashboard />
         </ProtectedRoute>
       } />
-      
+
       {/* Catch all */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
