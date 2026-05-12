@@ -7,13 +7,16 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabaseClient';
 import { Link } from 'react-router-dom';
-import { Trophy, Star, Calendar, ExternalLink, Github } from 'lucide-react';
+import { Trophy, Star, Calendar, ExternalLink, Github, Sparkles } from 'lucide-react';
+import { RecommendedChallengeCard } from '@/components/RecommendedChallengeCard';
 
 export function Dashboard() {
   const { user } = useAuth();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [challenges, setChallenges] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recsLoading, setRecsLoading] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -24,8 +27,30 @@ export function Dashboard() {
           .select('*')
           .eq('user_id', user.id);
         setSubmissions(submissionsData || []);
+
+        // Fetch recommendations
+        try {
+          setRecsLoading(true);
+          console.log('Calling get-recommendations for user:', user.id);
+
+          const { data, error } = await supabase.functions.invoke('get-recommendations');
+
+          if (error) {
+            console.error('Failed to fetch recommendations:', error);
+            setRecommendations([]);
+          } else {
+            console.log('Recommendations response:', data);
+            setRecommendations(data?.recommendations || []);
+          }
+        } catch (error) {
+          console.error('Unexpected recommendation error:', error);
+          setRecommendations([]);
+        } finally {
+          setRecsLoading(false);
+        }
       } else {
         setSubmissions([]);
+        setRecommendations([]);
       }
       const { data: challengesData } = await supabase
         .from('challenges')
@@ -93,6 +118,54 @@ export function Dashboard() {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Recommended for You */}
+            <Card className="bg-slate-900 border border-slate-700">
+              <CardHeader className="pb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <Sparkles className="h-5 w-5 text-yellow-400" />
+                      <span className="text-xl sm:text-2xl font-bold text-white">
+                        Recommended for You
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 max-w-2xl">
+                      Based on your recent progress and completed challenges.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-start sm:justify-end">
+                    <Badge className="bg-emerald-100 text-emerald-800">
+                      Personalized
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                {recsLoading ? (
+                  <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-950/50 p-6 text-center text-sm text-slate-300">
+                    Finding the best challenges for you...
+                  </div>
+                ) : recommendations.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {recommendations.map((challenge) => (
+                      <RecommendedChallengeCard key={challenge.id} challenge={challenge} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-950/50 p-6 text-center space-y-3">
+                    <h3 className="text-sm font-medium text-white">No personalized picks just yet</h3>
+                    <p className="text-sm text-gray-300">
+                      Explore a few more challenges and we’ll suggest better matches here.
+                    </p>
+                    <Button asChild>
+                      <Link to="/challenges">Browse challenges</Link>
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

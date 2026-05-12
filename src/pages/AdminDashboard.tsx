@@ -173,6 +173,21 @@ export function AdminDashboard() {
       });
       return;
     }
+
+    // Log the interaction for recommendations
+    const { error: interactionError } = await supabase.rpc('log_user_interaction', {
+      p_user_id: submission.user_id,
+      p_challenge_id: submission.challenge_id,
+      p_action: 'completed',
+      p_difficulty: challenge.difficulty,
+      p_challenge_type: challenge.challenge_type,
+      p_time_spent: 30
+    });
+
+    if (interactionError) {
+      console.error('Failed to log interaction:', interactionError);
+    }
+
     toast({
       title: "Submission approved",
       description: "The submission has been approved and the user has been awarded XP.",
