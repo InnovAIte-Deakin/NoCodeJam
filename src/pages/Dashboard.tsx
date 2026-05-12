@@ -7,7 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
-import { Trophy, Star, Calendar, ExternalLink, Github, BookOpen, Flame, Mountain, Award, Map, Sparkles } from 'lucide-react';
+import { Trophy, Star, ExternalLink, BookOpen, Flame, Mountain, Award, Map, Sparkles } from 'lucide-react';
+import { RecommendedChallengeCard } from '@/components/RecommendedChallengeCard';
+import { supabase } from '@/lib/supabaseClient';
 import {
   getDashboardAnalyticsData,
   type DashboardAnalyticsData,
@@ -17,7 +19,9 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recha
 export function Dashboard() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardAnalyticsData | null>(null);
+  const [recommendations, setRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recsLoading, setRecsLoading] = useState(false);
 
   // const xpChartData = [{ day: "Mon", xp: 20 }, { day: "Tue", xp: 35 }, { day: "Wed", xp: 28 }, { day: "Thu", xp: 50 }, { day: "Fri", xp: 45 }, { day: "Sat", xp: 15 }, { day: "Sun", xp: 32 }];
 
@@ -26,6 +30,7 @@ export function Dashboard() {
       setLoading(true);
       if (!user) {
         setDashboardData(null);
+        setRecommendations([]);
         setLoading(false);
         return;
       }
@@ -53,6 +58,28 @@ export function Dashboard() {
           pathways: [],
         });
       }
+
+      // Fetch recommendations
+      try {
+        setRecsLoading(true);
+        console.log('Calling get-recommendations for user:', user.id);
+
+        const { data, error } = await supabase.functions.invoke('get-recommendations');
+
+        if (error) {
+          console.error('Failed to fetch recommendations:', error);
+          setRecommendations([]);
+        } else {
+          console.log('Recommendations response:', data);
+          setRecommendations(data?.recommendations || []);
+        }
+      } catch (error) {
+        console.error('Unexpected recommendation error:', error);
+        setRecommendations([]);
+      } finally {
+        setRecsLoading(false);
+      }
+
       setLoading(false);
     };
 
@@ -238,6 +265,54 @@ export function Dashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Recommended for You */}
+            <Card className="bg-slate-900 border border-slate-700">
+              <CardHeader className="pb-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-start">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1 whitespace-nowrap">
+                      <Sparkles className="h-5 w-5 shrink-0 text-yellow-400" />
+                      <span className="text-xl sm:text-2xl font-bold leading-none text-white">
+                        Recommended for You
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-400 max-w-2xl">
+                      Based on your recent progress and completed challenges.
+                    </p>
+                  </div>
+
+                  <div className="flex justify-start sm:justify-end">
+                    <Badge className="bg-emerald-100 text-emerald-800">
+                      Personalized
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-6">
+                {recsLoading ? (
+                  <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-950/50 p-6 text-center text-sm text-slate-300">
+                    Finding the best challenges for you...
+                  </div>
+                ) : recommendations.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {recommendations.map((challenge) => (
+                      <RecommendedChallengeCard key={challenge.id} challenge={challenge} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl border border-dashed border-slate-600 bg-slate-950/50 p-6 text-center space-y-3">
+                    <h3 className="text-sm font-medium text-white">No personalized picks just yet</h3>
+                    <p className="text-sm text-gray-300">
+                      Explore a few more challenges and we’ll suggest better matches here.
+                    </p>
+                    <Button asChild>
+                      <Link to="/challenges">Browse challenges</Link>
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
