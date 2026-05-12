@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { supabase, supabaseUrl } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 import { normalizeRequirements } from '@/lib/utils';
 import {
   CheckCircle,
@@ -67,17 +67,6 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
-interface SubmissionDebugInfo {
-  reviewableCount: number;
-  reviewableError: string | null;
-  reviewableStatuses: string[];
-  reviewableFallbackReason: string | null;
-  recentStatuses: string[];
-  recentStatusesError: string | null;
-  lastAction: string | null;
-  lastActionError: string | null;
-}
-
 const isPendingReviewEnumError = (error: { message?: string } | null | undefined) =>
   Boolean(
     error?.message?.includes('invalid input value for enum submission_status') &&
@@ -129,8 +118,6 @@ const buildSubmissionUpdatePayloads = ({
 };
 
 export function AdminDashboard() {
-  const supabaseProjectRef = new URL(supabaseUrl).host.split('.')[0];
-
   const [newChallenge, setNewChallenge] = useState({
     title: '',
     description: '',
@@ -158,16 +145,6 @@ export function AdminDashboard() {
   const [pathways, setPathways] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [userProfiles, setUserProfiles] = useState<{[key: string]: any}>({});
-  const [submissionDebugInfo, setSubmissionDebugInfo] = useState<SubmissionDebugInfo>({
-    reviewableCount: 0,
-    reviewableError: null,
-    reviewableStatuses: [...REVIEWABLE_SUBMISSION_STATUSES],
-    reviewableFallbackReason: null,
-    recentStatuses: [],
-    recentStatusesError: null,
-    lastAction: null,
-    lastActionError: null,
-  });
 
   const fetchReviewableSubmissions = async () => {
     const baseQuery = () => supabase
@@ -311,35 +288,10 @@ export function AdminDashboard() {
       const {
         data: submissions,
         error: subError,
-        reviewableStatuses,
-        fallbackReason,
       } = await fetchReviewableSubmissions();
       
       // Add debugging
       console.log('Admin Dashboard - Submissions query result:', { submissions, subError });
-
-      const { data: recentSubmissionStatuses, error: recentStatusesError } = await supabase
-        .from('submissions')
-        .select('status')
-        .order('submitted_at', { ascending: false, nullsFirst: false })
-        .limit(10);
-
-      console.log('Admin Dashboard - Recent submission statuses:', {
-        recentSubmissionStatuses,
-        recentStatusesError,
-      });
-
-      setSubmissionDebugInfo({
-        reviewableCount: submissions?.length ?? 0,
-        reviewableError: subError?.message ?? null,
-        reviewableStatuses,
-        reviewableFallbackReason: fallbackReason,
-        recentStatuses: (recentSubmissionStatuses || [])
-          .map((submission: { status: string | null }) => submission.status ?? 'null'),
-        recentStatusesError: recentStatusesError?.message ?? null,
-        lastAction: null,
-        lastActionError: null,
-      });
       
       // Fetch all challenges (for lookup)
       const { data: challengesData, error: chalError } = await supabase
@@ -411,21 +363,10 @@ export function AdminDashboard() {
   }, []);
 
   const handleApproveSubmission = async (submissionId: string) => {
-    setSubmissionDebugInfo(prev => ({
-      ...prev,
-      lastAction: `Approve started for ${submissionId}`,
-      lastActionError: null,
-    }));
-
     const { data: authData, error: authError } = await supabase.auth.getUser();
     const reviewerId = authData.user?.id;
 
     if (authError || !reviewerId) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Approve failed for ${submissionId}`,
-        lastActionError: authError?.message || 'Admin user not found.',
-      }));
       toast({
         title: "Failed to approve submission",
         description: authError?.message || 'Admin user not found.',
@@ -441,11 +382,6 @@ export function AdminDashboard() {
       .maybeSingle<SubmissionReviewSnapshot>();
 
     if (latestSubmissionError || !latestSubmission) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Approve failed for ${submissionId}`,
-        lastActionError: latestSubmissionError?.message || 'Submission not found.',
-      }));
       toast({
         title: "Failed to approve submission",
         description: latestSubmissionError?.message || 'Submission not found.',
@@ -455,11 +391,6 @@ export function AdminDashboard() {
     }
 
     if (latestSubmission.status === APPROVED_SUBMISSION_STATUS) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Approve skipped for ${submissionId}`,
-        lastActionError: 'Submission already approved.',
-      }));
       toast({
         title: "Submission already approved",
         description: "This submission was already approved in another session.",
@@ -469,11 +400,6 @@ export function AdminDashboard() {
     }
 
     if (!isReviewableSubmissionStatus(latestSubmission.status)) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Approve skipped for ${submissionId}`,
-        lastActionError: `Unexpected submission status: ${latestSubmission.status}`,
-      }));
       toast({
         title: "Submission status changed",
         description: `Review skipped because the submission is now "${latestSubmission.status}".`,
@@ -485,11 +411,6 @@ export function AdminDashboard() {
 
     const challenge = challenges.find((c: any) => c.id === latestSubmission.challenge_id);
     if (!challenge) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Approve failed for ${submissionId}`,
-        lastActionError: 'Challenge metadata not found for this submission.',
-      }));
       toast({
         title: "Failed to approve submission",
         description: 'Challenge metadata not found for this submission.',
@@ -518,11 +439,6 @@ export function AdminDashboard() {
     });
 
     if (updateError) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Approve failed for ${submissionId}`,
-        lastActionError: `Submission update failed: ${updateError.message}`,
-      }));
       toast({
         title: "Failed to approve submission",
         description: updateError.message,
@@ -532,11 +448,6 @@ export function AdminDashboard() {
     }
 
     if (!approvedSubmission) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Approve skipped for ${submissionId}`,
-        lastActionError: 'Submission update returned no row.',
-      }));
       toast({
         title: "Submission status changed",
         description: "Approval skipped because the submission was updated by someone else.",
@@ -552,12 +463,6 @@ export function AdminDashboard() {
       const xpErrorMessage = rollbackError
         ? `${getErrorMessage(xpError, 'Unable to update user XP.')} Rollback also failed, so manual cleanup may be needed.`
         : `${getErrorMessage(xpError, 'Unable to update user XP.')} Submission approval was rolled back.`;
-
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Approve failed for ${submissionId}`,
-        lastActionError: xpErrorMessage,
-      }));
 
       toast({
         title: "Failed to award XP",
@@ -582,14 +487,6 @@ export function AdminDashboard() {
       console.error('Failed to log interaction:', interactionError);
     }
 
-    setSubmissionDebugInfo(prev => ({
-      ...prev,
-      lastAction: `Approve succeeded for ${submissionId}`,
-      lastActionError: interactionError?.message
-        ? `XP awarded and submission approved. Interaction log failed: ${interactionError.message}`
-        : null,
-    }));
-
     toast({
       title: "Submission approved",
       description: "The submission has been approved and the user has been awarded XP.",
@@ -599,21 +496,10 @@ export function AdminDashboard() {
   };
 
   const handleRejectSubmission = async (submissionId: string) => {
-    setSubmissionDebugInfo(prev => ({
-      ...prev,
-      lastAction: `Reject started for ${submissionId}`,
-      lastActionError: null,
-    }));
-
     const { data: authData, error: authError } = await supabase.auth.getUser();
     const reviewerId = authData.user?.id;
 
     if (authError || !reviewerId) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Reject failed for ${submissionId}`,
-        lastActionError: authError?.message || 'Admin user not found.',
-      }));
       toast({
         title: "Failed to reject submission",
         description: authError?.message || 'Admin user not found.',
@@ -629,11 +515,6 @@ export function AdminDashboard() {
       .maybeSingle<{ id: string; status: string }>();
 
     if (latestSubmissionError || !latestSubmission) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Reject failed for ${submissionId}`,
-        lastActionError: latestSubmissionError?.message || 'Submission not found.',
-      }));
       toast({
         title: "Failed to reject submission",
         description: latestSubmissionError?.message || 'Submission not found.',
@@ -643,11 +524,6 @@ export function AdminDashboard() {
     }
 
     if (!isReviewableSubmissionStatus(latestSubmission.status)) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Reject skipped for ${submissionId}`,
-        lastActionError: `Unexpected submission status: ${latestSubmission.status}`,
-      }));
       toast({
         title: "Submission status changed",
         description: `Reject skipped because the submission is now "${latestSubmission.status}".`,
@@ -670,11 +546,6 @@ export function AdminDashboard() {
     });
 
     if (error) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Reject failed for ${submissionId}`,
-        lastActionError: error.message,
-      }));
       toast({
         title: "Failed to reject submission",
         description: error.message,
@@ -684,11 +555,6 @@ export function AdminDashboard() {
     }
 
     if (!rejectedSubmission) {
-      setSubmissionDebugInfo(prev => ({
-        ...prev,
-        lastAction: `Reject skipped for ${submissionId}`,
-        lastActionError: 'Submission update returned no row.',
-      }));
       toast({
         title: "Submission status changed",
         description: "Reject skipped because the submission was updated by someone else.",
@@ -703,11 +569,6 @@ export function AdminDashboard() {
       description: "The submission has been rejected.",
       variant: "destructive",
     });
-    setSubmissionDebugInfo(prev => ({
-      ...prev,
-      lastAction: `Reject succeeded for ${submissionId}`,
-      lastActionError: null,
-    }));
     // Refresh pending submissions
     refreshPendingSubmissions();
   };
@@ -1248,27 +1109,6 @@ export function AdminDashboard() {
           <p className="text-gray-300">
             Manage challenges, submissions, and users
           </p>
-          {import.meta.env.DEV && (
-            <div className="mt-4 space-y-2">
-              <div className="rounded border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
-                Connected Supabase: {supabaseProjectRef}
-              </div>
-              <div className="rounded border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm text-sky-100">
-                <div>Reviewable submissions fetched: {submissionDebugInfo.reviewableCount}</div>
-                <div>Reviewable query error: {submissionDebugInfo.reviewableError ?? 'none'}</div>
-                <div>Reviewable statuses in use: {submissionDebugInfo.reviewableStatuses.join(', ')}</div>
-                <div>Reviewable fallback: {submissionDebugInfo.reviewableFallbackReason ?? 'none'}</div>
-                <div>
-                  Recent submission statuses: {submissionDebugInfo.recentStatuses.length > 0
-                    ? submissionDebugInfo.recentStatuses.join(', ')
-                    : 'none'}
-                </div>
-                <div>Recent statuses query error: {submissionDebugInfo.recentStatusesError ?? 'none'}</div>
-                <div>Last action: {submissionDebugInfo.lastAction ?? 'none'}</div>
-                <div>Last action error: {submissionDebugInfo.lastActionError ?? 'none'}</div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Stats Cards */}
