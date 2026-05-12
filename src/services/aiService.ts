@@ -1,5 +1,6 @@
 // src/services/aiService.ts
 import { supabase } from "@/lib/supabaseClient";
+import { getErrorMessage } from "@/lib/errorHandling";
 import type { DifficultyLevel, ChallengeType } from "@/types";
 
 // ============================================
@@ -39,6 +40,8 @@ export interface AIGeneratedChallenge {
  */
 interface ChatResponse {
   message: string;
+  fallbackUsed?: boolean;
+  fallbackReason?: string | null;
 }
 
 /**
@@ -47,6 +50,8 @@ interface ChatResponse {
 interface GenerateResponse {
   challenge: AIGeneratedChallenge;
   validationWarnings?: string[];
+  fallbackUsed?: boolean;
+  fallbackReason?: string | null;
 }
 
 /**
@@ -54,6 +59,51 @@ interface GenerateResponse {
  */
 interface ErrorResponse {
   error: string;
+}
+
+export interface AIFallbackMetadata {
+  fallbackUsed: boolean;
+  fallbackReason: string | null;
+}
+
+function normalizeMessages(messages: AIMessage[]): AIMessage[] {
+  return messages
+    .map((message) => ({
+      role: message.role,
+      content: message.content.trim(),
+    }))
+    .filter((message) => message.content.length > 0);
+}
+
+async function invokeChallengeAction<TResponse>(
+  action: "chat" | "chat-learn" | "generate",
+  messages: AIMessage[]
+): Promise<TResponse> {
+  const normalizedMessages = normalizeMessages(messages);
+
+  if (normalizedMessages.length === 0) {
+    throw new Error("At least one non-empty message is required.");
+  }
+
+  const { data, error } = await supabase.functions.invoke<TResponse | ErrorResponse>(
+    "generate-challenge",
+    {
+      body: {
+        action,
+        messages: normalizedMessages,
+      },
+    }
+  );
+
+  if (error) {
+    throw new Error(getErrorMessage(error));
+  }
+
+  if (!data || "error" in data) {
+    throw new Error(getErrorMessage((data as ErrorResponse)?.error ?? "Invalid response from AI"));
+  }
+
+  return data as TResponse;
 }
 
 // ============================================
@@ -67,26 +117,15 @@ interface ErrorResponse {
  */
 export async function chatWithAI(
   messages: AIMessage[]
-): Promise<string> {
-  const { data, error } = await supabase.functions.invoke<ChatResponse | ErrorResponse>(
-    "generate-challenge",
-    {
-      body: {
-        action: "chat",
-        messages: messages,
-      },
-    }
-  );
-
-  if (error) {
-    throw new Error(error.message || "Failed to chat with AI");
-  }
-
-  if (!data || "error" in data) {
-    throw new Error((data as ErrorResponse)?.error ?? "Invalid response from AI");
-  }
-
-  return (data as ChatResponse).message;
+): Promise<{ message: string; fallback: AIFallbackMetadata }> {
+  const data = await invokeChallengeAction<ChatResponse>("chat", messages);
+  return {
+    message: data.message,
+    fallback: {
+      fallbackUsed: data.fallbackUsed ?? false,
+      fallbackReason: data.fallbackReason ?? null,
+    },
+  };
 }
 
 /**
@@ -96,29 +135,15 @@ export async function chatWithAI(
  */
 export async function generateChallengeFromChat(
   messages: AIMessage[]
-): Promise<{ challenge: AIGeneratedChallenge; warnings: string[] }> {
-  const { data, error } = await supabase.functions.invoke<GenerateResponse | ErrorResponse>(
-    "generate-challenge",
-    {
-      body: {
-        action: "generate",
-        messages: messages,
-      },
-    }
-  );
-
-  if (error) {
-    throw new Error(error.message || "Failed to generate challenge");
-  }
-
-  if (!data || "error" in data) {
-    throw new Error((data as ErrorResponse)?.error ?? "Invalid response from AI");
-  }
-
-  const response = data as GenerateResponse;
+): Promise<{ challenge: AIGeneratedChallenge; warnings: string[]; fallback: AIFallbackMetadata }> {
+  const response = await invokeChallengeAction<GenerateResponse>("generate", messages);
   return {
     challenge: response.challenge,
     warnings: response.validationWarnings || [],
+    fallback: {
+      fallbackUsed: response.fallbackUsed ?? false,
+      fallbackReason: response.fallbackReason ?? null,
+    },
   };
 }
 
@@ -129,26 +154,15 @@ export async function generateChallengeFromChat(
  */
 export async function chatWithLearningArchitect(
   messages: AIMessage[]
-): Promise<string> {
-  const { data, error } = await supabase.functions.invoke<ChatResponse | ErrorResponse>(
-    "generate-challenge",
-    {
-      body: {
-        action: "chat-learn",
-        messages: messages,
-      },
-    }
-  );
-
-  if (error) {
-    throw new Error(error.message || "Failed to chat with Learning Architect");
-  }
-
-  if (!data || "error" in data) {
-    throw new Error((data as ErrorResponse)?.error ?? "Invalid response from AI");
-  }
-
-  return (data as ChatResponse).message;
+): Promise<{ message: string; fallback: AIFallbackMetadata }> {
+  const data = await invokeChallengeAction<ChatResponse>("chat-learn", messages);
+  return {
+    message: data.message,
+    fallback: {
+      fallbackUsed: data.fallbackUsed ?? false,
+      fallbackReason: data.fallbackReason ?? null,
+    },
+  };
 }
 
 // ============================================
@@ -232,11 +246,11 @@ export async function generatePathway(
   });
 
   if (error) {
-    throw new Error(error.message || "Failed to generate pathway");
+    throw new Error(getErrorMessage(error));
   }
 
   if (!data || "error" in data) {
-    throw new Error((data as ErrorResponse)?.error ?? "Invalid response from AI");
+    throw new Error(getErrorMessage((data as ErrorResponse)?.error ?? "Invalid response from AI"));
   }
 
   const response = data as GeneratePathwayResponse;

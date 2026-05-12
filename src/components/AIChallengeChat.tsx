@@ -4,43 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, Sparkles } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { chatWithAI, generateChallengeFromChat, type AIGeneratedChallenge, type AIMessage } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/errorHandling';
 
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-interface AIChallengeData {
-  title: string;
-  challengeId?: string;
-  associatedPathway?: string;
-  associatedModule?: string;
-  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
-  estimatedTime: number; // in minutes
-  challengeType: 'Build' | 'Modify' | 'Analyse' | 'Deploy' | 'Reflect';
-  recommendedTools: string[];
-  xp: string; // Always "(calculated by system)"
-  coverImageDescription: string;
-  versionNumber: string;
-  fullDescription: string;
-  requirements: string[];
-}
+const INITIAL_MESSAGE: AIMessage = {
+  role: 'assistant',
+  content: "Hi! I'm here to help you create a great challenge for NoCodeJam. What kind of challenge would you like to create? Tell me about your idea!"
+};
 
 interface AIChallengeChat {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onChallengeGenerated: (data: AIChallengeData) => void;
+  onChallengeGenerated: (data: AIGeneratedChallenge) => void;
 }
 
 export function AIChallengeChat({ open, onOpenChange, onChallengeGenerated }: AIChallengeChat) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: "Hi! I'm here to help you create a great challenge for NoCodeJam. What kind of challenge would you like to create? Tell me about your idea!"
-    }
-  ]);
+  const [messages, setMessages] = useState<AIMessage[]>([INITIAL_MESSAGE]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -65,30 +45,24 @@ export function AIChallengeChat({ open, onOpenChange, onChallengeGenerated }: AI
     setIsLoading(true);
 
     // Add user message
-    const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
+    const newMessages: AIMessage[] = [...messages, { role: 'user', content: userMessage }];
     setMessages(newMessages);
 
     try {
-      // Call Edge Function for chat
-      const { data, error } = await supabase.functions.invoke('generate-challenge', {
-        body: {
-          action: 'chat',
-          messages: newMessages
-        }
-      });
+      const { message, fallback } = await chatWithAI(newMessages);
+      setMessages([...newMessages, { role: 'assistant', content: message }]);
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      // Add assistant response
-      if (data?.message) {
-        setMessages([...newMessages, { role: 'assistant', content: data.message }]);
+      if (fallback.fallbackUsed) {
+        toast({
+          title: "Fallback Response",
+          description: fallback.fallbackReason ?? "The AI service was unavailable, so a fallback response was used.",
+        });
       }
     } catch (err) {
       console.error('Chat error:', err);
       toast({
         title: "Chat Error",
-        description: err instanceof Error ? err.message : "Failed to get response",
+        description: getErrorMessage(err),
         variant: "destructive"
       });
     } finally {
@@ -97,61 +71,55 @@ export function AIChallengeChat({ open, onOpenChange, onChallengeGenerated }: AI
   };
 
   const generateChallenge = async () => {
+    if (messages.length < 2) {
+      toast({
+        title: "More Input Needed",
+        description: "Add at least one idea before generating a challenge.",
+      });
+      return;
+    }
+
     setIsGenerating(true);
 
     try {
-      // Call Edge Function to extract structured data from conversation
-      const { data, error } = await supabase.functions.invoke('generate-challenge', {
-        body: {
-          action: 'generate',
-          messages: messages
-        }
+      const { challenge, warnings, fallback } = await generateChallengeFromChat(messages);
+
+      if (warnings.length > 0) {
+        toast({
+          title: "Governance Warnings",
+          description: (
+            <ul className="list-disc pl-4">
+              {warnings.map((warning, index) => (
+                <li key={index}>{warning}</li>
+              ))}
+            </ul>
+          ),
+          variant: "default",
+          className: "border-yellow-500 border-l-4 bg-gray-800 text-white"
+        });
+      }
+
+      if (fallback.fallbackUsed) {
+        toast({
+          title: "Fallback Draft Used",
+          description: fallback.fallbackReason ?? "A fallback challenge draft was created because the AI service was unavailable.",
+        });
+      }
+
+      onChallengeGenerated(challenge);
+
+      toast({
+        title: "Challenge Generated!",
+        description: "The form has been populated with your challenge details.",
       });
 
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      if (data?.challenge) {
-        // Validation Warnings
-        if (data.validationWarnings && data.validationWarnings.length > 0) {
-          toast({
-            title: "Governance Warnings",
-            description: (
-              <ul className="list-disc pl-4">
-                {data.validationWarnings.map((w: string, i: number) => (
-                  <li key={i}>{w}</li>
-                ))}
-              </ul>
-            ),
-            variant: "default",
-            className: "border-yellow-500 border-l-4 bg-gray-800 text-white"
-          });
-        }
-
-        // Pass the structured challenge data back to parent
-        onChallengeGenerated(data.challenge);
-
-        toast({
-          title: "Challenge Generated!",
-          description: "The form has been populated with your challenge details.",
-        });
-
-        // Close the modal
-        onOpenChange(false);
-
-        // Reset for next time
-        setMessages([
-          {
-            role: 'assistant',
-            content: "Hi! I'm here to help you create a great challenge for NoCodeJam. What kind of challenge would you like to create? Tell me about your idea!"
-          }
-        ]);
-      }
+      onOpenChange(false);
+      setMessages([INITIAL_MESSAGE]);
     } catch (err) {
       console.error('Generation error:', err);
       toast({
         title: "Generation Error",
-        description: err instanceof Error ? err.message : "Failed to generate challenge",
+        description: getErrorMessage(err),
         variant: "destructive"
       });
     } finally {
