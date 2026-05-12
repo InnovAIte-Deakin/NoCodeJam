@@ -128,9 +128,9 @@ export function Dashboard() {
                   <div>
                     <div className="flex items-center gap-2 mb-1">
                       <Sparkles className="h-5 w-5 text-yellow-400" />
-                      <h2 className="text-xl sm:text-2xl font-bold text-white">
+                      <span className="text-xl sm:text-2xl font-bold text-white">
                         Recommended for You
-                      </h2>
+                      </span>
                     </div>
                     <p className="text-sm text-gray-400 max-w-2xl">
                       Based on your recent progress and completed challenges.
