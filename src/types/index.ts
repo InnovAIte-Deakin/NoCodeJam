@@ -42,7 +42,7 @@ export interface Submission {
   challengeId: string;
   userId: string;
   solutionUrl: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: 'pending' | 'pending_review' | 'approved' | 'rejected';
   feedback?: string;
   submittedAt: Date;
   reviewedAt?: Date;

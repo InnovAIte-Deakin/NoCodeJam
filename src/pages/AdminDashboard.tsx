@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, supabaseUrl } from '@/lib/supabaseClient';
 import { normalizeRequirements } from '@/lib/utils';
 import {
   CheckCircle,
@@ -37,7 +37,100 @@ import {
 } from '@/components/ui/dialog';
 import { EditChallengeRequestModal } from '@/components/EditChallengeRequestModal';
 
+const REVIEWABLE_SUBMISSION_STATUSES = ['pending', 'pending_review'] as const;
+const APPROVED_SUBMISSION_STATUS = 'approved';
+const REJECTED_SUBMISSION_STATUS = 'rejected';
+const LEGACY_REJECTED_SUBMISSION_STATUS = 'denied';
+const PENDING_SUBMISSION_STATUS = 'pending';
+
+type ReviewableSubmissionStatus = (typeof REVIEWABLE_SUBMISSION_STATUSES)[number];
+
+interface SubmissionReviewSnapshot {
+  id: string;
+  status: string;
+  user_id: string;
+  challenge_id: string;
+}
+
+const isReviewableSubmissionStatus = (status: string): status is ReviewableSubmissionStatus =>
+  REVIEWABLE_SUBMISSION_STATUSES.includes(status as ReviewableSubmissionStatus);
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
+    return error.message;
+  }
+
+  return fallback;
+};
+
+interface SubmissionDebugInfo {
+  reviewableCount: number;
+  reviewableError: string | null;
+  reviewableStatuses: string[];
+  reviewableFallbackReason: string | null;
+  recentStatuses: string[];
+  recentStatusesError: string | null;
+  lastAction: string | null;
+  lastActionError: string | null;
+}
+
+const isPendingReviewEnumError = (error: { message?: string } | null | undefined) =>
+  Boolean(
+    error?.message?.includes('invalid input value for enum submission_status') &&
+    error.message.includes('"pending_review"')
+  );
+
+const buildSubmissionUpdatePayloads = ({
+  statusCandidates,
+  reviewedAt,
+  reviewedBy,
+  xpEarned,
+}: {
+  statusCandidates: string[];
+  reviewedAt?: string;
+  reviewedBy?: string;
+  xpEarned?: number;
+}) => {
+  const payloads: Array<Record<string, string | number>> = [];
+
+  for (const status of statusCandidates) {
+    const fullPayload: Record<string, string | number> = { status };
+
+    if (typeof xpEarned === 'number') {
+      fullPayload.xp_earned = xpEarned;
+    }
+
+    if (reviewedAt) {
+      fullPayload.reviewed_at = reviewedAt;
+    }
+
+    if (reviewedBy) {
+      fullPayload.reviewed_by = reviewedBy;
+    }
+
+    payloads.push(fullPayload);
+
+    const withoutXp = { ...fullPayload };
+    delete withoutXp.xp_earned;
+    payloads.push(withoutXp);
+
+    const statusOnly = { status };
+    payloads.push(statusOnly);
+  }
+
+  return payloads.filter((payload, index, arr) => {
+    const key = JSON.stringify(payload);
+    return arr.findIndex(candidate => JSON.stringify(candidate) === key) === index;
+  });
+};
+
 export function AdminDashboard() {
+  const supabaseProjectRef = new URL(supabaseUrl).host.split('.')[0];
+
   const [newChallenge, setNewChallenge] = useState({
     title: '',
     description: '',
@@ -65,18 +158,188 @@ export function AdminDashboard() {
   const [pathways, setPathways] = useState<any[]>([]);
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [userProfiles, setUserProfiles] = useState<{[key: string]: any}>({});
+  const [submissionDebugInfo, setSubmissionDebugInfo] = useState<SubmissionDebugInfo>({
+    reviewableCount: 0,
+    reviewableError: null,
+    reviewableStatuses: [...REVIEWABLE_SUBMISSION_STATUSES],
+    reviewableFallbackReason: null,
+    recentStatuses: [],
+    recentStatusesError: null,
+    lastAction: null,
+    lastActionError: null,
+  });
+
+  const fetchReviewableSubmissions = async () => {
+    const baseQuery = () => supabase
+      .from('submissions')
+      .select('*')
+      .order('submitted_at', { ascending: false, nullsFirst: false });
+
+    const preferredResult = await baseQuery().in('status', [...REVIEWABLE_SUBMISSION_STATUSES]);
+
+    if (!isPendingReviewEnumError(preferredResult.error)) {
+      return {
+        ...preferredResult,
+        reviewableStatuses: [...REVIEWABLE_SUBMISSION_STATUSES],
+        fallbackReason: null,
+      };
+    }
+
+    const fallbackResult = await baseQuery().eq('status', PENDING_SUBMISSION_STATUS);
+
+    return {
+      ...fallbackResult,
+      reviewableStatuses: [PENDING_SUBMISSION_STATUS],
+      fallbackReason: 'The current database enum does not support "pending_review", so the admin list is using "pending" only.',
+    };
+  };
+
+  const rollbackSubmissionReview = async (submission: SubmissionReviewSnapshot) => {
+    const { error } = await supabase
+      .from('submissions')
+      .update({
+        status: submission.status,
+      })
+      .eq('id', submission.id);
+
+    return error;
+  };
+
+  const awardUserXp = async (userId: string, xpToAward: number) => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const { data: userData, error: userFetchError } = await supabase
+        .from('users')
+        .select('total_xp')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (userFetchError || !userData) {
+        return {
+          error: userFetchError ?? new Error('User not found'),
+        };
+      }
+
+      const currentXp = userData.total_xp ?? 0;
+      const expectedXp = userData.total_xp;
+      let updateQuery = supabase
+        .from('users')
+        .update({ total_xp: currentXp + xpToAward })
+        .eq('id', userId)
+        .select('id, total_xp');
+
+      updateQuery = expectedXp === null
+        ? updateQuery.is('total_xp', null)
+        : updateQuery.eq('total_xp', expectedXp);
+
+      const { data: updatedUser, error: xpError } = await updateQuery.maybeSingle();
+
+      if (xpError) {
+        return { error: xpError };
+      }
+
+      if (updatedUser) {
+        return { data: updatedUser };
+      }
+    }
+
+    const { data: fallbackUserData, error: fallbackFetchError } = await supabase
+      .from('users')
+      .select('total_xp')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (fallbackFetchError || !fallbackUserData) {
+      return {
+        error: fallbackFetchError ?? new Error('User not found during XP fallback.'),
+      };
+    }
+
+    const { data: fallbackUpdatedUser, error: fallbackUpdateError } = await supabase
+      .from('users')
+      .update({ total_xp: (fallbackUserData.total_xp ?? 0) + xpToAward })
+      .eq('id', userId)
+      .select('id, total_xp')
+      .maybeSingle();
+
+    if (fallbackUpdateError) {
+      return { error: fallbackUpdateError };
+    }
+
+    if (fallbackUpdatedUser) {
+      return { data: fallbackUpdatedUser };
+    }
+
+    return {
+      error: new Error('Failed to award XP after multiple retries.'),
+    };
+  };
+
+  const updateSubmissionWithFallbacks = async ({
+    submissionId,
+    currentStatus,
+    payloads,
+  }: {
+    submissionId: string;
+    currentStatus: string;
+    payloads: Array<Record<string, string | number>>;
+  }) => {
+    let lastError: { message: string } | null = null;
+
+    for (const payload of payloads) {
+      const { data, error } = await supabase
+        .from('submissions')
+        .update(payload)
+        .eq('id', submissionId)
+        .eq('status', currentStatus)
+        .select('id')
+        .maybeSingle();
+
+      if (!error) {
+        return { data, error: null, payload };
+      }
+
+      lastError = error;
+    }
+
+    return { data: null, error: lastError, payload: null };
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoadingSubmissions(true);
       // Fetch pending submissions
-      const { data: submissions, error: subError } = await supabase
-        .from('submissions')
-        .select('*')
-        .eq('status', 'pending');
+      const {
+        data: submissions,
+        error: subError,
+        reviewableStatuses,
+        fallbackReason,
+      } = await fetchReviewableSubmissions();
       
       // Add debugging
       console.log('Admin Dashboard - Submissions query result:', { submissions, subError });
+
+      const { data: recentSubmissionStatuses, error: recentStatusesError } = await supabase
+        .from('submissions')
+        .select('status')
+        .order('submitted_at', { ascending: false, nullsFirst: false })
+        .limit(10);
+
+      console.log('Admin Dashboard - Recent submission statuses:', {
+        recentSubmissionStatuses,
+        recentStatusesError,
+      });
+
+      setSubmissionDebugInfo({
+        reviewableCount: submissions?.length ?? 0,
+        reviewableError: subError?.message ?? null,
+        reviewableStatuses,
+        reviewableFallbackReason: fallbackReason,
+        recentStatuses: (recentSubmissionStatuses || [])
+          .map((submission: { status: string | null }) => submission.status ?? 'null'),
+        recentStatusesError: recentStatusesError?.message ?? null,
+        lastAction: null,
+        lastActionError: null,
+      });
       
       // Fetch all challenges (for lookup)
       const { data: challengesData, error: chalError } = await supabase
@@ -105,19 +368,41 @@ export function AdminDashboard() {
       console.log('Admin Dashboard - Users query result:', { usersData, usersError });
       console.log('Admin Dashboard - Pathways query result:', { pathwaysData, pathwaysError });
 
-      if (!subError && !chalError && !reqError && !usersError && !pathwaysError && submissions && challengesData && requestsData && usersData && pathwaysData) {
+      if (submissions) {
         setPendingSubmissions(submissions);
+      } else {
+        setPendingSubmissions([]);
+      }
+
+      if (challengesData) {
         setChallenges(challengesData);
+      } else {
+        setChallenges([]);
+      }
+
+      if (requestsData) {
         setChallengeRequests(requestsData);
+      } else {
+        setChallengeRequests([]);
+      }
+
+      if (pathwaysData) {
         setPathways(pathwaysData);
-        
-        // Create users lookup map
+      } else {
+        setPathways([]);
+      }
+
+      if (usersData) {
         const usersMap: {[key: string]: any} = {};
         usersData.forEach((user: any) => {
           usersMap[user.id] = user;
         });
         setUserProfiles(usersMap);
       } else {
+        setUserProfiles({});
+      }
+
+      if (subError || chalError || reqError || usersError || pathwaysError) {
         console.error('Query errors:', { subError, chalError, reqError, usersError, pathwaysError });
       }
       setLoadingSubmissions(false);
@@ -126,17 +411,118 @@ export function AdminDashboard() {
   }, []);
 
   const handleApproveSubmission = async (submissionId: string) => {
-    // Find the submission and its challenge
-    const submission = pendingSubmissions.find((s: any) => s.id === submissionId);
-    if (!submission) return;
-    const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
-    if (!challenge) return;
-    // Update submission status to approved
-    const { error: updateError } = await supabase
+    setSubmissionDebugInfo(prev => ({
+      ...prev,
+      lastAction: `Approve started for ${submissionId}`,
+      lastActionError: null,
+    }));
+
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const reviewerId = authData.user?.id;
+
+    if (authError || !reviewerId) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Approve failed for ${submissionId}`,
+        lastActionError: authError?.message || 'Admin user not found.',
+      }));
+      toast({
+        title: "Failed to approve submission",
+        description: authError?.message || 'Admin user not found.',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: latestSubmission, error: latestSubmissionError } = await supabase
       .from('submissions')
-      .update({ status: 'approved' })
-      .eq('id', submissionId);
+      .select('id, status, user_id, challenge_id')
+      .eq('id', submissionId)
+      .maybeSingle<SubmissionReviewSnapshot>();
+
+    if (latestSubmissionError || !latestSubmission) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Approve failed for ${submissionId}`,
+        lastActionError: latestSubmissionError?.message || 'Submission not found.',
+      }));
+      toast({
+        title: "Failed to approve submission",
+        description: latestSubmissionError?.message || 'Submission not found.',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (latestSubmission.status === APPROVED_SUBMISSION_STATUS) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Approve skipped for ${submissionId}`,
+        lastActionError: 'Submission already approved.',
+      }));
+      toast({
+        title: "Submission already approved",
+        description: "This submission was already approved in another session.",
+      });
+      await refreshPendingSubmissions();
+      return;
+    }
+
+    if (!isReviewableSubmissionStatus(latestSubmission.status)) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Approve skipped for ${submissionId}`,
+        lastActionError: `Unexpected submission status: ${latestSubmission.status}`,
+      }));
+      toast({
+        title: "Submission status changed",
+        description: `Review skipped because the submission is now "${latestSubmission.status}".`,
+        variant: "destructive",
+      });
+      await refreshPendingSubmissions();
+      return;
+    }
+
+    const challenge = challenges.find((c: any) => c.id === latestSubmission.challenge_id);
+    if (!challenge) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Approve failed for ${submissionId}`,
+        lastActionError: 'Challenge metadata not found for this submission.',
+      }));
+      toast({
+        title: "Failed to approve submission",
+        description: 'Challenge metadata not found for this submission.',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const xpAwarded = challenge.xp_reward || 0;
+    const reviewedAt = new Date().toISOString();
+
+    const approvePayloads = buildSubmissionUpdatePayloads({
+      statusCandidates: [APPROVED_SUBMISSION_STATUS],
+      reviewedAt,
+      reviewedBy: reviewerId,
+      xpEarned: xpAwarded,
+    });
+
+    const {
+      data: approvedSubmission,
+      error: updateError,
+    } = await updateSubmissionWithFallbacks({
+      submissionId,
+      currentStatus: latestSubmission.status,
+      payloads: approvePayloads,
+    });
+
     if (updateError) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Approve failed for ${submissionId}`,
+        lastActionError: `Submission update failed: ${updateError.message}`,
+      }));
       toast({
         title: "Failed to approve submission",
         description: updateError.message,
@@ -144,40 +530,48 @@ export function AdminDashboard() {
       });
       return;
     }
-    // Add XP to user (two-step process)
-    // 1. Fetch user
-    const { data: userData, error: userFetchError } = await supabase
-      .from('users')
-      .select('total_xp')
-      .eq('id', submission.user_id)
-      .single();
-    if (userFetchError || !userData) {
+
+    if (!approvedSubmission) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Approve skipped for ${submissionId}`,
+        lastActionError: 'Submission update returned no row.',
+      }));
       toast({
-        title: "Failed to fetch user XP",
-        description: userFetchError?.message || 'User not found',
+        title: "Submission status changed",
+        description: "Approval skipped because the submission was updated by someone else.",
         variant: "destructive",
       });
+      await refreshPendingSubmissions();
       return;
     }
-    // 2. Update total_xp = user.total_xp + challenge.xp_reward
-    const newXP = (userData.total_xp || 0) + (challenge.xp_reward || 0);
-    const { error: xpError } = await supabase
-      .from('users')
-      .update({ total_xp: newXP })
-      .eq('id', submission.user_id);
+
+    const { error: xpError } = await awardUserXp(latestSubmission.user_id, xpAwarded);
     if (xpError) {
+      const rollbackError = await rollbackSubmissionReview(latestSubmission);
+      const xpErrorMessage = rollbackError
+        ? `${getErrorMessage(xpError, 'Unable to update user XP.')} Rollback also failed, so manual cleanup may be needed.`
+        : `${getErrorMessage(xpError, 'Unable to update user XP.')} Submission approval was rolled back.`;
+
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Approve failed for ${submissionId}`,
+        lastActionError: xpErrorMessage,
+      }));
+
       toast({
         title: "Failed to award XP",
-        description: xpError.message,
+        description: xpErrorMessage,
         variant: "destructive",
       });
+      await refreshPendingSubmissions();
       return;
     }
 
     // Log the interaction for recommendations
     const { error: interactionError } = await supabase.rpc('log_user_interaction', {
-      p_user_id: submission.user_id,
-      p_challenge_id: submission.challenge_id,
+      p_user_id: latestSubmission.user_id,
+      p_challenge_id: latestSubmission.challenge_id,
       p_action: 'completed',
       p_difficulty: challenge.difficulty,
       p_challenge_type: challenge.challenge_type,
@@ -188,6 +582,14 @@ export function AdminDashboard() {
       console.error('Failed to log interaction:', interactionError);
     }
 
+    setSubmissionDebugInfo(prev => ({
+      ...prev,
+      lastAction: `Approve succeeded for ${submissionId}`,
+      lastActionError: interactionError?.message
+        ? `XP awarded and submission approved. Interaction log failed: ${interactionError.message}`
+        : null,
+    }));
+
     toast({
       title: "Submission approved",
       description: "The submission has been approved and the user has been awarded XP.",
@@ -197,11 +599,82 @@ export function AdminDashboard() {
   };
 
   const handleRejectSubmission = async (submissionId: string) => {
-    const { error } = await supabase
+    setSubmissionDebugInfo(prev => ({
+      ...prev,
+      lastAction: `Reject started for ${submissionId}`,
+      lastActionError: null,
+    }));
+
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    const reviewerId = authData.user?.id;
+
+    if (authError || !reviewerId) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Reject failed for ${submissionId}`,
+        lastActionError: authError?.message || 'Admin user not found.',
+      }));
+      toast({
+        title: "Failed to reject submission",
+        description: authError?.message || 'Admin user not found.',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { data: latestSubmission, error: latestSubmissionError } = await supabase
       .from('submissions')
-      .update({ status: 'denied' })
-      .eq('id', submissionId);
+      .select('id, status')
+      .eq('id', submissionId)
+      .maybeSingle<{ id: string; status: string }>();
+
+    if (latestSubmissionError || !latestSubmission) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Reject failed for ${submissionId}`,
+        lastActionError: latestSubmissionError?.message || 'Submission not found.',
+      }));
+      toast({
+        title: "Failed to reject submission",
+        description: latestSubmissionError?.message || 'Submission not found.',
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isReviewableSubmissionStatus(latestSubmission.status)) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Reject skipped for ${submissionId}`,
+        lastActionError: `Unexpected submission status: ${latestSubmission.status}`,
+      }));
+      toast({
+        title: "Submission status changed",
+        description: `Reject skipped because the submission is now "${latestSubmission.status}".`,
+        variant: "destructive",
+      });
+      await refreshPendingSubmissions();
+      return;
+    }
+
+    const rejectPayloads = buildSubmissionUpdatePayloads({
+      statusCandidates: [REJECTED_SUBMISSION_STATUS, LEGACY_REJECTED_SUBMISSION_STATUS],
+      reviewedAt: new Date().toISOString(),
+      reviewedBy: reviewerId,
+    });
+
+    const { data: rejectedSubmission, error } = await updateSubmissionWithFallbacks({
+      submissionId,
+      currentStatus: latestSubmission.status,
+      payloads: rejectPayloads,
+    });
+
     if (error) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Reject failed for ${submissionId}`,
+        lastActionError: error.message,
+      }));
       toast({
         title: "Failed to reject submission",
         description: error.message,
@@ -209,11 +682,32 @@ export function AdminDashboard() {
       });
       return;
     }
+
+    if (!rejectedSubmission) {
+      setSubmissionDebugInfo(prev => ({
+        ...prev,
+        lastAction: `Reject skipped for ${submissionId}`,
+        lastActionError: 'Submission update returned no row.',
+      }));
+      toast({
+        title: "Submission status changed",
+        description: "Reject skipped because the submission was updated by someone else.",
+        variant: "destructive",
+      });
+      await refreshPendingSubmissions();
+      return;
+    }
+
     toast({
       title: "Submission rejected",
       description: "The submission has been rejected.",
       variant: "destructive",
     });
+    setSubmissionDebugInfo(prev => ({
+      ...prev,
+      lastAction: `Reject succeeded for ${submissionId}`,
+      lastActionError: null,
+    }));
     // Refresh pending submissions
     refreshPendingSubmissions();
   };
@@ -221,16 +715,8 @@ export function AdminDashboard() {
   // Helper to refresh pending submissions
   const refreshPendingSubmissions = async () => {
     setLoadingSubmissions(true);
-    const { data: submissions, error: subError } = await supabase
-      .from('submissions')
-      .select(`
-        *,
-        users!submissions_user_id_fkey (
-          id,
-          username
-        )
-      `)
-      .eq('status', 'pending');
+    const { data: submissions, error: subError } = await fetchReviewableSubmissions();
+
     if (!subError && submissions) {
       setPendingSubmissions(submissions);
     }
@@ -762,6 +1248,27 @@ export function AdminDashboard() {
           <p className="text-gray-300">
             Manage challenges, submissions, and users
           </p>
+          {import.meta.env.DEV && (
+            <div className="mt-4 space-y-2">
+              <div className="rounded border border-yellow-500/40 bg-yellow-500/10 px-3 py-2 text-sm text-yellow-200">
+                Connected Supabase: {supabaseProjectRef}
+              </div>
+              <div className="rounded border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-sm text-sky-100">
+                <div>Reviewable submissions fetched: {submissionDebugInfo.reviewableCount}</div>
+                <div>Reviewable query error: {submissionDebugInfo.reviewableError ?? 'none'}</div>
+                <div>Reviewable statuses in use: {submissionDebugInfo.reviewableStatuses.join(', ')}</div>
+                <div>Reviewable fallback: {submissionDebugInfo.reviewableFallbackReason ?? 'none'}</div>
+                <div>
+                  Recent submission statuses: {submissionDebugInfo.recentStatuses.length > 0
+                    ? submissionDebugInfo.recentStatuses.join(', ')
+                    : 'none'}
+                </div>
+                <div>Recent statuses query error: {submissionDebugInfo.recentStatusesError ?? 'none'}</div>
+                <div>Last action: {submissionDebugInfo.lastAction ?? 'none'}</div>
+                <div>Last action error: {submissionDebugInfo.lastActionError ?? 'none'}</div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -860,21 +1367,37 @@ export function AdminDashboard() {
                                 {submission.submitted_at ? new Date(submission.submitted_at).toLocaleDateString() : ''}
                               </p>
                             </div>
-                            <Badge variant="secondary">
-                              {challenge?.difficulty || 'Unknown'}
-                            </Badge>
-                          </div>
-                          <div className="mb-4">
-                            <Label className="text-sm font-medium">Solution URL:</Label>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <Input value={submission.submission_url} readOnly />
-                              <Button variant="outline" size="sm" asChild>
-                                <a href={submission.submission_url} target="_blank" rel="noopener noreferrer">
-                                  <ExternalLink className="w-4 h-4" />
-                                </a>
-                              </Button>
+                            <div className="flex flex-col items-end gap-2">
+                              <Badge variant="secondary">
+                                {challenge?.difficulty || 'Unknown'}
+                              </Badge>
+                              <Badge variant="outline">
+                                {submission.status === 'pending_review' ? 'Pending Review' : 'Pending'}
+                              </Badge>
                             </div>
                           </div>
+                          {submission.submission_url ? (
+                            <div className="mb-4">
+                              <Label className="text-sm font-medium">Solution URL:</Label>
+                              <div className="flex items-center space-x-2 mt-1">
+                                <Input value={submission.submission_url} readOnly />
+                                <Button variant="outline" size="sm" asChild>
+                                  <a href={submission.submission_url} target="_blank" rel="noopener noreferrer">
+                                    <ExternalLink className="w-4 h-4" />
+                                  </a>
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="mb-4">
+                              <Label className="text-sm font-medium">Submission Details:</Label>
+                              <p className="text-sm text-gray-400 mt-1">
+                                {submission.submission_type === 'onboarding_complete'
+                                  ? 'Onboarding completion submitted for admin review.'
+                                  : 'No external submission URL was provided for this submission.'}
+                              </p>
+                            </div>
+                          )}
                           <div className="flex gap-3 mt-4">
                             <Button 
                               onClick={() => handleApproveSubmission(submission.id)}
