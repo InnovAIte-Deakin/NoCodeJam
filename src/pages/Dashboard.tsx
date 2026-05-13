@@ -18,15 +18,30 @@ import {
   type DashboardAnalyticsData,
 } from '@/services/analyticsService';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { StartHereOnboarding } from '@/components/StartHereOnboarding';
+import type { Challenge } from '@/types';
+
+type RecommendedChallenge = Challenge & { score?: number; reason?: string };
 
 export function Dashboard() {
   const { user } = useAuth();
   const [dashboardData, setDashboardData] = useState<DashboardAnalyticsData | null>(null);
-  const [recommendations, setRecommendations] = useState<any[]>([]);
+  const [recommendations, setRecommendations] = useState<RecommendedChallenge[]>([]);
+  const [starterChallenge, setStarterChallenge] = useState<{ id: string; title: string } | null>(null);
+  const [startHereSkipped, setStartHereSkipped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [recsLoading, setRecsLoading] = useState(false);
 
   // const xpChartData = [{ day: "Mon", xp: 20 }, { day: "Tue", xp: 35 }, { day: "Wed", xp: 28 }, { day: "Thu", xp: 50 }, { day: "Fri", xp: 45 }, { day: "Sat", xp: 15 }, { day: "Sun", xp: 32 }];
+
+  useEffect(() => {
+    if (!user) {
+      setStartHereSkipped(false);
+      return;
+    }
+
+    setStartHereSkipped(localStorage.getItem(`nocodejam-start-here-skipped-${user.id}`) === 'true');
+  }, [user]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,6 +49,7 @@ export function Dashboard() {
       if (!user) {
         setDashboardData(null);
         setRecommendations([]);
+        setStarterChallenge(null);
         setLoading(false);
         return;
       }
@@ -74,13 +90,34 @@ export function Dashboard() {
           setRecommendations([]);
         } else {
           console.log('Recommendations response:', data);
-          setRecommendations(data?.recommendations || []);
+          setRecommendations((data?.recommendations || []) as RecommendedChallenge[]);
         }
       } catch (error) {
         console.error('Unexpected recommendation error:', error);
         setRecommendations([]);
       } finally {
         setRecsLoading(false);
+      }
+
+      // Fetch one beginner-friendly challenge for the guided flow
+      try {
+        const { data, error } = await supabase
+          .from('challenges')
+          .select('id, title')
+          .eq('difficulty', 'Beginner')
+          .neq('challenge_type', 'onboarding')
+          .order('created_at', { ascending: true })
+          .limit(1);
+
+        if (error) {
+          console.error('Failed to fetch starter challenge:', error);
+          setStarterChallenge(null);
+        } else {
+          setStarterChallenge(data?.[0] ?? null);
+        }
+      } catch (error) {
+        console.error('Unexpected starter challenge error:', error);
+        setStarterChallenge(null);
       }
 
       setLoading(false);
@@ -104,6 +141,8 @@ export function Dashboard() {
   };
   const recentSubmissions = dashboardData?.recent_submissions ?? [];
   const pathways = dashboardData?.pathways ?? [];
+  // const showStartHere = (summary.current_xp === 0 || summary.completed_challenges === 0) && !startHereSkipped;
+  const showStartHere = !startHereSkipped;
 
   const xpChartData = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
     day,
@@ -143,6 +182,16 @@ export function Dashboard() {
             Ready to take on some new challenges today?
           </p>
         </header>
+
+        {showStartHere && (
+          <StartHereOnboarding
+            starterChallenge={starterChallenge}
+            onSkip={() => {
+              localStorage.setItem(`nocodejam-start-here-skipped-${user.id}`, 'true');
+              setStartHereSkipped(true);
+            }}
+          />
+        )}
 
         <Card className="bg-gray-800 border-gray-700 mb-6 sm:mb-8">
           <CardContent className="p-5 sm:p-6">

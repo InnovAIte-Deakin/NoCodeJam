@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,16 +20,40 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+interface ChallengeListItem {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: string;
+  challenge_type?: string | null;
+  image?: string | null;
+  requirements?: unknown;
+  xp_reward?: number | null;
+  xp?: number | null;
+}
+
+interface ChallengeSubmission {
+  challenge_id: string;
+  status?: string | null;
+}
+
 export function ChallengeListPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState<string>('all');
-  const [challenges, setChallenges] = useState<any[]>([]);
-  const [onboardingChallenge, setOnboardingChallenge] = useState<any>(null);
-  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [challenges, setChallenges] = useState<ChallengeListItem[]>([]);
+  const [onboardingChallenge, setOnboardingChallenge] = useState<ChallengeListItem | null>(null);
+  const [submissions, setSubmissions] = useState<ChallengeSubmission[]>([]);
   const [isOnboardingHidden, setIsOnboardingHidden] = useState(false);
   const [loading, setLoading] = useState(true);
   const [aiHelpOpen, setAiHelpOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get('aiAssist') === 'true') {
+      setAiHelpOpen(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -47,9 +71,10 @@ export function ChallengeListPage() {
         }
 
         if (challengesData) {
-          const onboarding = challengesData.find(c => c.challenge_type === 'onboarding');
-          const regularChallenges = challengesData.filter(c => c.challenge_type !== 'onboarding');
-          setOnboardingChallenge(onboarding);
+          const challengeRows = challengesData as ChallengeListItem[];
+          const onboarding = challengeRows.find(c => c.challenge_type === 'onboarding');
+          const regularChallenges = challengeRows.filter(c => c.challenge_type !== 'onboarding');
+          setOnboardingChallenge(onboarding ?? null);
           setChallenges(regularChallenges);
         }
       } catch (error) {
@@ -62,7 +87,7 @@ export function ChallengeListPage() {
             .from('submissions')
             .select('*')
             .eq('user_id', user.id);
-          setSubmissions(submissionsData || []);
+          setSubmissions((submissionsData || []) as ChallengeSubmission[]);
 
           const { data: userData } = await supabase
             .from('users')
