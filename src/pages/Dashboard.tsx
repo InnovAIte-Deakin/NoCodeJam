@@ -138,8 +138,8 @@ export function Dashboard() {
   };
   const recentSubmissions = dashboardData?.recent_submissions ?? [];
   const pathways = dashboardData?.pathways ?? [];
-  // const showStartHere = (summary.current_xp === 0 || summary.completed_challenges === 0) && !startHereSkipped;
-  const showStartHere = !startHereSkipped;
+  const showStartHere = (summary.current_xp === 0 || summary.completed_challenges === 0) && !startHereSkipped;
+  // const showStartHere = !startHereSkipped;
 
   const xpChartData = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => ({
     day,
