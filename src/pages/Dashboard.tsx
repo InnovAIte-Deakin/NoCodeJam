@@ -21,6 +21,7 @@ import {
   Tooltip,
   ResponsiveContainer
 } from "recharts";
+import { supabase } from '@/lib/supabaseClient';
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -111,12 +112,6 @@ export function Dashboard() {
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchData();
-  }, [user]);
-      }
-      setLoading(false);
     };
 
     fetchData();
