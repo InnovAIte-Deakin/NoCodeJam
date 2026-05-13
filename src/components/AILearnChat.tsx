@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Send, BookOpen } from 'lucide-react';
-import { supabase } from '@/lib/supabaseClient';
+import { chatWithLearningArchitect, type AIMessage } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
+import { getErrorMessage } from '@/lib/errorHandling';
+import ReactMarkdown from 'react-markdown';
 
-interface Message {
-    role: 'user' | 'assistant';
-    content: string;
-}
+const INITIAL_MESSAGE: AIMessage = {
+    role: 'assistant',
+    content: "Hello! I'm your Learning Guide. What skills or tools would you like to learn today? Tell me your goals, and I'll recommend a pathway for you."
+};
 
 interface AILearnChatProps {
     open: boolean;
@@ -18,14 +20,10 @@ interface AILearnChatProps {
 }
 
 export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            role: 'assistant',
-            content: "Hello! I'm your Learning Guide. What skills or tools would you like to learn today? Tell me your goals, and I'll recommend a pathway for you."
-        }
-    ]);
+    const [messages, setMessages] = useState<AIMessage[]>([INITIAL_MESSAGE]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPrompts, setShowPrompts] = useState(true);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
 
@@ -46,55 +44,50 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
         setIsLoading(true);
 
         // UI update: Add user message immediately
-        const newMessages: Message[] = [...messages, { role: 'user', content: userMessage }];
-        setMessages(newMessages);
+const newMessages: AIMessage[] = [...messages, { role: 'user', content: userMessage }];
+setMessages(newMessages);
 
-        try {
-            const { data, error } = await supabase.functions.invoke('generate-challenge', {
-                body: {
-                    action: 'chat-learn',
-                    messages: newMessages
-                }
-            });
+try {
+    const { message, fallback } = await chatWithLearningArchitect(newMessages);
 
-            if (error) throw error;
-            if (data?.error || data?.fallback) throw new Error(data.error || "AI service unavailable");
+    const assistantMessage = fallback.fallbackUsed
+        ? `⚠️ ${message}`
+        : message;
 
-            // Add assistant response
-            // Add assistant response
-            if (data?.message) {
-                const isMockResponse = data.message.includes('This is a mock response (API Key missing)');
-                
-                setMessages([...newMessages, { 
-                    role: 'assistant', 
-                    content: isMockResponse
-                        ? "⚠️ The AI assistant is currently unavailable. Please try again later or contact your team admin."
-                        : data.message
-                }]);
-            } else {
-                throw new Error("No response message received");
-            }
+    setMessages([
+        ...newMessages,
+        {
+            role: 'assistant',
+            content: assistantMessage
+        }
+    ]);
 
-        } catch (err) {
-            console.error('Chat error:', err);
-            
-            // Check if it's an API key / mock mode issue
-            const errMsg = err instanceof Error ? err.message : "Failed to get response";
-            const isApiMissing = errMsg.toLowerCase().includes('api key') || errMsg.toLowerCase().includes('mock');
-            
-            // Add a fallback message in the chat instead of just a toast
-            setMessages([...newMessages, {
-                role: 'assistant',
-                content: isApiMissing
-                    ? "⚠️ The AI assistant is currently unavailable (service not configured). Please try again later or contact your team admin."
-                    : "⚠️ Something went wrong getting a response. Please try again in a moment."
-            }]);
+    if (fallback.fallbackUsed) {
+        toast({
+            title: "Fallback Response",
+            description:
+                fallback.fallbackReason ??
+                "The AI service was unavailable, so a fallback learning response was used.",
+        });
+    }
+} catch (err) {
+    console.error('Chat error:', err);
 
-            toast({
-                title: isApiMissing ? "AI Unavailable" : "Chat Error",
-                description: isApiMissing ? "AI service is not configured yet." : errMsg,
-                variant: "destructive"
-            });
+    setMessages([
+        ...newMessages,
+        {
+            role: 'assistant',
+            content: `⚠️ ${getErrorMessage(err)}`
+        }
+    ]);
+
+    toast({
+        title: "Chat Error",
+        description: getErrorMessage(err),
+        variant: "destructive"
+    });
+
+
         } finally {
             setIsLoading(false);
         }
@@ -135,7 +128,22 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
                                             : 'bg-gray-700 text-gray-100'
                                         }`}
                                 >
-                                    <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                                    <div className="text-sm leading-relaxed max-w-none">
+                                        <ReactMarkdown
+                                            components={{
+                                                h1: ({children}) => <p className="font-bold text-white mt-3 mb-0">{children}</p>,
+                                                h2: ({children}) => <p className="font-bold text-white mt-3 mb-0">{children}</p>,
+                                                h3: ({children}) => <p className="font-semibold text-white mt-3 mb-0">{children}</p>,
+                                                p: ({children}) => <p className="my-1.5">{children}</p>,
+                                                strong: ({children}) => <strong className="font-semibold text-white">{children}</strong>,
+                                                ol: ({children}) => <ol className="list-decimal list-outside ml-4 my-1.5 space-y-1">{children}</ol>,
+                                                ul: ({children}) => <ul className="list-disc list-outside ml-4 my-1.5 space-y-1">{children}</ul>,
+                                                li: ({children}) => <li className="text-sm leading-relaxed">{children}</li>,
+}}
+                                        >
+                                            {message.content}
+                                        </ReactMarkdown>
+                                    </div>
                                     {message.role === 'assistant' && !message.content.startsWith('⚠️') && (
                                         <p className="text-[10px] text-gray-400 mt-2 text-right">AI Learning Guide</p>
                                     )}
@@ -153,6 +161,42 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
                 </ScrollArea>
 
                 <div className="space-y-3 pt-4 border-t border-gray-700">
+                    {/* ── Suggested AI Prompts ── */}
+                    {showPrompts && (
+                        <div className="space-y-2">
+                            <p className="text-xs text-gray-400">Suggested questions:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    'Which no-code tool should I start with?',
+                                    'What is the easiest challenge for beginners?',
+                                    'How do I earn XP on NoCodeJam?',
+                                    'What can I build with no-code tools?',
+                                ].map((prompt) => (
+                                    <button
+                                        key={prompt}
+                                        onClick={() => {
+                                            setInput(prompt);
+                                            setShowPrompts(false);
+                                        }}
+                                        disabled={isLoading}
+                                        className="text-xs px-3 py-1.5 rounded-full bg-gray-700 text-gray-300 hover:bg-blue-600 hover:text-white border border-gray-600 hover:border-blue-500 transition-colors duration-200"
+                                    >
+                                        {prompt}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => setShowPrompts(!showPrompts)}
+                            className="text-xs text-gray-400 hover:text-blue-400 transition-colors duration-200 whitespace-nowrap"
+                        >
+                            {showPrompts ? 'Hide suggestions ▲' : 'Show suggestions ▼'}
+                        </button>
+                    </div>
+
                     <div className="flex space-x-2">
                         <Input
                             value={input}
