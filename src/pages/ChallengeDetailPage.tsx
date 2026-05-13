@@ -1,25 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, useLocation } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/lib/supabaseClient';
 import { normalizeRequirements } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Star, CheckCircle, Clock, User, ExternalLink, Send } from 'lucide-react';
 
+interface ChallengeDetail {
+  id: string;
+  title: string;
+  description: string;
+  image?: string | null;
+  difficulty: string;
+  requirements?: unknown;
+  xp_reward?: number | null;
+  created_at?: string | null;
+}
+
+interface ChallengeSubmission {
+  id: string;
+  user_id: string;
+  challenge_id: string;
+  submission_url?: string | null;
+  status: string;
+  submitted_at?: string | null;
+  admin_feedback?: string | null;
+}
+
 export function ChallengeDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const { user } = useAuth();
   const [solutionUrl, setSolutionUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [challenge, setChallenge] = useState<any>(null);
-  const [userSubmission, setUserSubmission] = useState<any>(null);
-  const [approvedSubmissions, setApprovedSubmissions] = useState<any[]>([]);
+  const [challenge, setChallenge] = useState<ChallengeDetail | null>(null);
+  const [userSubmission, setUserSubmission] = useState<ChallengeSubmission | null>(null);
+  const [approvedSubmissions, setApprovedSubmissions] = useState<ChallengeSubmission[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,22 +52,32 @@ export function ChallengeDetailPage() {
         .select('*')
         .eq('id', id)
         .single();
-      setChallenge(challengeData);
+      setChallenge((challengeData as ChallengeDetail | null) ?? null);
       // Fetch submissions for this challenge
       const { data: submissionsData } = await supabase
         .from('submissions')
         .select('*')
         .eq('challenge_id', id);
-      if (user && submissionsData) {
-        setUserSubmission(submissionsData.find((s: any) => s.user_id === user.id) || null);
+      const submissions = (submissionsData || []) as ChallengeSubmission[];
+      if (user && submissions.length > 0) {
+        setUserSubmission(submissions.find((s) => s.user_id === user.id) || null);
       } else {
         setUserSubmission(null);
       }
-      setApprovedSubmissions(submissionsData ? submissionsData.filter((s: any) => s.status === 'approved') : []);
+      setApprovedSubmissions(submissions.filter((s) => s.status === 'approved'));
       setLoading(false);
     };
     fetchData();
   }, [id, user]);
+
+  useEffect(() => {
+    if (!loading && location.hash === '#submit-solution') {
+      document.getElementById('submit-solution')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }
+  }, [loading, location.hash, userSubmission]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center text-lg text-gray-500">Loading challenge...</div>;
@@ -132,7 +163,7 @@ export function ChallengeDetailPage() {
         <Card className="mb-8 overflow-hidden">
           <div className="relative">
             <img
-              src={challenge.image}
+              src={challenge.image || 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800'}
               alt={challenge.title}
               className="w-full h-64 object-cover"
             />
@@ -178,7 +209,7 @@ export function ChallengeDetailPage() {
             </Card>
             {/* Submit Solution */}
             {!userSubmission && (
-              <Card>
+              <Card id="submit-solution">
                 <CardHeader>
                   <CardTitle>Submit Your Solution</CardTitle>
                   <CardDescription>
@@ -221,7 +252,7 @@ export function ChallengeDetailPage() {
             )}
             {/* User's Submission Status */}
             {userSubmission && (
-              <Card>
+              <Card id="submit-solution">
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     {userSubmission.status === 'approved' ? (
@@ -249,7 +280,7 @@ export function ChallengeDetailPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">Solution URL:</span>
                       <Button variant="outline" size="sm" asChild>
-                        <a href={userSubmission.submission_url} target="_blank" rel="noopener noreferrer">
+                        <a href={userSubmission.submission_url || '#'} target="_blank" rel="noopener noreferrer">
                           <ExternalLink className="w-4 h-4 mr-1" />
                           View
                         </a>
@@ -314,7 +345,7 @@ export function ChallengeDetailPage() {
                           <span className="text-sm font-medium">User Solution</span>
                         </div>
                         <Button variant="ghost" size="sm" asChild>
-                          <a href={submission.submission_url} target="_blank" rel="noopener noreferrer">
+                          <a href={submission.submission_url || '#'} target="_blank" rel="noopener noreferrer">
                             <ExternalLink className="w-4 h-4" />
                           </a>
                         </Button>
