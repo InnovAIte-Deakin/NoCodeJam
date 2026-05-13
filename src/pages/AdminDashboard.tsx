@@ -66,14 +66,83 @@ export function AdminDashboard() {
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [userProfiles, setUserProfiles] = useState<{[key: string]: any}>({});
 
+  const fetchPendingSubmissions = async () => {
+    const { data: pendingSubmissions, error: pendingError } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('status', 'pending');
+
+    if (pendingError) {
+      return { data: null, error: pendingError };
+    }
+
+    // Some environments still use an older submissions status schema
+    // and reject pending_review filters entirely. In that case we keep
+    // the working pending list instead of failing the whole dashboard.
+    const { data: reviewSubmissions, error: reviewError } = await supabase
+      .from('submissions')
+      .select('*')
+      .eq('status', 'pending_review');
+
+    if (reviewError) {
+      console.warn('Admin Dashboard - pending_review query not supported, falling back to pending only:', reviewError);
+      return { data: pendingSubmissions ?? [], error: null };
+    }
+
+    const merged = [...(pendingSubmissions ?? []), ...(reviewSubmissions ?? [])];
+    const deduped = merged.filter(
+      (submission, index, array) => array.findIndex((item) => item.id === submission.id) === index
+    );
+
+    return { data: deduped, error: null };
+  };
+
+  const updateSubmissionStatus = async (
+    submissionId: string,
+    nextStatuses: string[],
+  ) => {
+    let lastError: { message?: string } | null = null;
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
+
+    if (authError || !user?.id) {
+      return {
+        data: null,
+        error: authError ?? { message: 'Reviewer could not be identified.' },
+      };
+    }
+
+    const reviewedAt = new Date().toISOString();
+
+    for (const status of nextStatuses) {
+      const { data, error } = await supabase
+        .from('submissions')
+        .update({
+          status,
+          reviewed_by: user.id,
+          reviewed_at: reviewedAt,
+        })
+        .eq('id', submissionId)
+        .select('id, status')
+        .maybeSingle();
+
+      if (!error && data) {
+        return { data, error: null };
+      }
+
+      lastError = error;
+    }
+
+    return { data: null, error: lastError };
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoadingSubmissions(true);
-      // Fetch pending submissions
-      const { data: submissions, error: subError } = await supabase
-        .from('submissions')
-        .select('*')
-        .eq('status', 'pending');
+      // Fetch pending submissions with backward-compatible status handling
+      const { data: submissions, error: subError } = await fetchPendingSubmissions();
       
       // Add debugging
       console.log('Admin Dashboard - Submissions query result:', { submissions, subError });
@@ -105,19 +174,27 @@ export function AdminDashboard() {
       console.log('Admin Dashboard - Users query result:', { usersData, usersError });
       console.log('Admin Dashboard - Pathways query result:', { pathwaysData, pathwaysError });
 
-      if (!subError && !chalError && !reqError && !usersError && !pathwaysError && submissions && challengesData && requestsData && usersData && pathwaysData) {
+      if (submissions) {
         setPendingSubmissions(submissions);
+      }
+      if (challengesData) {
         setChallenges(challengesData);
+      }
+      if (requestsData) {
         setChallengeRequests(requestsData);
+      }
+      if (pathwaysData) {
         setPathways(pathwaysData);
-        
-        // Create users lookup map
+      }
+      if (usersData) {
         const usersMap: {[key: string]: any} = {};
         usersData.forEach((user: any) => {
           usersMap[user.id] = user;
         });
         setUserProfiles(usersMap);
-      } else {
+      }
+
+      if (subError || chalError || reqError || usersError || pathwaysError) {
         console.error('Query errors:', { subError, chalError, reqError, usersError, pathwaysError });
       }
       setLoadingSubmissions(false);
@@ -126,26 +203,28 @@ export function AdminDashboard() {
   }, []);
 
   const handleApproveSubmission = async (submissionId: string) => {
-    // Find the submission and its challenge
     const submission = pendingSubmissions.find((s: any) => s.id === submissionId);
     if (!submission) return;
     const challenge = challenges.find((c: any) => c.id === submission.challenge_id);
-    if (!challenge) return;
-    // Update submission status to approved
-    const { error: updateError } = await supabase
-      .from('submissions')
-      .update({ status: 'approved' })
-      .eq('id', submissionId);
-    if (updateError) {
+    if (!challenge) {
       toast({
         title: "Failed to approve submission",
-        description: updateError.message,
+        description: "Challenge data could not be found.",
         variant: "destructive",
       });
       return;
     }
-    // Add XP to user (two-step process)
-    // 1. Fetch user
+
+    const { error } = await updateSubmissionStatus(submissionId, ['approved']);
+    if (error) {
+      toast({
+        title: "Failed to approve submission",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const { data: userData, error: userFetchError } = await supabase
       .from('users')
       .select('total_xp')
@@ -153,28 +232,27 @@ export function AdminDashboard() {
       .single();
     if (userFetchError || !userData) {
       toast({
-        title: "Failed to fetch user XP",
+        title: "Failed to update XP",
         description: userFetchError?.message || 'User not found',
         variant: "destructive",
       });
       return;
     }
-    // 2. Update total_xp = user.total_xp + challenge.xp_reward
-    const newXP = (userData.total_xp || 0) + (challenge.xp_reward || 0);
+
+    const xpToAward = challenge.xp_reward || 0;
     const { error: xpError } = await supabase
       .from('users')
-      .update({ total_xp: newXP })
+      .update({ total_xp: (userData.total_xp || 0) + xpToAward })
       .eq('id', submission.user_id);
     if (xpError) {
       toast({
-        title: "Failed to award XP",
+        title: "Failed to update XP",
         description: xpError.message,
         variant: "destructive",
       });
       return;
     }
 
-    // Log the interaction for recommendations
     const { error: interactionError } = await supabase.rpc('log_user_interaction', {
       p_user_id: submission.user_id,
       p_challenge_id: submission.challenge_id,
@@ -190,17 +268,13 @@ export function AdminDashboard() {
 
     toast({
       title: "Submission approved",
-      description: "The submission has been approved and the user has been awarded XP.",
+      description: `The submission status has been updated and ${xpToAward} XP has been awarded.`,
     });
-    // Refresh pending submissions
     refreshPendingSubmissions();
   };
 
   const handleRejectSubmission = async (submissionId: string) => {
-    const { error } = await supabase
-      .from('submissions')
-      .update({ status: 'denied' })
-      .eq('id', submissionId);
+    const { error } = await updateSubmissionStatus(submissionId, ['rejected', 'denied']);
     if (error) {
       toast({
         title: "Failed to reject submission",
@@ -214,25 +288,17 @@ export function AdminDashboard() {
       description: "The submission has been rejected.",
       variant: "destructive",
     });
-    // Refresh pending submissions
     refreshPendingSubmissions();
   };
 
   // Helper to refresh pending submissions
   const refreshPendingSubmissions = async () => {
     setLoadingSubmissions(true);
-    const { data: submissions, error: subError } = await supabase
-      .from('submissions')
-      .select(`
-        *,
-        users!submissions_user_id_fkey (
-          id,
-          username
-        )
-      `)
-      .eq('status', 'pending');
+    const { data: submissions, error: subError } = await fetchPendingSubmissions();
     if (!subError && submissions) {
       setPendingSubmissions(submissions);
+    } else if (subError) {
+      console.error('Failed to refresh pending submissions:', subError);
     }
     setLoadingSubmissions(false);
   };
