@@ -95,7 +95,9 @@ Response rules:
 - Keep replies concise and structured
 - Prefer practical recommendations over abstract explanations
 - Tools are always recommended, never required
-- Do not refer to yourself as the Challenge Assistant`;
+- Do not refer to yourself as the Challenge Assistant
+- IMPORTANT: Ask only 1 question at a time per response. Wait for the user to answer before asking the next question
+- Never ask more than 2 questions in a single response`;
 
 // System prompt for final generation
 const GENERATE_SYSTEM_PROMPT = `You are the NoCodeJam Challenge Generator. Based on the conversation, extract and structure the challenge data.
@@ -343,7 +345,46 @@ Deno.serve(async (req: Request) => {
     // Handle chat-learn action
     if (action === 'chat-learn') {
       try {
-        const message = await callAnthropic(apiKey!, LEARN_SYSTEM_PROMPT, messages, 1024);
+        // Fetch real challenges and pathways from the database
+        const { data: challenges } = await supabaseAdmin
+          .from('challenges')
+          .select('title, description, difficulty, challenge_type, estimated_time, recommended_tools')
+          .eq('status', 'published')
+          .limit(20);
+
+        const { data: pathways } = await supabaseAdmin
+          .from('pathways')
+          .select('title, description, difficulty, estimated_time')
+          .eq('status', 'published')
+          .limit(10);
+
+        // Build context from real data
+        const challengeContext = challenges && challenges.length > 0
+          ? `\n\nAvailable challenges in NoCodeJam:\n${challenges.map((c: any) =>
+              `- ${c.title} (${c.difficulty}, ${c.estimated_time} mins)`
+            ).join('\n')}`
+          : '';
+
+        const pathwayContext = pathways && pathways.length > 0
+          ? `\n\nAvailable learning pathways in NoCodeJam:\n${pathways.map((p: any) =>
+              `- ${p.title} (${p.difficulty}, ${p.estimated_time} mins)`
+            ).join('\n')}`
+          : '';
+          
+
+        const learnPagePlatforms = 'Perplexity, Lovable, Base44, Windsurf, Replit, Figma, Webflow, Emergent, Grok, v0, Anything, Bolt, GitHub Copilot, Abacus.AI, Zapier, Cursor, Claude Code, Gemini CLI';
+
+        const toolContext = `\n\nAvailable platforms on the NoCodeJam Learn page: ${learnPagePlatforms}`;
+
+        const contextualPrompt = LEARN_SYSTEM_PROMPT + challengeContext + pathwayContext + toolContext +
+          '\n\nCRITICAL RULES - YOU MUST FOLLOW THESE:' +
+          '\n1. ONLY recommend challenges and pathways from the exact lists provided above.' +
+          '\n2. ONLY recommend tools from the available tools list above.' +
+          '\n3. NEVER suggest tools, challenges, or pathways that are not in the lists above.' +
+          '\n4. If the user asks about something not in the lists, politely tell them it is not currently available and suggest the closest match from the lists.' +
+          '\n5. Always refer to challenges and pathways by their exact names as listed above.';
+
+        const message = await callAnthropic(apiKey!, contextualPrompt, messages, 1024);
         await logUsage('success', MODEL, message.length);
         const payload: ChatSuccessPayload = { message };
         return jsonResponse(payload);
