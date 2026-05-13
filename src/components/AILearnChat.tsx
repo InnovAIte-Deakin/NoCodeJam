@@ -22,6 +22,7 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
     const [messages, setMessages] = useState<AIMessage[]>([INITIAL_MESSAGE]);
     const [input, setInput] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [showPrompts, setShowPrompts] = useState(true);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
     const { toast } = useToast();
 
@@ -115,6 +116,42 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
                 </ScrollArea>
 
                 <div className="space-y-3 pt-4 border-t border-gray-700">
+                    {/* ── Suggested AI Prompts ── */}
+                    {showPrompts && (
+                        <div className="space-y-2">
+                            <p className="text-xs text-gray-400">Suggested questions:</p>
+                            <div className="flex flex-wrap gap-2">
+                                {[
+                                    'Which no-code tool should I start with?',
+                                    'What is the easiest challenge for beginners?',
+                                    'How do I earn XP on NoCodeJam?',
+                                    'What can I build with no-code tools?',
+                                ].map((prompt) => (
+                                    <button
+                                        key={prompt}
+                                        onClick={() => {
+                                            setInput(prompt);
+                                            setShowPrompts(false);
+                                        }}
+                                        disabled={isLoading}
+                                        className="text-xs px-3 py-1.5 rounded-full bg-gray-700 text-gray-300 hover:bg-blue-600 hover:text-white border border-gray-600 hover:border-blue-500 transition-colors duration-200"
+                                    >
+                                        {prompt}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex space-x-2">
+                        <button
+                            onClick={() => setShowPrompts(!showPrompts)}
+                            className="text-xs text-gray-400 hover:text-blue-400 transition-colors duration-200 whitespace-nowrap"
+                        >
+                            {showPrompts ? 'Hide suggestions ▲' : 'Show suggestions ▼'}
+                        </button>
+                    </div>
+
                     <div className="flex space-x-2">
                         <Input
                             value={input}
