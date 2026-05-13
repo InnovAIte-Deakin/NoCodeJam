@@ -14,7 +14,16 @@ import {
   getDashboardAnalyticsData,
   type DashboardAnalyticsData,
 } from '@/services/analyticsService';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { RecommendedChallengeCard } from '@/components/RecommendedChallengeCard';
+import {
+  BarChart,
+  Bar,
+ XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer
+} from "recharts";
+import { supabase } from '@/lib/supabaseClient';
 
 export function Dashboard() {
   const { user } = useAuth();
@@ -79,8 +88,6 @@ export function Dashboard() {
       } finally {
         setRecsLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchData();
