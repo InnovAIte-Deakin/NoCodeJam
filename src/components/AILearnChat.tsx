@@ -7,10 +7,9 @@ import { Loader2, Send, BookOpen } from 'lucide-react';
 import { chatWithLearningArchitect, type AIMessage } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errorHandling';
-<<<<<<< HEAD
 import ReactMarkdown from 'react-markdown';
-=======
->>>>>>> origin/main
+
+
 
 const INITIAL_MESSAGE: AIMessage = {
     role: 'assistant',
@@ -47,52 +46,6 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
         setIsLoading(true);
 
         // UI update: Add user message immediately
-<<<<<<< HEAD
-const newMessages: AIMessage[] = [...messages, { role: 'user', content: userMessage }];
-setMessages(newMessages);
-
-try {
-    const { message, fallback } = await chatWithLearningArchitect(newMessages);
-
-    const assistantMessage = fallback.fallbackUsed
-        ? `⚠️ ${message}`
-        : message;
-
-    setMessages([
-        ...newMessages,
-        {
-            role: 'assistant',
-            content: assistantMessage
-        }
-    ]);
-
-    if (fallback.fallbackUsed) {
-        toast({
-            title: "Fallback Response",
-            description:
-                fallback.fallbackReason ??
-                "The AI service was unavailable, so a fallback learning response was used.",
-        });
-    }
-} catch (err) {
-    console.error('Chat error:', err);
-
-    setMessages([
-        ...newMessages,
-        {
-            role: 'assistant',
-            content: `⚠️ ${getErrorMessage(err)}`
-        }
-    ]);
-
-    toast({
-        title: "Chat Error",
-        description: getErrorMessage(err),
-        variant: "destructive"
-    });
-
-
-=======
         const newMessages: AIMessage[] = [...messages, { role: 'user', content: userMessage }];
         setMessages(newMessages);
 
@@ -126,7 +79,6 @@ try {
                     variant: "destructive"
                 });
             }
->>>>>>> origin/main
         } finally {
             setIsLoading(false);
         }
