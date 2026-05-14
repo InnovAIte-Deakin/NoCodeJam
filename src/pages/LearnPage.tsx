@@ -19,6 +19,8 @@ import githubCopilotLogo from '@/images/Github Copilot Logo.webp';
 import claudeCodeLogo from '@/images/Claude Code Logo.webp';
 import geminiLogo from '@/images/Gemini Logo.png';
 import figmaLogo from '@/images/figma-logo.svg';
+import chatgptLogo from '@/images/ChatGPT-Logo.png';
+import notionLogo from '@/images/Notion-Logo.png.png';
 import base44Logo from '@/images/base44-logo.png';
 import emergentLogo from '@/images/Emergent Logo.jpg';
 import grokLogo from '@/images/grok-icon.png';
@@ -510,7 +512,51 @@ const platformsRaw: Platform[] = [
       }
     ]
   },
-
+  //Chatgpt(new)
+   {
+    id: 'chatgpt',
+    name: 'ChatGPT',
+    description: 'An AI assistant that support idea generation, coding help, onboarding guidance, and beginner learning workflows.',
+    logo: chatgptLogo,
+    website: 'https://www.chat.openai.com',
+    docsUrl: 'https://help.openai.com',
+    features: ['AI Assistance', 'Prompting', 'Coding Help', 'Learning Support'],
+    difficulty: 'Beginner',
+    category: 'AI Tool',
+    tutorials: [
+      {
+        id: 'chatgpt-1',
+        title: 'Getting Started with ChatGPT',
+        description: 'Learn how to use prompt for onboarding, idea generation, and beginner support',
+        duration: '15 min',
+        difficulty: 'Beginner',
+        url: 'https://help.openai.com'
+      }
+    ]
+  },
+  //Notion(New)
+{
+    id: 'notion',
+    name: 'Notion',
+    description: 'A productivity and documentation platform for project planning, learning journals, and onboarding organization',
+    logo: notionLogo,
+    website: 'https://www.notion.so',
+    docsUrl: 'https://www.notion.so/help',
+    features: ['Documentation', 'Templates', 'Project Planning', 'Collaboration'],
+    difficulty: 'Beginner',
+    category: 'Productivity',
+    tutorials: [
+      {
+        id: 'notion-1',
+        title: 'Notion Basics',
+        description: 'Learn how to create pages, organize notes, and manage beginner projects',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://www.notion.so/help'
+      }
+    ]
+  },
+  
   // ✅ Webflow (marked NEW)
   {
     id: 'webflow',

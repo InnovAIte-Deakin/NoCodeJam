@@ -263,7 +263,48 @@ export const platformPricing: Record<string, PricingTier[]> = {
       ctaUrl: 'https://www.figma.com/pricing'
     }
   ],
-
+  chatgpt: [
+    {
+      id: 'chatgpt-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: ['AI chat assistance', 'Idea generation', 'Basic coding help'],
+      ctaUrl: 'https://www.chat.openai.com'
+    },
+    {
+      id: 'chatgpt-plus',
+      key: 'paid',
+      name: 'Plus',
+      price: '$20',
+      billing: 'per month',
+      features: ['Advanced AI models', 'Faster Response', 'Enhanced coding support'],
+      ctaUrl: 'https://www.chat.openai.com'
+    },
+    
+  ],
+  notion: [
+    {
+      id: 'notion-free',
+      key: 'free',
+      name: 'Free',
+      price: '$0',
+      billing: 'forever',
+      features: ['Notes and docs', 'Project planning', 'Templates'],
+      ctaUrl: 'https://www.notion.so'
+    },
+    {
+      id: 'notion-plus',
+      key: 'paid',
+      name: 'Plus',
+      price: '$10',
+      billing: 'per user/month',
+      features: ['Unlimited blocks', 'Team collaboration', 'Advanced permissions'],
+      ctaUrl: 'https://www.notion.so/pricing'
+    },
+    
+  ],
   'gemini-3': [
     {
       id: 'gemini-3-free',
