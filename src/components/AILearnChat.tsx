@@ -7,6 +7,9 @@ import { Loader2, Send, BookOpen } from 'lucide-react';
 import { chatWithLearningArchitect, type AIMessage } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errorHandling';
+import ReactMarkdown from 'react-markdown';
+
+
 
 const INITIAL_MESSAGE: AIMessage = {
     role: 'assistant',
@@ -111,17 +114,30 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
                                 <div
                                     className={`max-w-[80%] rounded-lg px-4 py-3 ${message.role === 'user'
                                         ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-700 text-gray-100'
+                                        : message.content.startsWith('⚠️')
+                                            ? 'bg-red-900/40 border border-red-500/40 text-red-200'
+                                            : 'bg-gray-700 text-gray-100'
                                         }`}
                                 >
-                                    <p className="text-sm whitespace-pre-wrap"
-                                        dangerouslySetInnerHTML={{
-                                            __html: message.content
-                                                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                                                .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                                                .replace(/#{1,3} (.*?)(\n|$)/g, '<strong>$1</strong>$2')
-                                        }}
-                                    />
+                                    <div className="text-sm leading-relaxed max-w-none">
+                                        <ReactMarkdown
+                                            components={{
+                                                h1: ({children}) => <p className="font-bold text-white mt-3 mb-0">{children}</p>,
+                                                h2: ({children}) => <p className="font-bold text-white mt-3 mb-0">{children}</p>,
+                                                h3: ({children}) => <p className="font-semibold text-white mt-3 mb-0">{children}</p>,
+                                                p: ({children}) => <p className="my-1.5">{children}</p>,
+                                                strong: ({children}) => <strong className="font-semibold text-white">{children}</strong>,
+                                                ol: ({children}) => <ol className="list-decimal list-outside ml-4 my-1.5 space-y-1">{children}</ol>,
+                                                ul: ({children}) => <ul className="list-disc list-outside ml-4 my-1.5 space-y-1">{children}</ul>,
+                                                li: ({children}) => <li className="text-sm leading-relaxed">{children}</li>,
+}}
+                                        >
+                                            {message.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                    {message.role === 'assistant' && !message.content.startsWith('⚠️') && (
+                                        <p className="text-[10px] text-gray-400 mt-2 text-right">AI Learning Guide</p>
+                                    )}
                                 </div>
                             </div>
                         ))}
