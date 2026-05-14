@@ -7,6 +7,9 @@ import { Loader2, Send, BookOpen } from 'lucide-react';
 import { chatWithLearningArchitect, type AIMessage } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errorHandling';
+import ReactMarkdown from 'react-markdown';
+
+
 
 const INITIAL_MESSAGE: AIMessage = {
     role: 'assistant',
@@ -74,19 +77,18 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
             const errMsg = err instanceof Error ? err.message : "Failed to get response";
             const isApiMissing = errMsg.toLowerCase().includes('api key') || errMsg.toLowerCase().includes('mock');
             
-            // Add a fallback message in the chat instead of just a toast
-            setMessages([...newMessages, {
-                role: 'assistant',
-                content: isApiMissing
-                    ? "⚠️ The AI assistant is currently unavailable (service not configured). Please try again later or contact your team admin."
-                    : "⚠️ Something went wrong getting a response. Please try again in a moment."
-            }]);
-
-            toast({
-                title: isApiMissing ? "AI Unavailable" : "Chat Error",
-                description: isApiMissing ? "AI service is not configured yet." : errMsg,
-                variant: "destructive"
-            });
+            if (isRateLimit) {
+                setMessages([...newMessages, {
+                    role: 'assistant',
+                    content: "⚠️ You have reached the maximum number of AI requests for this hour (20 requests). Please wait a while before trying again. In the meantime, feel free to browse the challenges and learning pathways available on the platform! You can also visit our FAQ page for answers to common questions."
+                }]);
+            } else {
+                toast({
+                    title: "Chat Error",
+                    description: errorMsg,
+                    variant: "destructive"
+                });
+            }
         } finally {
             setIsLoading(false);
         }
