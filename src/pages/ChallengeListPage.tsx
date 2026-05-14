@@ -161,7 +161,7 @@ export function ChallengeListPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div id="challenges-header" className="mb-8">
           <div className="flex justify-between items-start mb-4">
             <div>
               <h1 className="text-3xl font-bold text-white mb-2">Challenges</h1>
@@ -182,7 +182,7 @@ export function ChallengeListPage() {
 
               {/* Request Challenge Button */}
               <ChallengeRequestModal>
-                <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                <Button id="challenge-request-button" className="bg-purple-600 hover:bg-purple-700 text-white">
                   <Plus className="w-4 h-4 mr-2" />
                   Request Challenge
                 </Button>
@@ -192,7 +192,7 @@ export function ChallengeListPage() {
         </div>
 
         {/* Filters */}
-        <Card className="mb-8">
+        <Card id="challenge-filters-card" className="mb-8">
           <CardContent className="p-6">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
@@ -222,7 +222,7 @@ export function ChallengeListPage() {
 
         {/* Challenge Grid */}
         {loading ? (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div id="challenge-grid" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4, 5, 6].map(i => (
               <ChallengeCardSkeleton key={i} />
             ))}
@@ -252,7 +252,7 @@ export function ChallengeListPage() {
               </div>
             )}
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div id="challenge-grid" className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredChallenges.map((challenge) => {
                 const status = getChallengeStatus(challenge.id);
                 const requirementsArr = normalizeRequirements(challenge.requirements);

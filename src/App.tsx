@@ -21,6 +21,7 @@ import { ForgotPasswordPage } from '@/pages/ForgotPasswordPage';
 import { ResetPasswordPage } from '@/pages/ResetPasswordPage';
 import OnboardingStepPage from '@/pages/onboarding/[step]';
 import { OnboardingCompleteScreen } from '@/components/OnboardingCompleteScreen';
+import { OnboardingTour } from '@/components/onboarding/OnboardingTour';
 import { FAQPage } from '@/pages/FAQPage';
 import './App.css';
 
@@ -127,6 +128,7 @@ function App() {
         <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
           <Navigation />
           <AppRoutes />
+          <OnboardingTour />
           <Toaster />
         </div>
       </Router>
