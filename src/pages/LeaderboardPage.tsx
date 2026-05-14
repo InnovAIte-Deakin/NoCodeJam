@@ -212,7 +212,7 @@ export function LeaderboardPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div id="leaderboard-header" className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">🏆 Leaderboard</h1>
           <p className="text-gray-300">
             See how you rank against other no-code developers in the community
@@ -270,7 +270,7 @@ export function LeaderboardPage() {
             )}
 
             {/* Top 10 Leaderboard */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card id="top-10-card" className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-white">
                   <Trophy className="w-6 h-6 text-yellow-500" />
@@ -281,7 +281,7 @@ export function LeaderboardPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div id="leaderboard-list" className="space-y-4">
                   {leaderboard.slice(0, 10).map((developer, index) => {
                     const position = index + 1;
                     const isCurrentUser = developer.id === user?.id;
@@ -550,7 +550,7 @@ export function LeaderboardPage() {
             </Card>
 
             {/* Stats */}
-            <div className="grid md:grid-cols-3 gap-6 mt-8">
+            <div id="leaderboard-stats" className="grid md:grid-cols-3 gap-6 mt-8">
               <Card className="shadow-lg hover:shadow-xl transition-shadow bg-gray-800 border-gray-700">
                 <CardContent className="p-6 text-center">
                   <div className="text-3xl font-bold text-purple-400 mb-2">

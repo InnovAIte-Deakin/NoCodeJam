@@ -26,6 +26,7 @@ import v0Logo from '@/images/v0-icon.png';
 import webflowLogo from '@/images/webflow-logo.webp';
 import anythingLogo from '@/images/Anything Logo.png';
 import perplexityLogo from '@/images/perplexity.jpg.avif';
+import visionAILogo from '@/images/visionAI.webp';
 
 type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 type Category = 'Visual Builder' | 'AI-Powered' | 'Database' | 'Web Development';
@@ -646,7 +647,49 @@ const platformsRaw: Platform[] = [
         url: 'https://www.youtube.com/watch?v=6RSSDFEWbm8'
       }
     ]
-  }
+  },
+  {
+    id: 'visionAI',
+    name: 'visionAI',
+    description:
+      'visionAI',
+    logo: visionAILogo,
+    website: 'https://www.perplexity.ai',
+    features: [
+      'Web-grounded answers with citations',
+      'Fast Pro search across the web',
+      'Labs for advanced experimentation',
+      'APIs for search and grounded LLMs'
+    ],
+    difficulty: 'Beginner',
+    category: 'AI-Powered',
+    tutorials: [
+      {
+        id: 'visionAI-docs-overview',
+        title: 'Perplexity Docs: Getting Started',
+        description: 'Official documentation overview for building with Perplexity APIs and models.',
+        duration: '10 min',
+        difficulty: 'Beginner',
+        url: 'https://docs.perplexity.ai/getting-started/overview'
+      },
+      {
+        id: 'visionAI-guide-1',
+        title: 'How To Use Perplexity',
+        description: 'YouTube walkthrough on using Perplexity for everyday research and Q&A.',
+        duration: '12 min',
+        difficulty: 'Beginner',
+        url: 'https://www.youtube.com/watch?v=bOHfJZ4DVqE'
+      },
+      {
+        id: 'visionAI-guide-2',
+        title: 'Every Perplexity Feature Explained',
+        description: 'YouTube guide to using Perplexity for more complex research and projects.',
+        duration: '19 min',
+        difficulty: 'Intermediate',
+        url: 'https://www.youtube.com/watch?v=LnURCxwsB34'
+      }
+    ]
+  }  
 ];
 
 function difficultyRank(d: Difficulty) {
@@ -867,7 +910,7 @@ export function LearnPage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
-        <div className="text-center mb-6">
+        <div id="learn-header" className="text-center mb-6">
           <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight">
             <span className="mr-2">🎓</span>Explore No-Code Platforms for Fast Prototyping
           </h1>
@@ -878,8 +921,8 @@ export function LearnPage() {
         </div>
 
         {/* View mode toggle */}
-        <div className="flex justify-center mb-8">
-          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
+        <div id="learn-mode-toggle" className="flex justify-center mb-8">
+          <div id="learn-mode-buttons" className="inline-flex rounded-full border border-white/10 bg-white/[0.03] p-1">
             <button
               type="button"
               onClick={() => setFiltersMode('on')}
@@ -906,9 +949,9 @@ export function LearnPage() {
         {filtersMode === 'off' ? (
           <>
             {/* Classic controls (from old main) */}
-            <div className="mb-6 space-y-3">
+            <div id="learn-controls" className="mb-6 space-y-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex items-center gap-2 flex-wrap">
+                <div id="learn-path-buttons" className="flex items-center gap-2 flex-wrap">
                   <Button
                     variant="outline"
                     className="border-white/15 text-black/80 hover:bg-white/10"
@@ -989,7 +1032,7 @@ export function LearnPage() {
             </div>
 
             {/* Classic platform grid */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div id="learn-platforms" className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {classicFiltered.map((p) => (
                 <Card
                   key={p.id}
@@ -1040,7 +1083,7 @@ export function LearnPage() {
 
             {/* Classic details */}
             {selected && (
-              <div className="mt-10" ref={(el) => (platformRefs.current[selected.id] = el)}>
+              <div id="learn-selected-tool" className="mt-10" ref={(el) => (platformRefs.current[selected.id] = el)}>
                 <Card className="bg-white/[0.03] border-white/10 backdrop-blur-md">
                   <CardHeader>
                     <div className="flex items-center gap-4">
@@ -1150,7 +1193,7 @@ export function LearnPage() {
         ) : (
           <>
             {/* Quick category buttons */}
-            <div className="flex flex-wrap justify-center gap-3 mb-8">
+            <div id="learn-path-buttons" className="flex flex-wrap justify-center gap-3 mb-8">
               {['All', 'Visual Builder', 'AI-Powered', 'Web Development', 'Database'].map((cat) => (
                 <button
                   key={cat}
@@ -1163,7 +1206,7 @@ export function LearnPage() {
             </div>
 
         {/* Control Panel */}
-        <Card className="bg-white/[0.03] border-white/10 backdrop-blur-md shadow-xl">
+        <Card id="learn-controls" className="bg-white/[0.03] border-white/10 backdrop-blur-md shadow-xl">
           <CardHeader className="pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
               <Zap className="w-5 h-5 text-purple-300" />
@@ -1295,7 +1338,7 @@ export function LearnPage() {
         </Card>
 
         {/* Tool Grid */}
-        <div className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="learn-platforms" className="mt-8 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((platform) => {
             const isSelected = selected?.id === platform.id;
             const isRecommended = recommendedIds.has(platform.id);
@@ -1382,7 +1425,7 @@ export function LearnPage() {
 
         {/* Selected tool details */}
         {selected && (
-          <div className="mt-10" ref={(el) => (platformRefs.current[selected.id] = el)}>
+          <div id="learn-selected-tool" className="mt-10" ref={(el) => (platformRefs.current[selected.id] = el)}>
             <Card className="bg-white/[0.03] border-white/10 backdrop-blur-md">
               <CardHeader>
                 <div className="flex items-center gap-4">

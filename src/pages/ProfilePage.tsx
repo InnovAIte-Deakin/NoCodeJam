@@ -8,10 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
-import { User, Github, Mail, Calendar, ExternalLink, Trophy } from 'lucide-react';
+import { Github, Calendar, ExternalLink, Trophy, RotateCcw } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { Link, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
+import { ONBOARDING_RESTART_EVENT, restartAllOnboardingTours } from '@/components/onboarding/onboardingStorage';
 
 export function ProfilePage() {
   const { user: currentUser, setUser } = useAuth();
@@ -269,6 +270,17 @@ export function ProfilePage() {
     setPreviewUrl(url);
   };
 
+  const handleRestartTour = () => {
+    if (!currentUser) return;
+
+    restartAllOnboardingTours(currentUser.id);
+    window.dispatchEvent(new CustomEvent(ONBOARDING_RESTART_EVENT));
+    toast({
+      title: "Onboarding restarted",
+      description: "Tours are ready to run again across Dashboard, Learn, Challenges, Leaderboard, and Profile.",
+    });
+  };
+
 
   // Only allow editing if viewing own profile
   const isOwnProfile = !id || id === currentUser?.id;
@@ -282,7 +294,7 @@ export function ProfilePage() {
           {/* Left Column: Profile Info & Stats */}
           <div className="space-y-6 lg:col-span-1">
             {/* Profile Card */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card id="profile-summary-card" className="bg-gray-800 border-gray-700">
               <CardHeader className="text-center">
                 <Avatar className="w-24 h-24 mx-auto mb-4">
                   <AvatarImage src={isEditing ? formData.avatar : user?.avatar} alt={user?.username} />
@@ -398,7 +410,7 @@ export function ProfilePage() {
               </CardHeader>
             </Card>
             {/* Account Stats */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card id="profile-stats-card" className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white">Account Stats</CardTitle>
               </CardHeader>
@@ -423,12 +435,34 @@ export function ProfilePage() {
                 </div>
               </CardContent>
             </Card>
+
+            {isOwnProfile && (
+              <Card id="profile-settings-card" className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">Profile Settings</CardTitle>
+                  <CardDescription className="text-gray-300">
+                    Manage guidance and walkthrough preferences
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={handleRestartTour}
+                  >
+                    <RotateCcw className="w-4 h-4 mr-2" />
+                    Restart Tour
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Right Column: Submissions & Badges */}
           <div className="space-y-8 lg:col-span-2">
             {/* Submissions Section */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card id="profile-submissions-card" className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white">Your Submissions</CardTitle>
                 <CardDescription className="text-gray-300">All your challenge submissions</CardDescription>
@@ -479,7 +513,7 @@ export function ProfilePage() {
               </CardContent>
             </Card>
             {/* Badges Section */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card id="profile-badges-card" className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-white">Badges</CardTitle>
                 <CardDescription className="text-gray-300">Your achievements and milestones</CardDescription>

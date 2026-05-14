@@ -7,7 +7,10 @@ import { Loader2, Send, BookOpen } from 'lucide-react';
 import { chatWithLearningArchitect, type AIMessage } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errorHandling';
+<<<<<<< HEAD
 import ReactMarkdown from 'react-markdown';
+=======
+>>>>>>> origin/main
 
 const INITIAL_MESSAGE: AIMessage = {
     role: 'assistant',
@@ -44,6 +47,7 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
         setIsLoading(true);
 
         // UI update: Add user message immediately
+<<<<<<< HEAD
 const newMessages: AIMessage[] = [...messages, { role: 'user', content: userMessage }];
 setMessages(newMessages);
 
@@ -88,6 +92,41 @@ try {
     });
 
 
+=======
+        const newMessages: AIMessage[] = [...messages, { role: 'user', content: userMessage }];
+        setMessages(newMessages);
+
+        try {
+            const { message, fallback } = await chatWithLearningArchitect(newMessages);
+            setMessages([...newMessages, { role: 'assistant', content: message }]);
+
+            if (fallback.fallbackUsed) {
+                toast({
+                    title: "Fallback Response",
+                    description: fallback.fallbackReason ?? "The AI service was unavailable, so a fallback learning response was used.",
+                });
+            }
+        } catch (err) {
+            console.error('Chat error:', err);
+            const errorMsg = getErrorMessage(err);
+            const isRateLimit = errorMsg.includes('429') || 
+                errorMsg.toLowerCase().includes('rate limit') ||
+                errorMsg.toLowerCase().includes('too many') ||
+                errorMsg.toLowerCase().includes('non-2xx');
+            
+            if (isRateLimit) {
+                setMessages([...newMessages, {
+                    role: 'assistant',
+                    content: "⚠️ You have reached the maximum number of AI requests for this hour (20 requests). Please wait a while before trying again. In the meantime, feel free to browse the challenges and learning pathways available on the platform! You can also visit our FAQ page for answers to common questions."
+                }]);
+            } else {
+                toast({
+                    title: "Chat Error",
+                    description: errorMsg,
+                    variant: "destructive"
+                });
+            }
+>>>>>>> origin/main
         } finally {
             setIsLoading(false);
         }
@@ -104,9 +143,9 @@ try {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl h-[80vh] flex flex-col bg-gray-800 border-gray-700">
                 <DialogHeader>
-                    <div className="flex items-center space-x-2">
-                        <BookOpen className="w-5 h-5 text-blue-400" />
-                        <DialogTitle className="text-white">AI Learning Guide</DialogTitle>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <BookOpen style={{ width: '20px', height: '20px', color: '#60a5fa', flexShrink: 0 }} />
+                        <DialogTitle style={{ color: 'white', margin: 0, lineHeight: '20px' }}>AI Learning Guide</DialogTitle>
                     </div>
                     <DialogDescription className="text-gray-300">
                         Ask me about No-Code tools, coding concepts, or where to start!

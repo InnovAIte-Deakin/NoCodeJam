@@ -132,7 +132,7 @@ export function Dashboard() {
     <main className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <div className="container-responsive py-6 sm:py-8">
         {/* Welcome Header */}
-        <header className="mb-6 sm:mb-8">
+        <header id="dashboard-welcome" className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
             Welcome back, {user.username}! 👋
           </h1>
@@ -199,7 +199,7 @@ export function Dashboard() {
           {/* Left Column - Stats & Progress */}
           <div className="lg:col-span-2 space-y-4 sm:space-y-6">
             {/* XP and Level Progress */}
-            <Card className="card-gradient-bar bg-gray-800 border-gray-700">
+            <Card id="xp-card" className="card-gradient-bar bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2 text-lg sm:text-xl text-white">
                   <Star className="w-5 h-5 text-yellow-500" />
@@ -317,7 +317,7 @@ export function Dashboard() {
             </Card>
 
             {/* Recent Submissions */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card id="recent-submissions-card" className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl text-white">Recent Submissions</CardTitle>
                 <CardDescription className="text-gray-300">
@@ -421,7 +421,7 @@ export function Dashboard() {
           {/* Right Column - Profile & Badges */}
           <div className="space-y-4 sm:space-y-6">
             {/* Profile Card */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card id="dashboard-profile-card" className="bg-gray-800 border-gray-700">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg sm:text-xl text-white">Profile</CardTitle>
               </CardHeader>
@@ -471,7 +471,7 @@ export function Dashboard() {
             </Card>
 
             {/* Badges */}
-            <Card className="bg-gray-800 border-gray-700">
+            <Card id="dashboard-badges-card" className="bg-gray-800 border-gray-700">
               <CardHeader>
                 <CardTitle className="text-lg sm:text-xl text-white">Badges</CardTitle>
                 <CardDescription className="text-gray-300">
