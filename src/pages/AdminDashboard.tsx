@@ -66,6 +66,9 @@ export function AdminDashboard() {
   const [loadingSubmissions, setLoadingSubmissions] = useState(true);
   const [userProfiles, setUserProfiles] = useState<{[key: string]: any}>({});
 
+  const [selectedChallengeIds, setSelectedChallengeIds] = useState<string[]>([]);
+  const [editingChallengeIds, setEditingChallengeIds] = useState<string[]>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       setLoadingSubmissions(true);
@@ -332,7 +335,7 @@ export function AdminDashboard() {
     // Auto-generate slug from title if not provided
     const slug = newPathway.slug || newPathway.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
-    const { error } = await supabase.from('pathways').insert([
+    const { data: pathwayData, error: pathwayError } = await supabase.from('pathways').insert([
       {
         title: newPathway.title,
         slug: slug,
@@ -344,13 +347,53 @@ export function AdminDashboard() {
         status: newPathway.status,
         created_by: userData.user.id
       }
-    ]);
+    ]).select().single();
 
-    if (error) {
-      console.error('Create pathway error:', error);
+    if (pathwayError) {
+      console.error('Create pathway error:', pathwayError);
       toast({
         title: "Failed to create pathway",
-        description: error.message,
+        description: pathwayError.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Create a default module and link challenges
+    if (pathwayData && selectedChallengeIds.length > 0) {
+      const { data: moduleData, error: moduleError } = await supabase
+        .from('pathway_modules')
+        .insert({
+          pathway_id: pathwayData.id,
+          title: 'Core Challenges',
+          description: 'The primary building blocks of this pathway.',
+          sequence_order: 1
+        })
+        .select()
+        .single();
+
+      if (moduleError) {
+        console.error('Error creating default module:', moduleError);
+        toast({
+          title: "Pathway created with warnings",
+          description: "Created pathway but failed to link challenges (module error).",
+          variant: "destructive",
+        });
+      } else if (moduleData) {
+        const { error: linkError } = await supabase
+          .from('challenges')
+          .update({ module_id: moduleData.id })
+          .in('id', selectedChallengeIds);
+
+        if (linkError) {
+          console.error('Error linking challenges:', linkError);
+        }
+      }
+    } else if (!pathwayData) {
+      // This shouldn't happen if error is null
+      toast({
+        title: "Error",
+        description: "Failed to retrieve new pathway ID.",
         variant: "destructive",
       });
       return;
@@ -363,6 +406,7 @@ export function AdminDashboard() {
 
     refreshPathways();
     // Reset form
+    setSelectedChallengeIds([]);
     setNewPathway({
       title: '',
       slug: '',
@@ -408,7 +452,7 @@ export function AdminDashboard() {
     refreshPathways();
   };
 
-  const handleEditPathway = (pathway: any) => {
+  const handleEditPathway = async (pathway: any) => {
     setEditingPathway({
       ...pathway,
       slug: pathway.slug || '',
@@ -419,6 +463,24 @@ export function AdminDashboard() {
       cover_image: pathway.cover_image || '',
       status: pathway.status || 'draft'
     });
+
+    // Fetch associated challenges via modules
+    const { data: modules } = await supabase
+      .from('pathway_modules')
+      .select('id')
+      .eq('pathway_id', pathway.id);
+      
+    if (modules && modules.length > 0) {
+      const moduleIds = modules.map(m => m.id);
+      const { data: pathwayChallenges } = await supabase
+        .from('challenges')
+        .select('id')
+        .in('module_id', moduleIds);
+      setEditingChallengeIds(pathwayChallenges?.map(c => c.id) || []);
+    } else {
+      setEditingChallengeIds([]);
+    }
+
     setIsEditPathwayDialogOpen(true);
   };
 
@@ -459,6 +521,71 @@ export function AdminDashboard() {
       return;
     }
 
+    // Handle Challenge Connections
+    // 1. Get or create a default module for this pathway
+    let targetModuleId: string | null = null;
+    const { data: existingModules } = await supabase
+      .from('pathway_modules')
+      .select('id')
+      .eq('pathway_id', editingPathway.id)
+      .order('sequence_order', { ascending: true })
+      .limit(1);
+
+    if (existingModules && existingModules.length > 0) {
+      targetModuleId = existingModules[0].id;
+    } else if (editingChallengeIds.length > 0) {
+      const { data: newModule } = await supabase
+        .from('pathway_modules')
+        .insert({
+          pathway_id: editingPathway.id,
+          title: 'Core Challenges',
+          description: 'The primary building blocks of this pathway.',
+          sequence_order: 1
+        })
+        .select()
+        .single();
+      targetModuleId = newModule?.id || null;
+    }
+
+    if (targetModuleId) {
+      // Unlink challenges no longer in the selection (that belong to any module of this pathway)
+      const { data: allPathwayModules } = await supabase
+        .from('pathway_modules')
+        .select('id')
+        .eq('pathway_id', editingPathway.id);
+      
+      if (allPathwayModules) {
+        const moduleIds = allPathwayModules.map(m => m.id);
+        
+        // Find challenges to remove
+        const { data: currentChallenges } = await supabase
+          .from('challenges')
+          .select('id')
+          .in('module_id', moduleIds);
+          
+        const idsToRemove = currentChallenges
+          ?.map(c => c.id)
+          .filter(id => !editingChallengeIds.includes(id)) || [];
+
+        if (idsToRemove.length > 0) {
+          await supabase
+            .from('challenges')
+            .update({ module_id: null })
+            .in('id', idsToRemove);
+        }
+      }
+
+      // Link selected challenges
+      if (editingChallengeIds.length > 0) {
+        const { error: linkError } = await supabase
+          .from('challenges')
+          .update({ module_id: targetModuleId })
+          .in('id', editingChallengeIds);
+        
+        if (linkError) console.error('Error linking challenges during update:', linkError);
+      }
+    }
+
     toast({
       title: "Pathway updated",
       description: "The pathway has been successfully updated.",
@@ -466,6 +593,7 @@ export function AdminDashboard() {
 
     setIsEditPathwayDialogOpen(false);
     setEditingPathway(null);
+    setEditingChallengeIds([]);
     refreshPathways();
   };
 
@@ -720,6 +848,26 @@ export function AdminDashboard() {
       });
     }
   };
+
+  const renderChallengeCheckboxes = (selectedIds: string[], onChange: (id: string) => void) => (
+    <div className="border border-gray-700 rounded-md p-4 max-h-60 overflow-y-auto space-y-2 bg-gray-900/50 mt-1">
+      {challenges.map((challenge) => (
+        <div key={challenge.id} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            id={`chal-${challenge.id}`}
+            checked={selectedIds.includes(challenge.id)}
+            onChange={() => onChange(challenge.id)}
+            className="w-4 h-4 rounded border-gray-600 bg-gray-700 text-purple-600 focus:ring-purple-500"
+          />
+          <Label htmlFor={`chal-${challenge.id}`} className="text-sm cursor-pointer text-gray-300">
+            {challenge.title} <span className="text-xs text-gray-500">({challenge.difficulty})</span>
+          </Label>
+        </div>
+      ))}
+      {challenges.length === 0 && <p className="text-sm text-gray-500 italic">No challenges available.</p>}
+    </div>
+  );
 
 
   const handleRejectRequest = async (requestId: string) => {
@@ -1250,10 +1398,10 @@ export function AdminDashboard() {
           </Dialog>
 
           <Dialog open={isEditPathwayDialogOpen} onOpenChange={setIsEditPathwayDialogOpen}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gray-800 border-gray-700 text-white">
               <DialogHeader>
                 <DialogTitle>Edit Pathway</DialogTitle>
-                <DialogDescription>
+                <DialogDescription className="text-gray-400">
                   Update the pathway details below.
                 </DialogDescription>
               </DialogHeader>
@@ -1293,6 +1441,16 @@ export function AdminDashboard() {
                       required
                       className="mt-1 font-mono text-sm"
                     />
+                  </div>
+
+                  <div>
+                    <Label>Connect Challenges</Label>
+                    {renderChallengeCheckboxes(editingChallengeIds, (id) => {
+                      setEditingChallengeIds(prev => 
+                        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+                      );
+                    })}
+                    <p className="text-xs text-gray-400 mt-1">Update the challenges associated with this pathway.</p>
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-4">
@@ -1590,6 +1748,16 @@ export function AdminDashboard() {
                       className="mt-1 font-mono text-sm"
                     />
                     <p className="text-xs text-gray-400 mt-1">Use Markdown formatting. Include sections like "Who This Is For", "What You'll Learn", "Prerequisites", etc.</p>
+                  </div>
+
+                  <div>
+                    <Label>Connect Challenges</Label>
+                    {renderChallengeCheckboxes(selectedChallengeIds, (id) => {
+                      setSelectedChallengeIds(prev => 
+                        prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+                      );
+                    })}
+                    <p className="text-xs text-gray-400 mt-1">Select one or more challenges to include in this pathway.</p>
                   </div>
 
                   <div className="grid md:grid-cols-3 gap-4">
