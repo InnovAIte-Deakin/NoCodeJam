@@ -175,6 +175,8 @@ export function BrowsePathways() {
 
     return true;
   });
+  const featuredPathways = pathways.slice(0, 3);
+const regularPathways = filteredPathways.slice(3);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty?.toLowerCase()) {
@@ -221,6 +223,60 @@ export function BrowsePathways() {
             Structured learning journeys to master no-code development
           </p>
         </div>
+        {/* Featured Pathways */}
+<div className="mb-10">
+  <h2 className="text-3xl font-bold text-white mb-6 text-center">
+    Featured Pathways
+  </h2>
+
+  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    {featuredPathways.map(pathway => (
+      <Card
+        key={pathway.id}
+        className="bg-gradient-to-br from-purple-700 to-indigo-800 border-purple-400 hover:scale-105 transition-transform duration-300 cursor-pointer"
+        onClick={() => handleViewPathway(pathway.id)}
+      >
+        <CardHeader>
+          <div className="flex items-center justify-between mb-2">
+            <Badge className={`${getDifficultyColor(pathway.difficulty)} text-white`}>
+              {pathway.difficulty}
+            </Badge>
+
+            <Badge className="bg-yellow-400 text-black font-bold">
+              FEATURED
+            </Badge>
+          </div>
+
+          <CardTitle className="text-white text-2xl">
+            {pathway.title}
+          </CardTitle>
+
+          <CardDescription className="text-gray-200 line-clamp-3">
+            {pathway.description}
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <div className="flex items-center justify-between text-sm text-gray-200 mb-4">
+            <div className="flex items-center">
+              <Clock className="w-4 h-4 mr-1" />
+              {Math.floor((pathway.estimated_time || 0) / 60)}h {(pathway.estimated_time || 0) % 60}m
+            </div>
+
+            <div className="flex items-center">
+              <Trophy className="w-4 h-4 mr-1" />
+              {pathway.total_xp} XP
+            </div>
+          </div>
+
+          <Button className="w-full bg-white text-purple-900 hover:bg-gray-200">
+            Explore Pathway
+          </Button>
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+</div>
 
         {/* Filters */}
         <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700">

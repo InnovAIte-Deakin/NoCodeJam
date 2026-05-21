@@ -6,12 +6,14 @@ export interface DashboardSummary {
   xp_to_next_milestone: number;
   completed_challenges: number;
   badge_count: number;
+  learning_streak: number;
 }
 
 export interface RecentSubmission {
   id: string;
   challenge_id: string;
   challenge_title: string;
+  challenge_xp: number;
   status: "pending" | "approved" | "rejected" | string;
   submitted_at: string | null;
   submission_url: string | null;
@@ -46,6 +48,8 @@ type SubmissionRow = {
 type ChallengeTitleRow = {
   id: string;
   title: string;
+  xp: number | null;
+  xp_reward: number | null;
 };
 
 type UserXpRow = {
@@ -90,7 +94,8 @@ function getNextMilestone(currentXp: number): number {
 function buildDashboardSummary(
   currentXp: number,
   completedChallenges: number,
-  badgeCount: number
+  badgeCount: number,
+  learningStreak: number
 ): DashboardSummary {
   const nextMilestone = getNextMilestone(currentXp);
 
@@ -100,11 +105,44 @@ function buildDashboardSummary(
     xp_to_next_milestone: nextMilestone - currentXp,
     completed_challenges: completedChallenges,
     badge_count: badgeCount,
+    learning_streak: learningStreak,
   };
 }
 
+function calculateLearningStreak(submissionDates: (string | null)[]): number {
+  const uniqueDays = new Set(
+    submissionDates
+      .filter((date): date is string => Boolean(date))
+      .map((date) => new Date(date).toISOString().split("T")[0])
+  );
+
+  if (uniqueDays.size === 0) {
+    return 0;
+  }
+
+  let streak = 0;
+  const currentDate = new Date();
+
+  while (true) {
+    const dayKey = currentDate.toISOString().split("T")[0];
+
+    if (!uniqueDays.has(dayKey)) {
+      break;
+    }
+    streak += 1;
+    currentDate.setDate(currentDate.getDate() - 1);
+  }
+
+  return streak;
+}
+
 export async function getDashboardSummary(userId: string): Promise<DashboardSummary> {
-  const [{ data: userData, error: userError }, { count: completedChallenges, error: submissionsError }, { count: badgeCount, error: badgeError }] =
+  const [
+    { data: userData, error: userError },
+    { count: completedChallenges, error: submissionsError },
+    { count: badgeCount, error: badgeError },
+    { data: streakSubmissionsData, error: streakSubmissionsError },
+  ] =
     await Promise.all([
       supabase.from("users").select("total_xp").eq("id", userId).single(),
       supabase
@@ -116,6 +154,11 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
         .from("user_badges")
         .select("*", { count: "exact", head: true })
         .eq("user_id", userId),
+      supabase
+        .from("submissions")
+        .select("submitted_at")
+        .eq("user_id", userId)
+        .order("submitted_at", { ascending: false }),
     ]);
 
   if (userError) {
@@ -130,10 +173,21 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
     throw new Error(badgeError.message || "Failed to fetch badge count");
   }
 
+  if (streakSubmissionsError) {
+    throw new Error(streakSubmissionsError.message || "Failed to fetch learning streak data");
+  }
+
+  const learningStreak = calculateLearningStreak(
+    ((streakSubmissionsData as { submitted_at: string | null }[] | null) ?? []).map(
+      (submission) => submission.submitted_at
+    )
+  );
+
   return buildDashboardSummary(
     ((userData as UserXpRow | null)?.total_xp ?? 0),
     completedChallenges ?? 0,
-    badgeCount ?? 0
+    badgeCount ?? 0,
+    learningStreak
   );
 }
 
@@ -161,12 +215,12 @@ export async function getRecentSubmissions(
     )
   );
 
-  let challengeTitles = new Map<string, string>();
+  let challengeTitles = new Map<string, { title: string; xp: number }>();
 
   if (challengeIds.length > 0) {
     const { data: challengesData, error: challengesError } = await supabase
       .from("challenges")
-      .select("id, title")
+      .select("id, title, xp, xp_reward")
       .in("id", challengeIds);
 
     if (challengesError) {
@@ -176,15 +230,23 @@ export async function getRecentSubmissions(
     challengeTitles = new Map(
       ((challengesData as ChallengeTitleRow[] | null) ?? []).map((challenge) => [
         challenge.id,
-        challenge.title,
+        {
+          title: challenge.title,
+          xp: challenge.xp_reward ?? challenge.xp ?? 0,
+        },
       ])
     );
   }
 
-  return submissions.map((submission) => ({
-    ...submission,
-    challenge_title: challengeTitles.get(submission.challenge_id) ?? "Untitled challenge",
-  }));
+  return submissions.map((submission) => {
+    const challengeInfo = challengeTitles.get(submission.challenge_id);
+
+    return {
+      ...submission,
+      challenge_title: challengeInfo?.title ?? "Untitled challenge",
+      challenge_xp: challengeInfo?.xp ?? 0,
+    };
+  });
 }
 
 export async function getUserPathwayProgress(
@@ -298,18 +360,18 @@ export async function getUserPathwayProgress(
         ? Math.round((completedChallenges / totalChallenges) * 100)
         : enrollment.progress ?? 0;
 
-      return [
-        {
-          pathway_id: pathway.id,
-          pathway_title: pathway.title,
-          progress_percent: progressPercent,
-          completed_challenges: completedChallenges,
-          total_challenges: totalChallenges,
-          total_xp: pathway.total_xp,
-          status: enrollment.status,
-        },
-      ];
-    });
+    return [
+      {
+        pathway_id: pathway.id,
+        pathway_title: pathway.title,
+        progress_percent: progressPercent,
+        completed_challenges: completedChallenges,
+        total_challenges: totalChallenges,
+        total_xp: pathway.total_xp,
+        status: enrollment.status,
+      },
+    ];
+  });
 }
 
 export async function getDashboardAnalyticsData(

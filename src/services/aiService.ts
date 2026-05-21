@@ -153,8 +153,10 @@ export async function generateChallengeFromChat(
  * @returns AI learning architect's response
  */
 export async function chatWithLearningArchitect(
+  
   messages: AIMessage[]
 ): Promise<{ message: string; fallback: AIFallbackMetadata }> {
+  
   const data = await invokeChallengeAction<ChatResponse>("chat-learn", messages);
   return {
     message: data.message,

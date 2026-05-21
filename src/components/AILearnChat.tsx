@@ -7,6 +7,9 @@ import { Loader2, Send, BookOpen } from 'lucide-react';
 import { chatWithLearningArchitect, type AIMessage } from '@/services/aiService';
 import { useToast } from '@/hooks/use-toast';
 import { getErrorMessage } from '@/lib/errorHandling';
+import ReactMarkdown from 'react-markdown';
+
+
 
 const INITIAL_MESSAGE: AIMessage = {
     role: 'assistant',
@@ -58,11 +61,24 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
             }
         } catch (err) {
             console.error('Chat error:', err);
-            toast({
-                title: "Chat Error",
-                description: getErrorMessage(err),
-                variant: "destructive"
-            });
+            const errorMsg = getErrorMessage(err);
+            const isRateLimit = errorMsg.includes('429') || 
+                errorMsg.toLowerCase().includes('rate limit') ||
+                errorMsg.toLowerCase().includes('too many') ||
+                errorMsg.toLowerCase().includes('non-2xx');
+            
+            if (isRateLimit) {
+                setMessages([...newMessages, {
+                    role: 'assistant',
+                    content: "⚠️ You have reached the maximum number of AI requests for this hour (20 requests). Please wait a while before trying again. In the meantime, feel free to browse the challenges and learning pathways available on the platform! You can also visit our FAQ page for answers to common questions."
+                }]);
+            } else {
+                toast({
+                    title: "Chat Error",
+                    description: errorMsg,
+                    variant: "destructive"
+                });
+            }
         } finally {
             setIsLoading(false);
         }
@@ -79,9 +95,9 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-3xl h-[80vh] flex flex-col bg-gray-800 border-gray-700">
                 <DialogHeader>
-                    <div className="flex items-center space-x-2">
-                        <BookOpen className="w-5 h-5 text-blue-400" />
-                        <DialogTitle className="text-white">AI Learning Guide</DialogTitle>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <BookOpen style={{ width: '20px', height: '20px', color: '#60a5fa', flexShrink: 0 }} />
+                        <DialogTitle style={{ color: 'white', margin: 0, lineHeight: '20px' }}>AI Learning Guide</DialogTitle>
                     </div>
                     <DialogDescription className="text-gray-300">
                         Ask me about No-Code tools, coding concepts, or where to start!
@@ -98,10 +114,30 @@ export function AILearnChat({ open, onOpenChange }: AILearnChatProps) {
                                 <div
                                     className={`max-w-[80%] rounded-lg px-4 py-3 ${message.role === 'user'
                                         ? 'bg-blue-600 text-white'
-                                        : 'bg-gray-700 text-gray-100'
+                                        : message.content.startsWith('⚠️')
+                                            ? 'bg-red-900/40 border border-red-500/40 text-red-200'
+                                            : 'bg-gray-700 text-gray-100'
                                         }`}
                                 >
-                                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                                    <div className="text-sm leading-relaxed max-w-none">
+                                        <ReactMarkdown
+                                            components={{
+                                                h1: ({children}) => <p className="font-bold text-white mt-3 mb-0">{children}</p>,
+                                                h2: ({children}) => <p className="font-bold text-white mt-3 mb-0">{children}</p>,
+                                                h3: ({children}) => <p className="font-semibold text-white mt-3 mb-0">{children}</p>,
+                                                p: ({children}) => <p className="my-1.5">{children}</p>,
+                                                strong: ({children}) => <strong className="font-semibold text-white">{children}</strong>,
+                                                ol: ({children}) => <ol className="list-decimal list-outside ml-4 my-1.5 space-y-1">{children}</ol>,
+                                                ul: ({children}) => <ul className="list-disc list-outside ml-4 my-1.5 space-y-1">{children}</ul>,
+                                                li: ({children}) => <li className="text-sm leading-relaxed">{children}</li>,
+}}
+                                        >
+                                            {message.content}
+                                        </ReactMarkdown>
+                                    </div>
+                                    {message.role === 'assistant' && !message.content.startsWith('⚠️') && (
+                                        <p className="text-[10px] text-gray-400 mt-2 text-right">AI Learning Guide</p>
+                                    )}
                                 </div>
                             </div>
                         ))}
