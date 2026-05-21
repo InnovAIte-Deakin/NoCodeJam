@@ -10,6 +10,9 @@ import { Link } from 'react-router-dom';
 import { Trophy, Star, ExternalLink, BookOpen, Flame, Mountain, Award, Map, Sparkles } from 'lucide-react';
 import { RecommendedChallengeCard } from '@/components/RecommendedChallengeCard';
 import { supabase } from '@/lib/supabaseClient';
+import { Trophy, Star, ExternalLink, BookOpen, Flame, Mountain, Award, Map, Sparkles } from 'lucide-react';
+import { RecommendedChallengeCard } from '@/components/RecommendedChallengeCard';
+import { supabase } from '@/lib/supabaseClient';
 import {
   getDashboardAnalyticsData,
   type DashboardAnalyticsData,
