@@ -327,7 +327,7 @@ export function Dashboard() {
       </div>
     )}
   </CardContent>
-</Card>
+</Card>np
 
             {/* Recent Submissions */}
             <Card id="recent-submissions-card" className="bg-gray-800 border-gray-700">
