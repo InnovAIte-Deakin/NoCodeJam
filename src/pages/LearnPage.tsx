@@ -707,8 +707,14 @@ export function LearnPage() {
     []
   );
 
-  const [selectedPlatform, setSelectedPlatform] = useState<string>(platforms[0]?.id ?? 'lovable');
-
+const [selectedPlatform, setSelectedPlatform] = useState<string>(() => {
+  try {
+    const saved = typeof window !== 'undefined' ? window.localStorage.getItem('learn:selectedPlatform') : null;
+    return saved || platforms[0]?.id || 'lovable';
+  } catch {
+    return platforms[0]?.id || 'lovable';
+  }
+});
   const [filtersMode, setFiltersMode] = useState<'on' | 'off'>(() => {
     try {
       // New key
@@ -750,6 +756,14 @@ export function LearnPage() {
       // ignore
     }
   }, [filtersMode]);
+  
+  useEffect(() => {
+  try {
+    window.localStorage.setItem('learn:selectedPlatform', selectedPlatform);
+  } catch {
+    // ignore
+  }
+}, [selectedPlatform]);
 
   const scrollToPlatform = (platformId: string) => {
     setSelectedPlatform(platformId);
