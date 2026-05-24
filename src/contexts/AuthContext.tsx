@@ -110,47 +110,88 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string): Promise<AuthResult> => {
-    setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setIsLoading(false);
 
-    if (error) {
-      // eslint-disable-next-line no-console
-      console.error("login error:", error);
-      return { ok: false, error: error.message };
-    }
-
-    return { ok: true };
-  };
-
-  const register = async (
-    email: string,
-    password: string,
-    username: string
-  ): Promise<AuthResult> => {
-    setIsLoading(true);
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
+  try {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
       password,
-      options: { data: { username, xp: 0, badges: [] } },
     });
 
-    setIsLoading(false);
-
     if (error) {
-      // eslint-disable-next-line no-console
-      console.error("register error:", error);
+      console.error("login error:", error);
+
+      const message = error.message.toLowerCase();
+
+      if (
+        message.includes("invalid login credentials") ||
+        message.includes("invalid credentials") ||
+        message.includes("email not confirmed")
+      ) {
+        return { ok: false, error: "Incorrect email or password." };
+      }
+
       return { ok: false, error: error.message };
     }
 
-    // If email confirmations are enabled, user may be created but no session exists yet.
-    // We treat this as success and let UI instruct user.
-    // eslint-disable-next-line no-console
-    console.log("register ok:", { userId: data.user?.id, session: !!data.session });
-
     return { ok: true };
-  };
+  } finally {
+  }
+};
+
+  const register = async (
+  email: string,
+  password: string,
+  username: string
+): Promise<AuthResult> => {
+  setIsLoading(true);
+
+  const { data: existingUser, error: existingUserError } = await supabase
+    .from("users")
+    .select("id")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (existingUserError) {
+    setIsLoading(false);
+    console.error("existing user check error:", existingUserError);
+    return { ok: false, error: "Unable to verify email. Please try again." };
+  }
+
+  if (existingUser) {
+    setIsLoading(false);
+    return { ok: false, error: "An account with this email already exists." };
+  }
+
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { username, xp: 0, badges: [] } },
+  });
+
+  setIsLoading(false);
+
+  if (error) {
+    console.error("register error:", error);
+
+    const message = error.message.toLowerCase();
+
+    if (
+      message.includes("already registered") ||
+      message.includes("already exists") ||
+      message.includes("user already registered")
+    ) {
+      return { ok: false, error: "An account with this email already exists." };
+    }
+
+    return { ok: false, error: error.message };
+  }
+
+  console.log("register ok:", { userId: data.user?.id, session: !!data.session });
+if (!data.session && !data.user?.identities?.length) {
+  return { ok: false, error: "An account with this email already exists." };
+}
+  return { ok: true };
+};
 
   const logout = () => {
     setIsLoading(true);
