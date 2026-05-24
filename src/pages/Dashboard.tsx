@@ -204,7 +204,7 @@ export function Dashboard() {
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {/* Featured Pathways */}
-                <Link to="/learn" className="block">
+                <Link to="/pathways" className="block">
                   <div className="rounded-xl p-5 bg-gradient-to-br from-blue-900/40 to-purple-900/30 border border-gray-700 transition-all duration-200 hover:border-blue-400 hover:shadow-lg hover:shadow-blue-500/20 hover:-translate-y-1 cursor-pointer">
                     <div className="bg-blue-500/20 w-10 h-10 rounded-lg flex items-center justify-center mb-4">
                       <Map className="w-5 h-5 text-blue-400" />
