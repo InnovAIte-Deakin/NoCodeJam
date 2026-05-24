@@ -10,13 +10,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Search, BookOpen, Clock, Trophy, CheckCircle2 } from 'lucide-react';
 import { PathwayCardSkeleton } from '@/components/skeletons/PathwayCardSkeleton';
-import { handleError, SCENARIO_ERRORS } from '@/lib/errorHandling';
-import type { Pathway, PathwayEnrollment } from '@/types';
+import { handleError } from '@/lib/errorHandling';
+import type { Pathway } from '@/types';
 
 interface PathwayWithEnrollment extends Pathway {
   is_enrolled?: boolean;
   enrollment_status?: string;
 }
+
+const FEATURED_PATHWAY_TITLES = [
+  'Evidence-Based Care Prototyping',
+  'Education Analytics for Teachers',
+  'Research Prototyping for Non-Programmers',
+];
+
+const normalizeTitle = (title: string) => title.trim().toLowerCase();
 
 export function BrowsePathways() {
   const navigate = useNavigate();
@@ -176,6 +184,15 @@ export function BrowsePathways() {
     return true;
   });
 
+  const featuredPathways = FEATURED_PATHWAY_TITLES
+    .map(featuredTitle =>
+      pathways.find(pathway => normalizeTitle(pathway.title) === normalizeTitle(featuredTitle))
+    )
+    .filter((pathway): pathway is PathwayWithEnrollment => Boolean(pathway));
+
+  const featuredPathwayIds = new Set(featuredPathways.map(pathway => pathway.id));
+  const regularPathways = filteredPathways.filter(pathway => !featuredPathwayIds.has(pathway.id));
+
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty?.toLowerCase()) {
       case 'beginner':
@@ -221,6 +238,62 @@ export function BrowsePathways() {
             Structured learning journeys to master no-code development
           </p>
         </div>
+        {/* Featured Pathways */}
+        {featuredPathways.length > 0 && (
+          <div className="mb-10">
+            <h2 className="text-3xl font-bold text-white mb-6 text-center">
+              Featured Pathways
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {featuredPathways.map(pathway => (
+                <Card
+                  key={pathway.id}
+                  className="bg-gradient-to-br from-purple-700 to-indigo-800 border-purple-400 hover:scale-105 transition-transform duration-300 cursor-pointer"
+                  onClick={() => handleViewPathway(pathway.id)}
+                >
+                  <CardHeader>
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge className={`${getDifficultyColor(pathway.difficulty)} text-white`}>
+                        {pathway.difficulty}
+                      </Badge>
+
+                      <Badge className="bg-yellow-400 text-black font-bold">
+                        FEATURED
+                      </Badge>
+                    </div>
+
+                    <CardTitle className="text-white text-2xl">
+                      {pathway.title}
+                    </CardTitle>
+
+                    <CardDescription className="text-gray-200 line-clamp-3">
+                      {pathway.description}
+                    </CardDescription>
+                  </CardHeader>
+
+                  <CardContent>
+                    <div className="flex items-center justify-between text-sm text-gray-200 mb-4">
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-1" />
+                        {Math.floor((pathway.estimated_time || 0) / 60)}h {(pathway.estimated_time || 0) % 60}m
+                      </div>
+
+                      <div className="flex items-center">
+                        <Trophy className="w-4 h-4 mr-1" />
+                        {pathway.total_xp} XP
+                      </div>
+                    </div>
+
+                    <Button className="w-full bg-white text-purple-900 hover:bg-gray-200">
+                      Explore Pathway
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Filters */}
         <div className="bg-gray-800 rounded-lg p-6 mb-8 border border-gray-700">
@@ -267,10 +340,10 @@ export function BrowsePathways() {
         </div>
 
         {/* Pathways Grid */}
-        {filteredPathways.length === 0 ? (
+        {regularPathways.length === 0 ? (
           <div className="bg-gray-800 rounded-lg p-12 border border-gray-700 text-center">
             <BookOpen className="w-16 h-16 text-gray-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-white mb-2">No pathways found</h3>
+            <h3 className="text-xl font-semibold text-white mb-2">No other pathways found</h3>
             <p className="text-gray-400">
               {searchQuery || difficultyFilter !== 'all' || timeFilter !== 'all'
                 ? 'Try adjusting your filters'
@@ -279,7 +352,7 @@ export function BrowsePathways() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPathways.map(pathway => (
+            {regularPathways.map(pathway => (
               <Card
                 key={pathway.id}
                 className="bg-gray-800 border-gray-700 hover:border-purple-500 transition-colors cursor-pointer"
