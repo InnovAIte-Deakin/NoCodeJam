@@ -377,6 +377,7 @@ export async function getUserPathwayProgress(
 export async function getDashboardAnalyticsData(
   userId: string
 ): Promise<DashboardAnalyticsData> {
+
   const [summary, recentSubmissions, pathways] = await Promise.all([
     getDashboardSummary(userId),
     getRecentSubmissions(userId),
